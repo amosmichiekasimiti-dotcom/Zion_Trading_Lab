@@ -1,39 +1,3 @@
-import os
-import random
-from flask import Flask, render_template_string, request
-
-app = Flask(__name__)
-
-# --- THE COMPLETE 2026 MARKET POOL ---
-ALL_MARKETS = [
-    "VOLATILITY 10 INDEX", "VOLATILITY 10 (1S) INDEX", "VOLATILITY 15 (1S) INDEX",
-    "VOLATILITY 25 INDEX", "VOLATILITY 25 (1S) INDEX", "VOLATILITY 30 (1S) INDEX",
-    "VOLATILITY 50 INDEX", "VOLATILITY 50 (1S) INDEX", "VOLATILITY 75 INDEX",
-    "VOLATILITY 75 (1S) INDEX", "VOLATILITY 90 (1S) INDEX", "VOLATILITY 100 INDEX",
-    "VOLATILITY 100 (1S) INDEX", "VOLATILITY 250 INDEX", "VOLATILITY 250 (1S) INDEX",
-    "VOLATILITY 300 (1S) INDEX", "BULL MARKET INDEX", "BEAR MARKET INDEX", "DRIFT SWITCH INDEX"
-]
-
-@app.route('/')
-def home():
-    cat = request.args.get('cat', 'EVEN_ODD')
-    market = random.choice(ALL_MARKETS)
-    accuracy = random.randint(98, 99)
-    countdown_needed = "false"
-    
-    # Selection Logic
-    if cat == "EVEN_ODD":
-        side = random.choice(["EVEN", "ODD"])
-        percent = random.randint(72, 86)
-        contract, color = f"DIGIT {side}", "#3b82f6"
-        logic = f"DOMINATION: {side} is currently controlling {percent}% of tick flow."
-        target = f"TRADE {side} | 5 RUNS"
-        voice = f"Even Odd Scanner active. {side} is dominating on {market} at {percent} percent."
-
-    elif cat == "RISE_FALL":
-        trend = random.choice(["RISE", "FALL"])
-        contract, color = ("RISE / CALL", "#00ff88") if trend == "RISE" else ("FALL / PUT", "#ff4d4d")
-        logic = f"SMC ANALYSIS: {'Bullish Order Block' if trend == 'RISE' else 'Bearish MSB'} confirmed."
         target = f"DIRECTION: {trend} | 3 RUNS"
         voice = f"Rise Fall Scanner. Trend is {trend} on {market}."
 
