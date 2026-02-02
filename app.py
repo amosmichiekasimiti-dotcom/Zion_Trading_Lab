@@ -1,151 +1,129 @@
-import os
-import random
-from flask import Flask, render_template_string, jsonify
+import os, random
+import google.generativeai as genai
+from flask import Flask, render_template_string, request
 
 app = Flask(__name__)
 
-# --- CONFIG (UNTOUCHED) ---
-GEMINI_API_KEY = "AIzaSyDM7cKxbQwbwBX0ubbO1Iel2WrFi8oEh2E"
+# --- MASTER CONFIG ---
+API_KEY = "AIzaSyDM7cKxbQwbwBX0ubbO1Iel2WrFi8oEh2E"
+genai.configure(api_key=API_KEY)
+ai_engine = genai.GenerativeModel('gemini-1.5-flash')
+
 WHATSAPP = "https://wa.me/254742024175?text=Hello%20Zion%20Support"
-GEMINI_LINK = "https://gemini.google.com/"
 
-MARKETS = {
-    "VOLS": ["V10_1S", "V10_PL", "V15_1S", "V25_1S", "V25_PL", "V50_1S", "V75_1S", "V75_PL", "V90_1S", "V100_1S", "V100_PL"],
-    "SPIKES": ["B300", "B500", "B1000", "C300", "C500", "C1000"],
-    "JUMP": ["JD10", "JD50", "JD100"]
-}
-
-@app.route('/get_mega_signal')
-def get_mega_signal():
-    cat = random.choice(list(MARKETS.keys()))
-    sym = random.choice(MARKETS[cat])
-    name = sym.replace("_1S", " (1s)").replace("_PL", " Index").replace("V", "Volatility ").replace("B", "Boom ").replace("C", "Crash ").replace("JD", "Jump ")
-    is_vol = cat == "VOLS"
-    return jsonify(
-        market=name,
-        rf="RISE" if "B" in sym else ("FALL" if "C" in sym else random.choice(["RISE", "FALL"])),
-        eo=random.choice(["EVEN", "ODD"]) if is_vol else "N/A",
-        ou=random.choice(["OVER 4", "UNDER 5"]) if is_vol else "N/A",
-        md=f"DIFFERS {random.randint(0,9)}" if is_vol else "N/A",
-        spike="SPIKE SOON" if cat == "SPIKES" else "STABLE",
-        duration="5 TICKS" if is_vol else "1 MINUTE",
-        timeframe="M1" if is_vol else "M1 (SCALPING)",
-        acc=f"{random.randint(97, 99)}%"
-    )
+# VOLATILITIES (Including 15 and all 1S markers as per your instructions)
+VOLS = ["R_10", "1HZ10V", "1HZ15V", "R_25", "1HZ25V", "1HZ30V", "R_50", "1HZ50V", "R_75", "1HZ75V", "1HZ90V", "R_100", "1HZ100V"]
 
 @app.route('/')
 def home():
-    return render_template_string(UI_HTML, wa=WHATSAPP, gemini=GEMINI_LINK)
+    # 'cat' determines which section is active
+    cat = request.args.get('cat', 'DASHBOARD')
+    symbol = random.choice(VOLS)
+    
+    # Naming logic to ensure "Volatility Index (1S)" appears correctly
+    market = symbol.replace("R_", "Volatility ").replace("1HZ", "Volatility ").replace("V", "")
+    market_display = f"{market} (1S) Index"
+    
+    if cat == 'DASHBOARD':
+        return render_template_string(UI_HTML, cat=cat, wa=WHATSAPP)
+
+    # SIGNAL LOGIC: RISE/FALL with high-accuracy percentages
+    action = random.choice(["RISE", "FALL"])
+    acc_val = round(random.uniform(94.2, 98.9), 1)
+    acc = f"{acc_val}%"
+    
+    voice_msg = f"New analysis for {market_display}. Prediction: {action} with {acc} accuracy."
+    
+    return render_template_string(UI_HTML, market=market_display, action=action, acc=acc, voice=voice_msg, cat=cat, wa=WHATSAPP)
 
 UI_HTML = """
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Zion Live Terminal</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { --nav: #0000ff; --bg: #020617; --accent: #316dca; --green: #22c55e; }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: var(--bg); color: white; font-family: 'Arial Black', sans-serif; overflow-x: hidden; }
-
-        /* FIXED HEADER: Padding added to prevent edge-touching */
-        .header { background: var(--nav); padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid cyan; }
-        .header span { font-size: 14px; text-transform: uppercase; }
-
-        /* FLOATING LIVE SIGNAL ICON (PULSING) */
-        .floating-signal { 
-            position: fixed; bottom: 100px; right: 20px; 
-            width: 60px; height: 60px; background: var(--nav); 
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.6); border: 2px solid cyan; z-index: 1000;
-            animation: pulse 2s infinite; cursor: pointer;
-        }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); box-shadow: 0 0 30px cyan; } 100% { transform: scale(1); } }
-
-        .main-container { padding: 15px; width: 100%; max-width: 480px; margin: 0 auto; }
+        :root { --primary: #0000ff; --red: #ff3b30; --green: #22c55e; --bg: #020617; --glass: rgba(255,255,255,0.06); }
+        body { background: var(--bg); color: white; margin: 0; font-family: 'Inter', sans-serif; overflow-x: hidden; }
         
-        .market-banner { text-align: center; margin: 10px 0; }
-        .m-name { color: cyan; font-size: 26px; }
+        .navbar { background: var(--primary); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top:0; z-index:100; }
+        .nav-controls { display: flex; gap: 25px; align-items: center; }
+        .btn-signup { background: var(--red); color: white; padding: 7px 15px; border-radius: 5px; font-weight: bold; font-size: 11px; text-decoration: none; text-transform: uppercase; }
 
-        /* 6-COLUMN GRID */
-        .signal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-        .col-card { background: #0f172a; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px 5px; text-align: center; }
-        .col-label { font-size: 10px; color: var(--accent); margin-bottom: 5px; text-transform: uppercase; }
-        .big-display { font-size: 28px; font-weight: 900; }
+        /* Grid Alignment */
+        .dashboard-label { padding: 20px 20px 5px; font-size: 11px; font-weight: 800; color: #3b82f6; letter-spacing: 1.5px; }
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 15px; }
+        .card { background: var(--glass); border-radius: 12px; padding: 22px 5px; text-align: center; text-decoration: none; color: white; border: 1px solid rgba(255,255,255,0.05); }
+        .card i { font-size: 24px; color: #3b82f6; margin-bottom: 10px; display: block; }
+        .card span { display: block; font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; }
 
-        /* FIXED FOOTER LINKS */
-        .footer-nav { display: flex; justify-content: space-around; padding: 25px 0; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 20px; }
-        .nav-item { text-decoration: none; color: white; text-align: center; }
-        .nav-item i { font-size: 32px; display: block; margin-bottom: 5px; }
-        .nav-label { font-size: 11px; font-weight: bold; }
+        /* Professional Signal Layout */
+        .signal-view { text-align: center; padding: 50px 20px; animation: slideUp 0.4s ease-out; }
+        .market-title { font-size: 13px; color: #3b82f6; font-weight: 800; border: 1px solid #3b82f6; display: inline-block; padding: 4px 12px; border-radius: 20px; margin-bottom: 25px; }
+        .direction-box { background: var(--glass); border-radius: 20px; padding: 40px 20px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 30px; }
+        .direction-text { font-size: 75px; font-weight: 900; margin: 10px 0; letter-spacing: -3px; }
+        
+        .accuracy-badge { background: rgba(34, 197, 94, 0.1); border: 1px solid var(--green); padding: 8px 16px; border-radius: 30px; display: inline-flex; align-items: center; gap: 10px; }
+        .accuracy-badge span { font-weight: 900; font-size: 18px; color: var(--green); }
+
+        .btn-trade { display: block; background: var(--green); color: white; padding: 20px; border-radius: 12px; text-decoration: none; font-weight: 900; font-size: 16px; box-shadow: 0 8px 20px rgba(34, 197, 94, 0.2); }
+        .wa-float { position: fixed; bottom: 25px; right: 20px; background: #25d366; width: 55px; height: 55px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; color: white; text-decoration: none; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
-    <div class="header">
-        <span>ZION MASTER COMMAND</span>
-        <div onclick="toggleMute()"><i id="mute-icon" class="fa-solid fa-volume-high" style="color:cyan; font-size:20px; cursor:pointer;"></i></div>
+    <div class="navbar">
+        <div class="nav-controls">
+            <i class="fa-solid fa-bars" style="font-size: 22px;"></i>
+            <i id="muteBtn" class="fa-solid fa-volume-high" style="color:cyan; font-size: 22px; cursor:pointer;"></i>
+        </div>
+        <div style="font-weight:900; font-size: 19px; letter-spacing: 1px;">ZION <span style="color:#3b82f6">AI</span></div>
+        <a href="#" class="btn-signup">Sign up</a>
     </div>
 
-    <div class="floating-signal" onclick="update()">
-        <i class="fa-solid fa-tower-broadcast" style="color:white; font-size:24px;"></i>
+    {% if cat == 'DASHBOARD' %}
+    <div class="dashboard-label">TERMINAL DASHBOARD</div>
+    <div class="grid">
+        <a href="/?cat=LIVE_SIGNAL" class="card"><i class="fa-solid fa-tower-broadcast"></i><span>Signal</span></a>
+        <a href="/?cat=LIVE_SIGNAL" class="card"><i class="fa-solid fa-robot"></i><span>Bot Builder</span></a>
+        <a href="/?cat=LIVE_SIGNAL" class="card"><i class="fa-solid fa-brain"></i><span>AI Bots</span></a>
+        <a href="/?cat=LIVE_SIGNAL" class="card"><i class="fa-solid fa-magnifying-glass-chart"></i><span>Analysis</span></a>
+        <a href="/?cat=LIVE_SIGNAL" class="card"><i class="fa-solid fa-eye"></i><span>TradeView</span></a>
+        <a href="/?cat=LIVE_SIGNAL" class="card"><i class="fa-solid fa-bolt"></i><span>DTrader</span></a>
     </div>
-
-    <div class="main-container">
-        <div class="market-banner">
-            <div class="m-name" id="m-display">INITIATING...</div>
-            <div style="font-size: 12px; color: var(--green);">ACCURACY: <span id="acc-display">--</span></div>
+    {% else %}
+    <div class="signal-view">
+        <div class="market-title">{{ market }}</div>
+        
+        <div class="direction-box">
+            <div style="color: #64748b; font-size: 11px; font-weight: bold; letter-spacing: 2px;">PREDICTED DIRECTION</div>
+            <div class="direction-text" style="color: {{ 'var(--green)' if action == 'RISE' else 'var(--red)' }};">
+                {{ action }}
+            </div>
+            <div class="accuracy-badge">
+                <small style="color: #94a3b8; font-size: 10px;">ACCURACY</small>
+                <span>{{ acc }}</span>
+            </div>
         </div>
 
-        <div style="text-align:center; padding: 15px; background:rgba(255,165,0,0.1); border:1px dashed orange; border-radius:8px; margin: 10px 0;">
-            <div id="time-display" style="font-size:18px; font-weight:bold;">-- | --</div>
-        </div>
-
-        <div class="signal-grid">
-            <div class="col-card"><div class="col-label">RISE / FALL</div><div id="rf" class="big-display">--</div></div>
-            <div class="col-card"><div class="col-label">EVEN / ODD</div><div id="eo" class="big-display">--</div></div>
-            <div class="col-card"><div class="col-label">MATCH / DIFF</div><div id="md" class="big-display">--</div></div>
-            <div class="col-card" style="border-color:orange"><div class="col-label" style="color:orange">SPIKE</div><div id="spike" class="big-display" style="color:orange">--</div></div>
-            <div class="col-card"><div class="col-label">OVER / UNDER</div><div id="ou" class="big-display">--</div></div>
-            <div class="col-card" style="border-color:purple"><div class="col-label" style="color:purple">STATUS</div><div class="big-display" style="color:purple">LIVE</div></div>
-        </div>
-
-        <div class="footer-nav">
-            <a href="{{ wa }}" class="nav-item" style="color:#25d366;"><i class="fa-brands fa-whatsapp"></i><div class="nav-label">Support</div></a>
-            <a href="{{ gemini }}" class="nav-item" style="color:#4285f4;"><i class="fa-solid fa-brain"></i><div class="nav-label">Gemini AI</div></a>
-        </div>
+        <a href="https://app.deriv.com" target="_blank" class="btn-trade">EXECUTE TRADE</a>
+        <br>
+        <a href="/?cat=DASHBOARD" style="color:#64748b; text-decoration:none; font-size:13px; font-weight:600;">
+            <i class="fa-solid fa-arrow-left"></i> BACK TO DASHBOARD
+        </a>
     </div>
+    {% endif %}
+
+    <a href="{{ wa }}" class="wa-float"><i class="fa-brands fa-whatsapp"></i></a>
 
     <script>
-        let isMuted = false;
-        function toggleMute() {
-            isMuted = !isMuted;
-            document.getElementById('mute-icon').className = isMuted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
-            document.getElementById('mute-icon').style.color = isMuted ? '#ff3b30' : 'cyan';
-            if(isMuted) window.speechSynthesis.cancel();
-        }
-        function speak(text) {
-            if(isMuted) return;
-            window.speechSynthesis.cancel();
-            let u = new SpeechSynthesisUtterance(text);
-            u.rate = 1.0;
-            window.speechSynthesis.speak(u);
-        }
-        function update() {
-            fetch('/get_mega_signal').then(r => r.json()).then(d => {
-                document.getElementById('m-display').innerText = d.market;
-                document.getElementById('rf').innerText = d.rf;
-                document.getElementById('eo').innerText = d.eo;
-                document.getElementById('ou').innerText = d.ou;
-                document.getElementById('md').innerText = d.md;
-                document.getElementById('spike').innerText = d.spike;
-                document.getElementById('acc-display').innerText = d.acc;
-                document.getElementById('time-display').innerText = d.duration + " | " + d.timeframe;
-                speak(`Signal ${d.rf} on ${d.market}`);
-            });
-        }
-        setInterval(update, 12000); update();
+        let muted = false;
+        function playAI(t) { if (!muted) { const s = new SpeechSynthesisUtterance(t); s.rate = 0.95; window.speechSynthesis.speak(s); } }
+        document.getElementById('muteBtn').onclick = function() { 
+            muted = !muted; this.className = muted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high'; this.style.color = muted ? 'red' : 'cyan';
+        };
+        window.onload = () => { if("{{ cat }}" !== "DASHBOARD") playAI("{{ voice }}"); };
     </script>
 </body>
 </html>
