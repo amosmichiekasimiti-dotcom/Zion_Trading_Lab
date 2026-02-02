@@ -4,12 +4,11 @@ from flask import Flask, render_template_string, jsonify
 
 app = Flask(__name__)
 
-# --- SECURE CONFIGURATION (DIRECTLY INCLUDED AS REQUESTED) ---
+# --- CONFIG (UNTOUCHED) ---
 GEMINI_API_KEY = "AIzaSyDM7cKxbQwbwBX0ubbO1Iel2WrFi8oEh2E"
 WHATSAPP = "https://wa.me/254742024175?text=Hello%20Zion%20Support"
 GEMINI_LINK = "https://gemini.google.com/"
 
-# --- MARKET REPOSITORY (ALL 11 VOLS + OTHERS) ---
 MARKETS = {
     "VOLS": ["V10_1S", "V10_PL", "V15_1S", "V25_1S", "V25_PL", "V50_1S", "V75_1S", "V75_PL", "V90_1S", "V100_1S", "V100_PL"],
     "SPIKES": ["B300", "B500", "B1000", "C300", "C500", "C1000"],
@@ -21,12 +20,7 @@ def get_mega_signal():
     cat = random.choice(list(MARKETS.keys()))
     sym = random.choice(MARKETS[cat])
     name = sym.replace("_1S", " (1s)").replace("_PL", " Index").replace("V", "Volatility ").replace("B", "Boom ").replace("C", "Crash ").replace("JD", "Jump ")
-    
-    # Trade Duration & Timeframe Intelligence
     is_vol = cat == "VOLS"
-    duration = "5 TICKS" if is_vol else "1 MINUTE"
-    timeframe = "M1" if is_vol else "M1 (SCALPING)"
-
     return jsonify(
         market=name,
         rf="RISE" if "B" in sym else ("FALL" if "C" in sym else random.choice(["RISE", "FALL"])),
@@ -34,8 +28,8 @@ def get_mega_signal():
         ou=random.choice(["OVER 4", "UNDER 5"]) if is_vol else "N/A",
         md=f"DIFFERS {random.randint(0,9)}" if is_vol else "N/A",
         spike="SPIKE SOON" if cat == "SPIKES" else "STABLE",
-        duration=duration,
-        timeframe=timeframe,
+        duration="5 TICKS" if is_vol else "1 MINUTE",
+        timeframe="M1" if is_vol else "M1 (SCALPING)",
         acc=f"{random.randint(97, 99)}%"
     )
 
@@ -48,76 +42,94 @@ UI_HTML = """
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zion AI Command</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zion Live Terminal</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        :root { --nav: #0000ff; --bg: #020617; --accent: #316dca; --green: #22c55e; --red: #ff3b30; }
-        body { background: var(--bg); color: white; margin: 0; font-family: 'Arial Black', sans-serif; }
-        .header { background: var(--nav); padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid cyan; }
-        .voice-settings { background: #1e293b; padding: 10px; display: flex; justify-content: center; gap: 15px; font-size: 11px; }
-        .voice-btn { cursor: pointer; padding: 5px 10px; border-radius: 5px; border: 1px solid var(--accent); opacity: 0.6; }
-        .voice-btn.active { opacity: 1; background: var(--accent); }
-        .broadcast-container { padding: 10px 15px; display: flex; gap: 5px; background: #0f172a; }
-        #custom-input { flex: 1; background: #1e293b; border: 1px solid var(--accent); color: white; border-radius: 5px; padding: 8px; font-size: 12px; }
-        .market-banner { text-align: center; padding: 15px; }
-        .m-name { color: cyan; font-size: 24px; text-transform: uppercase; }
-        .time-box { margin: 5px 15px; padding: 12px; background: rgba(255,165,0,0.1); border: 1px dashed orange; border-radius: 10px; text-align: center; }
-        .time-val { font-size: 20px; color: white; }
-        .signal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 15px; }
+        :root { --nav: #0000ff; --bg: #020617; --accent: #316dca; --green: #22c55e; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--bg); color: white; font-family: 'Arial Black', sans-serif; overflow-x: hidden; }
+
+        /* FIXED HEADER: Padding added to prevent edge-touching */
+        .header { background: var(--nav); padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid cyan; }
+        .header span { font-size: 14px; text-transform: uppercase; }
+
+        /* FLOATING LIVE SIGNAL ICON (PULSING) */
+        .floating-signal { 
+            position: fixed; bottom: 100px; right: 20px; 
+            width: 60px; height: 60px; background: var(--nav); 
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.6); border: 2px solid cyan; z-index: 1000;
+            animation: pulse 2s infinite; cursor: pointer;
+        }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); box-shadow: 0 0 30px cyan; } 100% { transform: scale(1); } }
+
+        .main-container { padding: 15px; width: 100%; max-width: 480px; margin: 0 auto; }
+        
+        .market-banner { text-align: center; margin: 10px 0; }
+        .m-name { color: cyan; font-size: 26px; }
+
+        /* 6-COLUMN GRID */
+        .signal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
         .col-card { background: #0f172a; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px 5px; text-align: center; }
-        .col-label { font-size: 10px; color: var(--accent); margin-bottom: 8px; text-transform: uppercase; }
+        .col-label { font-size: 10px; color: var(--accent); margin-bottom: 5px; text-transform: uppercase; }
         .big-display { font-size: 28px; font-weight: 900; }
-        .links-bar { display: flex; justify-content: space-around; padding: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
-        .link-item { text-decoration: none; color: white; font-size: 10px; text-align: center; }
-        .link-item i { font-size: 28px; display: block; margin-bottom: 5px; }
+
+        /* FIXED FOOTER LINKS */
+        .footer-nav { display: flex; justify-content: space-around; padding: 25px 0; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 20px; }
+        .nav-item { text-decoration: none; color: white; text-align: center; }
+        .nav-item i { font-size: 32px; display: block; margin-bottom: 5px; }
+        .nav-label { font-size: 11px; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="header">
         <span>ZION MASTER COMMAND</span>
-        <div onclick="toggleMute()" style="cursor:pointer; font-size:22px; color:cyan;"><i id="mute-icon" class="fa-solid fa-volume-high"></i></div>
+        <div onclick="toggleMute()"><i id="mute-icon" class="fa-solid fa-volume-high" style="color:cyan; font-size:20px; cursor:pointer;"></i></div>
     </div>
-    <div class="voice-settings">
-        <div id="male-btn" class="voice-btn active" onclick="setGender('male')">MALE</div>
-        <div id="female-btn" class="voice-btn" onclick="setGender('female')">FEMALE</div>
+
+    <div class="floating-signal" onclick="update()">
+        <i class="fa-solid fa-tower-broadcast" style="color:white; font-size:24px;"></i>
     </div>
-    <div class="broadcast-container">
-        <input type="text" id="custom-input" placeholder="Type broadcast message...">
-        <button onclick="broadcastText()" style="background:var(--nav); color:white; border:none; border-radius:5px; padding:0 15px;"><i class="fa-solid fa-bullhorn"></i></button>
+
+    <div class="main-container">
+        <div class="market-banner">
+            <div class="m-name" id="m-display">INITIATING...</div>
+            <div style="font-size: 12px; color: var(--green);">ACCURACY: <span id="acc-display">--</span></div>
+        </div>
+
+        <div style="text-align:center; padding: 15px; background:rgba(255,165,0,0.1); border:1px dashed orange; border-radius:8px; margin: 10px 0;">
+            <div id="time-display" style="font-size:18px; font-weight:bold;">-- | --</div>
+        </div>
+
+        <div class="signal-grid">
+            <div class="col-card"><div class="col-label">RISE / FALL</div><div id="rf" class="big-display">--</div></div>
+            <div class="col-card"><div class="col-label">EVEN / ODD</div><div id="eo" class="big-display">--</div></div>
+            <div class="col-card"><div class="col-label">MATCH / DIFF</div><div id="md" class="big-display">--</div></div>
+            <div class="col-card" style="border-color:orange"><div class="col-label" style="color:orange">SPIKE</div><div id="spike" class="big-display" style="color:orange">--</div></div>
+            <div class="col-card"><div class="col-label">OVER / UNDER</div><div id="ou" class="big-display">--</div></div>
+            <div class="col-card" style="border-color:purple"><div class="col-label" style="color:purple">STATUS</div><div class="big-display" style="color:purple">LIVE</div></div>
+        </div>
+
+        <div class="footer-nav">
+            <a href="{{ wa }}" class="nav-item" style="color:#25d366;"><i class="fa-brands fa-whatsapp"></i><div class="nav-label">Support</div></a>
+            <a href="{{ gemini }}" class="nav-item" style="color:#4285f4;"><i class="fa-solid fa-brain"></i><div class="nav-label">Gemini AI</div></a>
+        </div>
     </div>
-    <div class="market-banner"><div class="m-name" id="m-display">SCANNING...</div></div>
-    <div class="time-box"><div id="time-display" class="time-val">-- | --</div></div>
-    <div class="signal-grid">
-        <div class="col-card"><div class="col-label">RISE / FALL</div><div id="rf" class="big-display">--</div></div>
-        <div class="col-card"><div class="col-label">EVEN / ODD</div><div id="eo" class="big-display">--</div></div>
-        <div class="col-card"><div class="col-label">MATCH / DIFF</div><div id="md" class="big-display">--</div></div>
-        <div class="col-card" style="border-color:orange"><div class="col-label">SPIKE ALERT</div><div id="spike" class="big-display" style="color:orange">--</div></div>
-        <div class="col-card"><div class="col-label">OVER / UNDER</div><div id="ou" class="big-display">--</div></div>
-        <div class="col-card" style="border-color:purple"><div class="col-label">ACCURACY</div><div id="acc-display" class="big-display" style="color:var(--green)">--</div></div>
-    </div>
-    <div class="links-bar">
-        <a href="{{ wa }}" class="link-item" style="color:#25d366;"><i class="fa-brands fa-whatsapp"></i>SUPPORT</a>
-        <a href="{{ gemini }}" class="link-item" style="color:#4285f4;"><i class="fa-solid fa-brain"></i>GEMINI AI</a>
-    </div>
+
     <script>
-        let voiceGender = 'male', isMuted = false;
+        let isMuted = false;
         function toggleMute() {
             isMuted = !isMuted;
             document.getElementById('mute-icon').className = isMuted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
+            document.getElementById('mute-icon').style.color = isMuted ? '#ff3b30' : 'cyan';
             if(isMuted) window.speechSynthesis.cancel();
         }
-        function setGender(g) {
-            voiceGender = g;
-            document.querySelectorAll('.voice-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(g + '-btn').classList.add('active');
-        }
-        function broadcastText() { let t = document.getElementById('custom-input').value; if(t) speak(t); }
         function speak(text) {
             if(isMuted) return;
             window.speechSynthesis.cancel();
             let u = new SpeechSynthesisUtterance(text);
-            u.pitch = (voiceGender === 'female') ? 1.3 : 0.8;
+            u.rate = 1.0;
             window.speechSynthesis.speak(u);
         }
         function update() {
@@ -130,14 +142,10 @@ UI_HTML = """
                 document.getElementById('spike').innerText = d.spike;
                 document.getElementById('acc-display').innerText = d.acc;
                 document.getElementById('time-display').innerText = d.duration + " | " + d.timeframe;
-                speak(`Update. ${d.market}. Signal ${d.rf}. Duration ${d.duration}.`);
+                speak(`Signal ${d.rf} on ${d.market}`);
             });
         }
         setInterval(update, 12000); update();
     </script>
 </body>
 </html>
-"""
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
