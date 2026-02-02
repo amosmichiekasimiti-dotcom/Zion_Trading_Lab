@@ -4,23 +4,19 @@ from flask import Flask, render_template_string, request
 
 app = Flask(__name__)
 
-# --- THE FULL 2026 VOLATILITY LIST (All Markets) ---
+# --- ALL VOLATILITY MARKETS (Focusing on 1S) ---
 ALL_MARKETS = [
-    "VOLATILITY 10 INDEX", "VOLATILITY 10 (1S) INDEX", "VOLATILITY 15 (1S) INDEX",
-    "VOLATILITY 25 INDEX", "VOLATILITY 25 (1S) INDEX", "VOLATILITY 30 (1S) INDEX",
-    "VOLATILITY 50 INDEX", "VOLATILITY 50 (1S) INDEX", "VOLATILITY 75 INDEX",
-    "VOLATILITY 75 (1S) INDEX", "VOLATILITY 90 (1S) INDEX", "VOLATILITY 100 INDEX",
-    "VOLATILITY 100 (1S) INDEX", "VOLATILITY 250 INDEX", "VOLATILITY 250 (1S) INDEX",
-    "VOLATILITY 300 (1S) INDEX", "BULL MARKET INDEX", "BEAR MARKET INDEX"
+    "VOLATILITY 10 (1S) INDEX", "VOLATILITY 15 (1S) INDEX",
+    "VOLATILITY 25 (1S) INDEX", "VOLATILITY 30 (1S) INDEX",
+    "VOLATILITY 50 (1S) INDEX", "VOLATILITY 75 (1S) INDEX", 
+    "VOLATILITY 90 (1S) INDEX", "VOLATILITY 100 (1S) INDEX", 
+    "VOLATILITY 250 (1S) INDEX", "VOLATILITY 300 (1S) INDEX"
 ]
 
 @app.route('/')
 def home():
     cat = request.args.get('cat', 'EVEN_ODD')
-    # Focus on 1S markets for high frequency
-    s1_list = [m for m in ALL_MARKETS if "(1S)" in m]
-    market = random.choice(s1_list if s1_list else ALL_MARKETS)
-    
+    market = random.choice(ALL_MARKETS)
     accuracy = random.randint(98, 99)
     percent = random.randint(72, 89)
     show_timer = "true" if cat == "MATCH_DIFFER" else "false"
@@ -30,11 +26,26 @@ def home():
         contract, color = f"DIGIT {side}", "#3b82f6"
         logic = f"SIGNAL: {side} is occurring in {percent}% of ticks on {market}."
         voice = f"Even Odd alert. {side} at {percent} percent."
-    else:
+    elif cat == "MATCH_DIFFER":
         digit = random.randint(0, 9)
         contract, color = "DIGIT MATCHES", "#f59e0b"
         logic = f"MATCH: Digit {digit} detected in {percent}% of flow."
         voice = f"Matches Alert. Target is {digit}."
+    elif cat == "OVER_UNDER":
+        type_ou, barr = random.choice([("OVER", 4), ("UNDER", 5)])
+        contract, color = f"DIGIT {type_ou}", "#00ff88" if type_ou == "OVER" else "#ff4d4d"
+        logic = f"SNIPER: Barrier {barr} active. Frequency: {percent}%."
+        voice = f"Over Under. {type_ou} {barr}."
+    elif cat == "RISE_FALL":
+        trend = random.choice(["RISE", "FALL"])
+        contract, color = ("RISE", "#00ff88") if trend == "RISE" else ("FALL", "#ff4d4d")
+        logic = f"TREND: {trend} momentum confirmed at {percent}% strength."
+        voice = f"Rise Fall alert. Trend is {trend}."
+    else: # Accumulators
+        growth = random.choice([3, 5])
+        contract, color = "ACCUMULATORS", "#00d4ff"
+        logic = f"STABILITY: Market holding for {growth}% growth."
+        voice = "Accumulators active."
 
     HTML_TEMPLATE = """
     <!DOCTYPE html>
@@ -49,14 +60,14 @@ def home():
             html, body { 
                 background: var(--bg); color: #adbac7; margin: 0; padding: 0; 
                 width: 100%; height: 100%; overflow: hidden; position: fixed; 
-                font-family: 'Segoe UI', sans-serif; 
+                font-family: sans-serif; 
             }
             .sidebar { display: flex; overflow-x: auto; padding: 10px; background: #161b22; gap: 8px; border-bottom: 1px solid #30363d; }
             .nav-item { color: #768390; text-decoration: none; padding: 8px 15px; background: #21262d; border-radius: 6px; font-size: 11px; font-weight: bold; white-space: nowrap; }
             .nav-item.active { background: var(--blue); color: white; }
             .main { display: flex; align-items: center; justify-content: center; height: 85vh; padding: 20px; }
-            .card { width: 100%; max-width: 360px; background: var(--card); border-radius: 18px; padding: 25px; border-top: 6px solid {{ color }}; text-align: center; border: 1px solid #30363d; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-            #v-btn { position: fixed; bottom: 20px; right: 20px; background: var(--blue); width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+            .card { width: 100%; max-width: 360px; background: var(--card); border-radius: 18px; padding: 25px; border-top: 6px solid {{ color }}; text-align: center; border: 1px solid #30363d; }
+            #v-btn { position: fixed; bottom: 20px; right: 20px; background: var(--blue); width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; z-index: 1000; }
             #timer { color: var(--gold); font-weight: 900; margin-bottom: 12px; font-size: 18px; display: none; }
             #timer.active { display: block; }
             .btn { display: block; margin-top: 25px; background: #3fb950; color: white; padding: 15px; border-radius: 12px; text-decoration: none; font-weight: 900; font-size: 14px; }
@@ -66,22 +77,24 @@ def home():
         <div class="sidebar">
             <a href="/?cat=EVEN_ODD" class="nav-item {% if cat == 'EVEN_ODD' %}active{% endif %}">EVEN/ODD</a>
             <a href="/?cat=MATCH_DIFFER" class="nav-item {% if cat == 'MATCH_DIFFER' %}active{% endif %}">MATCHES</a>
+            <a href="/?cat=OVER_UNDER" class="nav-item {% if cat == 'OVER_UNDER' %}active{% endif %}">OVER/UNDER</a>
+            <a href="/?cat=RISE_FALL" class="nav-item {% if cat == 'RISE_FALL' %}active{% endif %}">RISE/FALL</a>
+            <a href="/?cat=ACCUMULATORS" class="nav-item {% if cat == 'ACCUMULATORS' %}active{% endif %}">ACCUMULATORS</a>
         </div>
         <div class="main">
             <div class="card">
                 <div id="timer" class="{% if show_timer == 'true' %}active{% endif %}">READY IN: <span id="cnt">10</span>s</div>
-                <div style="color:#3fb950; font-size:12px; font-weight:900; letter-spacing:1px;">{{ accuracy }}% ACCURACY</div>
-                <div style="font-size:10px; color:#768390; margin: 8px 0; font-weight: bold;">{{ market }}</div>
+                <div style="color:#3fb950; font-size:12px; font-weight:900;">{{ accuracy }}% ACCURACY</div>
+                <div style="font-size:10px; color:#768390; margin: 8px 0;">{{ market }}</div>
                 <h1 style="color:{{ color }}; margin: 12px 0; font-size: 32px; font-weight: 900;">{{ contract }}</h1>
-                <div style="background:#0d1117; padding:18px; border-radius:12px; font-size:13px; border: 1px solid #30363d; line-height: 1.5;">{{ logic }}</div>
+                <div style="background:#0d1117; padding:18px; border-radius:12px; font-size:13px; border: 1px solid #30363d;">{{ logic }}</div>
                 <a href="https://bot.deriv.com" class="btn">EXECUTE ON BOT</a>
             </div>
         </div>
         <div id="v-btn" onclick="toggleMute()"><i id="v-icon" class="fa-solid fa-volume-high"></i></div>
         <script>
             let muted = localStorage.getItem('zion_muted') === 'true';
-            const vIcon = document.getElementById('v-icon');
-            if (muted) vIcon.className = 'fa-solid fa-volume-xmark';
+            if (muted) document.getElementById('v-icon').className = 'fa-solid fa-volume-xmark';
             function toggleMute() { localStorage.setItem('zion_muted', !muted); location.reload(); }
             if ("{{ show_timer }}" === "true") {
                 let s = 10;
@@ -90,8 +103,11 @@ def home():
                     if(s <= 0) { clearInterval(tId); document.getElementById('timer').innerHTML = '🔥 STRIKE NOW!'; }
                 }, 1000);
             }
-            window.onload = () => { if(!muted) { let u = new SpeechSynthesisUtterance("{{ voice }}"); u.rate = 0.9; window.speechSynthesis.speak(u); } };
-            setTimeout(() => { location.reload(); }, 13000);
+            window.onload = () => { if(!muted) { window.speechSynthesis.speak(new SpeechSynthesisUtterance("{{ voice }}")); } };
+            setTimeout(() => { 
+                const urlParams = new URLSearchParams(window.location.search);
+                window.location.href = "/?cat=" + (urlParams.get('cat') || 'EVEN_ODD'); 
+            }, 12000);
         </script>
     </body>
     </html>
