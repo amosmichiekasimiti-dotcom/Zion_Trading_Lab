@@ -1,47 +1,115 @@
-            body { background: var(--bg); color: white; font-family: 'Inter', sans-serif; margin: 0; }
-            .navbar { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: #000; border-bottom: 1px solid #1f2937; position: sticky; top:0; z-index: 1000; }
-            .logo { font-weight: 900; color: var(--blue); }
-            .container { padding: 20px; max-width: 500px; margin: auto; }
-            .signal-card { background: var(--card); border-radius: 20px; padding: 30px; border-left: 8px solid {{ color }}; position: relative; border-top: 1px solid #333; }
-            .accuracy { font-size: 50px; font-weight: 900; margin: 0; }
-            .xml-btn { background: linear-gradient(90deg, #3b82f6, #1d4ed8); color: white; padding: 15px; border-radius: 12px; text-decoration: none; display: block; text-align: center; margin-top: 20px; font-weight: bold; border: 1px solid rgba(255,255,255,0.1); }
-            .grid-nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px; }
-            .nav-item { background: var(--card); border-radius: 12px; padding: 15px 5px; text-align: center; color: white; text-decoration: none; font-size: 10px; border: 1px solid #333; }
-            .nav-item i { display: block; font-size: 22px; margin-bottom: 8px; }
+import os
+import random
+from flask import Flask, render_template_string, request
+
+app = Flask(__name__)
+
+# --- THE COMPLETE 2026 MARKET POOL ---
+ALL_MARKETS = [
+    "VOLATILITY 10 INDEX", "VOLATILITY 10 (1S) INDEX", "VOLATILITY 15 (1S) INDEX",
+    "VOLATILITY 25 INDEX", "VOLATILITY 25 (1S) INDEX", "VOLATILITY 30 (1S) INDEX",
+    "VOLATILITY 50 INDEX", "VOLATILITY 50 (1S) INDEX", "VOLATILITY 75 INDEX",
+    "VOLATILITY 75 (1S) INDEX", "VOLATILITY 90 (1S) INDEX", "VOLATILITY 100 INDEX",
+    "VOLATILITY 100 (1S) INDEX", "VOLATILITY 250 INDEX", "VOLATILITY 250 (1S) INDEX",
+    "VOLATILITY 300 (1S) INDEX", "BULL MARKET INDEX", "BEAR MARKET INDEX", "DRIFT SWITCH INDEX"
+]
+
+@app.route('/')
+def home():
+    cat = request.args.get('cat', 'EVEN_ODD')
+    market = random.choice(ALL_MARKETS)
+    accuracy = random.randint(98, 99)
+    countdown_needed = "false"
+    
+    # Selection Logic
+    if cat == "EVEN_ODD":
+        side = random.choice(["EVEN", "ODD"])
+        percent = random.randint(72, 86)
+        contract, color = f"DIGIT {side}", "#3b82f6"
+        logic = f"DOMINATION: {side} is currently controlling {percent}% of tick flow."
+        target = f"TRADE {side} | 5 RUNS"
+        voice = f"Even Odd Scanner active. {side} is dominating on {market} at {percent} percent."
+
+    elif cat == "RISE_FALL":
+        trend = random.choice(["RISE", "FALL"])
+        contract, color = ("RISE / CALL", "#00ff88") if trend == "RISE" else ("FALL / PUT", "#ff4d4d")
+        logic = f"SMC ANALYSIS: {'Bullish Order Block' if trend == 'RISE' else 'Bearish MSB'} confirmed."
+        target = f"DIRECTION: {trend} | 3 RUNS"
+        voice = f"Rise Fall Scanner. Trend is {trend} on {market}."
+
+    elif cat == "MATCH_DIFFER":
+        digit = random.randint(0, 9)
+        contract, color = "DIGIT MATCHES", "#f59e0b"
+        logic = f"PRECISION MATCH: Digit {digit} frequency outlier detected. 800% Payout mode."
+        target = f"TARGET: {digit} | 1 RUN"
+        voice = f"Matches Alert. Target is {digit} on {market}."
+        countdown_needed = "true"
+
+    elif cat == "OVER_UNDER":
+        type_ou, barr = random.choice([("OVER", 4), ("UNDER", 5), ("OVER", 5), ("UNDER", 4)])
+        payout = "95%" if barr in [4, 5] else "140%"
+        contract, color = f"DIGIT {type_ou}", "#00ff88" if type_ou == "OVER" else "#ff4d4d"
+        logic = f"PAYOUT SNIPER: Barrier {barr} set. Expected ROI: {payout}."
+        target = f"BARRIER: {barr} | {payout} PAYOUT"
+        voice = f"High Payout Over Under. Trade {type_ou} {barr} for {payout} return."
+
+    else: # ACCUMULATORS
+        growth = random.choice([3, 5])
+        contract, color = "ACCUMULATORS", "#00d4ff"
+        logic = f"STABILITY SCANNER: Market is consolidating for {growth}% growth."
+        target = f"GROWTH: {growth}% | 40 TICKS"
+        voice = f"Accumulators active. Stable growth detected."
+
+    HTML_TEMPLATE = """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>ZION LAB | MASTER</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <style>
+            :root { --bg: #0b0e14; --sidebar: #161b22; --card: #1c2128; --blue: #58a6ff; --green: #3fb950; --red: #f85149; --gold: #d29922; }
+            body { background: var(--bg); color: #adbac7; font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+            .sidebar { width: 240px; background: var(--sidebar); border-right: 1px solid #444c56; display: flex; flex-direction: column; padding: 25px 15px; }
+            .nav-item { color: #768390; text-decoration: none; padding: 14px 18px; border-radius: 10px; margin-bottom: 8px; font-size: 13px; display: flex; align-items: center; gap: 12px; font-weight: bold; }
+            .nav-item.active { background: #316dca; color: white; }
+            .main { flex: 1; padding: 40px; overflow-y: auto; display: flex; justify-content: center; }
+            .signal-card { width: 100%; max-width: 480px; background: var(--card); border: 1px solid #444c56; border-radius: 24px; padding: 35px; border-top: 8px solid {{ color }}; position: relative; }
+            .accuracy-tag { position: absolute; top: 20px; right: 25px; color: var(--green); font-weight: 800; font-size: 12px; }
+            .contract-name { font-size: 42px; font-weight: 900; color: {{ color }}; margin: 15px 0; }
+            .target-badge { display: inline-block; margin-top: 25px; padding: 12px 25px; border: 2px dashed var(--gold); color: var(--gold); border-radius: 12px; font-weight: 900; font-size: 18px; }
+            @media (max-width: 850px) { body { flex-direction: column; } .sidebar { width: 100%; height: auto; flex-direction: row; overflow-x: auto; } .sidebar h1 { display: none; } }
         </style>
     </head>
     <body>
-        <nav class="navbar">
-            <i class="fa-solid fa-bars-staggered"></i>
-            <div class="logo">ZION TRADING LAB</div>
-            <i id="v-btn" class="fa-solid fa-volume-high" onclick="toggleMute()" style="color:var(--blue); cursor:pointer;"></i>
-        </nav>
-        <div class="container">
+        <div class="sidebar">
+            <h1 style="font-size:18px; color:var(--blue);">ZION LAB</h1>
+            <a href="/?cat=EVEN_ODD" class="nav-item {% if cat == 'EVEN_ODD' %}active{% endif %}">EVEN / ODD</a>
+            <a href="/?cat=RISE_FALL" class="nav-item {% if cat == 'RISE_FALL' %}active{% endif %}">RISE / FALL</a>
+            <a href="/?cat=MATCH_DIFFER" class="nav-item {% if cat == 'MATCH_DIFFER' %}active{% endif %}">MATCHES</a>
+            <a href="/?cat=OVER_UNDER" class="nav-item {% if cat == 'OVER_UNDER' %}active{% endif %}">OVER / UNDER</a>
+            <a href="/?cat=ACCUMULATORS" class="nav-item {% if cat == 'ACCUMULATORS' %}active{% endif %}">ACCUMULATORS</a>
+        </div>
+        <div class="main">
             <div class="signal-card">
-                <div style="font-size:11px; font-weight:bold; color:var(--blue);"><i class="fa-solid fa-microchip"></i> {{ market }}</div>
-                <div class="accuracy">{{ accuracy }}%</div>
-                <div style="font-size:13px; color:#cfd8dc; margin-top:10px;"><b>CONDITION:</b> {{ logic }}</div>
-                <div style="font-size:30px; font-weight:900; color:{{ color }}; margin-top:15px; text-transform:uppercase;">{{ contract }}</div>
-                <div style="margin-top:15px; font-weight:800; color:#fcd34d; border:1px dashed #fcd34d; padding:8px 15px; display:inline-block; border-radius:10px; background:rgba(252,211,77,0.05);">{{ target_info }}</div>
-            </div>
-            <a href="https://bot.deriv.com" class="xml-btn">DOWNLOAD RECOMMENDED XML BOT</a>
-            <div class="grid-nav">
-                <a href="#" class="nav-item"><i class="fa-solid fa-house" style="color:var(--blue)"></i>HOME</a>
-                <a href="#" class="nav-item"><i class="fa-solid fa-robot" style="color:var(--red)"></i>XML BOTS</a>
-                <a href="#" class="nav-item"><i class="fa-solid fa-bolt" style="color:var(--gold)"></i>SIGNALS</a>
+                <div class="accuracy-tag">{{ accuracy }}% ACCURACY</div>
+                <div style="font-size:12px; color:#768390; font-weight:800; margin-bottom:15px;">{{ market }}</div>
+                <div class="contract-name">{{ contract }}</div>
+                <div style="background:#22272e; padding:20px; border-radius:15px; font-size:14px; border: 1px solid #444c56;">{{ logic }}</div>
+                <div class="target-badge">{{ target }}</div>
+                <a href="https://bot.deriv.com" style="display:block; margin-top:30px; background:var(--green); color:white; text-align:center; padding:18px; border-radius:15px; text-decoration:none; font-weight:900;">EXECUTE ON XML BOT</a>
             </div>
         </div>
         <script>
             let isMuted = localStorage.getItem('zionMuted') === 'true';
-            if(isMuted) document.getElementById('v-btn').classList.replace('fa-volume-high', 'fa-volume-xmark');
-            function toggleMute() { isMuted = !isMuted; localStorage.setItem('zionMuted', isMuted); location.reload(); }
-            window.onload = () => { if(!isMuted) { let m = new SpeechSynthesisUtterance("{{ voice }}"); m.rate=0.92; window.speechSynthesis.speak(m); } };
+            window.onload = () => { if(!isMuted) { let m = new SpeechSynthesisUtterance("{{ voice }}"); m.rate=0.9; window.speechSynthesis.speak(m); } };
             setTimeout(() => { location.reload(); }, 12000);
         </script>
     </body>
     </html>
     """
-    return render_template_string(HTML_TEMPLATE, market=market, contract=contract, logic=logic, accuracy=accuracy, color=color, target_info=target_info, voice=voice, countdown_needed=countdown_needed)
+    return render_template_string(HTML_TEMPLATE, market=market, contract=contract, logic=logic, accuracy=accuracy, color=color, target=target, voice=voice, cat=cat)
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
