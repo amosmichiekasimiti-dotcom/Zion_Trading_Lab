@@ -4,7 +4,7 @@ from flask import Flask, render_template_string, request
 
 app = Flask(__name__)
 
-# --- ALL VOLATILITY MARKETS (Full List: Plain & 1S) ---
+# --- COMPLETE VOLATILITY MARKETS ---
 ALL_MARKETS = [
     "VOLATILITY 10 INDEX", "VOLATILITY 10 (1S) INDEX", 
     "VOLATILITY 15 (1S) INDEX", "VOLATILITY 25 INDEX", 
@@ -18,42 +18,34 @@ ALL_MARKETS = [
 
 @app.route('/')
 def home():
-    # 1. Get the category from the URL
     cat = request.args.get('cat', 'EVEN_ODD')
     market = random.choice(ALL_MARKETS)
     accuracy = random.randint(98, 99)
     percent = random.randint(72, 89)
     show_timer = "true" if cat == "MATCH_DIFFER" else "false"
     
-    # 2. ISOLATED LOGIC: Each category stays in its own "column"
+    # ISOLATED COLUMN LOGIC
     if cat == "EVEN_ODD":
         side = random.choice(["EVEN", "ODD"])
-        contract, color = f"DIGIT {side}", "#316dca" # Blue for Even/Odd
+        contract, color = f"DIGIT {side}", "#316dca"
         logic = f"SIGNAL: {side} is occurring in {percent}% of ticks on {market}."
         voice = f"Even Odd alert. {side} at {percent} percent."
-
     elif cat == "MATCH_DIFFER":
         digit = random.randint(0, 9)
-        contract, color = "DIGIT MATCHES", "#f59e0b" # Gold for Matches
+        contract, color = "DIGIT MATCHES", "#f59e0b"
         logic = f"MATCH: Digit {digit} detected in {percent}% of flow on {market}."
         voice = f"Matches Alert. Target is {digit}."
-
     elif cat == "OVER_UNDER":
-        # Strictly Over/Under logic
         type_ou, barr = random.choice([("OVER", 4), ("UNDER", 5)])
         contract, color = f"DIGIT {type_ou}", "#00ff88" if type_ou == "OVER" else "#ff4d4d"
         logic = f"SNIPER: Barrier {barr} active on {market}. Frequency: {percent}%."
         voice = f"Over Under. {type_ou} {barr}."
-
     elif cat == "RISE_FALL":
-        # Strictly Trend logic
         trend = random.choice(["RISE", "FALL"])
         contract, color = ("RISE", "#00ff88") if trend == "RISE" else ("FALL", "#ff4d4d")
         logic = f"TREND: {trend} momentum confirmed at {percent}% strength on {market}."
         voice = f"Rise Fall alert. Trend is {trend}."
-
-    elif cat == "ACCUMULATORS":
-        # Strictly Accumulators logic
+    else: # ACCUMULATORS
         growth = random.choice([3, 5])
         contract, color = "ACCUMULATORS", "#00d4ff"
         logic = f"STABILITY: {market} holding for {growth}% growth."
@@ -69,11 +61,7 @@ def home():
         <style>
             :root { --bg: #0b0e14; --card: #1c2128; --gold: #d29922; --blue: #316dca; }
             * { box-sizing: border-box; touch-action: manipulation; }
-            html, body { 
-                background: var(--bg); color: #adbac7; margin: 0; padding: 0; 
-                width: 100%; height: 100%; overflow: hidden; position: fixed; 
-                font-family: sans-serif; 
-            }
+            html, body { background: var(--bg); color: #adbac7; margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; position: fixed; font-family: sans-serif; }
             .sidebar { display: flex; overflow-x: auto; padding: 10px; background: #161b22; gap: 8px; border-bottom: 1px solid #30363d; }
             .nav-item { color: #768390; text-decoration: none; padding: 8px 15px; background: #21262d; border-radius: 6px; font-size: 11px; font-weight: bold; white-space: nowrap; }
             .nav-item.active { background: var(--blue); color: white; border: 1px solid #58a6ff; }
@@ -96,10 +84,10 @@ def home():
         <div class="main">
             <div class="card">
                 <div id="timer" class="{% if show_timer == 'true' %}active{% endif %}">READY IN: <span id="cnt">10</span>s</div>
-                <div style="color:#3fb950; font-size:12px; font-weight:900; letter-spacing: 1px;">{{ accuracy }}% ACCURACY</div>
-                <div style="font-size:11px; color:#768390; margin: 10px 0; text-transform: uppercase; font-weight: bold;">{{ market }}</div>
-                <h1 style="color:{{ color }}; margin: 15px 0; font-size: 36px; font-weight: 900; letter-spacing: -1px;">{{ contract }}</h1>
-                <div style="background:#0d1117; padding:20px; border-radius:12px; font-size:14px; border: 1px solid #30363d; line-height: 1.4;">{{ logic }}</div>
+                <div style="color:#3fb950; font-size:12px; font-weight:900;">{{ accuracy }}% ACCURACY</div>
+                <div style="font-size:11px; color:#768390; margin: 10px 0;">{{ market }}</div>
+                <h1 style="color:{{ color }}; margin: 15px 0; font-size: 36px; font-weight: 900;">{{ contract }}</h1>
+                <div style="background:#0d1117; padding:20px; border-radius:12px; font-size:14px; border: 1px solid #30363d;">{{ logic }}</div>
                 <a href="https://bot.deriv.com" class="btn">EXECUTE TRADE</a>
             </div>
         </div>
@@ -107,10 +95,7 @@ def home():
         <script>
             let muted = localStorage.getItem('zion_muted') === 'true';
             if (muted) document.getElementById('v-icon').className = 'fa-solid fa-volume-xmark';
-            function toggleMute() { 
-                localStorage.setItem('zion_muted', !muted); 
-                location.reload(); 
-            }
+            function toggleMute() { localStorage.setItem('zion_muted', !muted); location.reload(); }
             if ("{{ show_timer }}" === "true") {
                 let s = 10;
                 let tId = setInterval(() => {
@@ -118,14 +103,7 @@ def home():
                     if(s <= 0) { clearInterval(tId); document.getElementById('timer').innerHTML = '🔥 STRIKE NOW!'; }
                 }, 1000);
             }
-            window.onload = () => { 
-                if(!muted) { 
-                    const utterance = new SpeechSynthesisUtterance("{{ voice }}");
-                    utterance.rate = 0.9; // Slightly slower for clarity
-                    window.speechSynthesis.speak(utterance); 
-                } 
-            };
-            // Auto-refresh every 12 seconds, MAINTAINING the current category
+            window.onload = () => { if(!muted) { window.speechSynthesis.speak(new SpeechSynthesisUtterance("{{ voice }}")); } };
             setTimeout(() => { 
                 const urlParams = new URLSearchParams(window.location.search);
                 window.location.href = "/?cat=" + (urlParams.get('cat') || 'EVEN_ODD'); 
@@ -137,4 +115,6 @@ def home():
     return render_template_string(HTML_TEMPLATE, market=market, contract=contract, logic=logic, accuracy=accuracy, color=color, voice=voice, show_timer=show_timer, cat=cat)
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
+    # Render requires binding to 0.0.0.0 and the PORT environment variable
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
