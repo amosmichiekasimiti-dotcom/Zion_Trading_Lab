@@ -6,13 +6,14 @@ from flask import Flask, render_template_string, request
 app = Flask(__name__)
 
 # --- MASTER CONFIGURATION ---
+# Your Gemini API Key for AI Analysis
 API_KEY = "AIzaSyDM7cKxbQwbwBX0ubbO1Iel2WrFi8oEh2E"
 genai.configure(api_key=API_KEY)
 ai_engine = genai.GenerativeModel('gemini-1.5-flash')
 
 WHATSAPP_LINK = "https://wa.me/254742024175?text=Hello%20Zion%20Trading%20Lab%20Support"
 
-# Unlimited Volatility Assets
+# Volatility Indices including 1S and standard versions
 ALL_VOLS = ["R_10", "1HZ10V", "1HZ15V", "R_25", "1HZ25V", "1HZ30V", "R_50", "1HZ50V", "R_75", "1HZ75V", "1HZ90V", "R_100", "1HZ100V"]
 SPIKES = ["CRASH 300", "BOOM 1000", "JUMP 10", "JUMP 100"]
 
@@ -36,11 +37,11 @@ def home():
     except:
         action, acc, expiry, reason = "CALL/OVER", "98%", "5 Ticks", "Macro Trend aligned with signal flow."
 
-    # This is the text the AI speaks
+    # Signal Speech Data
     voice = f"Signal for {display_name}. Action {action}. Accuracy {acc}."
     return render_template_string(UI_HTML, market=display_name, action=action, acc=acc, expiry=expiry, reason=reason, voice=voice, macro=macro, cat=cat, wa=WHATSAPP_LINK)
 
-# --- THE ZION AI INTERFACE (HTML & CSS) ---
+# --- THE ZION AI INTERFACE (COMPLETE HTML & CSS) ---
 UI_HTML = """
 <!DOCTYPE html>
 <html>
@@ -51,13 +52,12 @@ UI_HTML = """
         :root { --nav: #0000ff; --red: #ff3b30; --accent: #316dca; --glass: rgba(255,255,255,0.08); }
         body { background: #020617; color: white; margin: 0; font-family: 'Inter', sans-serif; overflow-x: hidden; }
         
-        /* HEADER & NAVIGATION */
         .navbar { background: var(--nav); padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
         .nav-right { display: flex; gap: 8px; align-items: center; }
         .btn-login { color: white; text-decoration: none; font-size: 11px; font-weight: bold; border: 1px solid rgba(255,255,255,0.3); padding: 6px 10px; border-radius: 5px; }
         .btn-signup { background: var(--red); color: white; padding: 7px 14px; border-radius: 6px; font-weight: bold; font-size: 11px; text-decoration: none; box-shadow: 0 0 10px var(--red); }
         
-        /* HORIZONTAL SCROLLING SLIDER */
+        /* SWIPABLE HORIZONTAL SLIDER */
         .slider { display: flex; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; background: var(--nav); padding: 12px 15px; gap: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); scrollbar-width: none; }
         .slider::-webkit-scrollbar { display: none; }
         .nav-link { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
@@ -66,13 +66,12 @@ UI_HTML = """
         .container { padding: 15px; }
         .label { font-size: 10px; color: var(--accent); letter-spacing: 2px; margin: 20px 0 10px; font-weight: bold; text-transform: uppercase; }
         
-        /* FULL 13-ICON GRID */
+        /* 13-ICON DASHBOARD GRID */
         .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
         .card { background: var(--glass); border-radius: 12px; padding: 18px 5px; text-align: center; text-decoration: none; color: white; border: 1px solid rgba(255,255,255,0.05); }
         .card i { font-size: 20px; color: var(--accent); margin-bottom: 8px; }
         .card span { display: block; font-size: 10px; font-weight: 700; color: #94a3b8; }
 
-        /* BROADCAST BOX */
         .broadcast-box { background: var(--glass); padding: 15px; border-radius: 15px; margin-top: 25px; border: 1px solid rgba(255,255,255,0.1); }
         .broadcast-box input { background: rgba(0,0,0,0.3); border: 1px solid var(--accent); padding: 10px; color: white; width: 60%; border-radius: 8px; font-size: 12px; }
         .broadcast-box button { background: var(--accent); border: none; padding: 10px 12px; color: white; border-radius: 8px; font-weight: bold; font-size: 11px; }
@@ -125,7 +124,7 @@ UI_HTML = """
         
         <div class="broadcast-box">
             <div class="label">AI VOICE BROADCAST</div>
-            <input type="text" id="customText" placeholder="Broadcast to users...">
+            <input type="text" id="customText" placeholder="Broadcast message...">
             <button onclick="speakCustom()">SPEAK</button>
         </div>
     </div>
@@ -156,7 +155,8 @@ UI_HTML = """
 </html>
 """
 
-# --- RENDER DEPLOYMENT SETTINGS ---
+# --- PRODUCTION DEPLOYMENT SETTINGS ---
+# Correctly binds to the port provided by Render
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
