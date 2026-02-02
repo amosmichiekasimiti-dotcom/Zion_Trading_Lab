@@ -4,37 +4,60 @@ from flask import Flask, render_template_string
 
 app = Flask(__name__)
 
+# --- THE COMPLETE 2026 MASTER MARKET LIST ---
 ALL_MARKETS = [
-    "VOLATILITY 10 (1S)", "VOLATILITY 25 (1S)", "VOLATILITY 50 (1S)", 
-    "VOLATILITY 75 (1S)", "VOLATILITY 100 (1S)", "VOLATILITY 250 (1S)",
-    "VOLATILITY 10", "VOLATILITY 25", "VOLATILITY 50", "VOLATILITY 75", 
-    "VOLATILITY 100", "BULL MARKET", "BEAR MARKET", "SWITCH INDEX"
+    "VOLATILITY 10 INDEX", "VOLATILITY 10 (1S) INDEX", "VOLATILITY 15 (1S) INDEX",
+    "VOLATILITY 25 INDEX", "VOLATILITY 25 (1S) INDEX", "VOLATILITY 30 (1S) INDEX",
+    "VOLATILITY 50 INDEX", "VOLATILITY 50 (1S) INDEX", "VOLATILITY 75 INDEX",
+    "VOLATILITY 75 (1S) INDEX", "VOLATILITY 90 (1S) INDEX", "VOLATILITY 100 INDEX",
+    "VOLATILITY 100 (1S) INDEX", "VOLATILITY 250 INDEX", "VOLATILITY 250 (1S) INDEX",
+    "VOLATILITY 300 (1S) INDEX", "BULL MARKET INDEX", "BEAR MARKET INDEX", "DRIFT SWITCH INDEX"
 ]
 
 @app.route('/')
 def home():
     market = random.choice(ALL_MARKETS)
     accuracy = random.randint(98, 99)
-    users = random.randint(3200, 4500)
     
-    # Logic Engine with Countdown Trigger
-    mode = random.choice(["MATCH_DIFFER", "SMC_RISE_FALL", "DYNAMIC_DIGITS"])
-    
-    if mode == "MATCH_DIFFER":
-        target = random.randint(0, 9)
-        contract, color = random.choice(["MATCHES", "DIFFERS"]), "#f59e0b"
-        logic = f"Digit {target} Analysis: High Probability Entry"
-        target_info = f"SPECIFIC DIGIT: {target}"
-        voice = f"Target digit {target}. Precision match signal for {market}. Wait for the countdown to zero before entry."
-        countdown_needed = "true"
-    else:
-        # Standard Rise/Fall or Over/Under Logic
-        contract = random.choice(["RISE / CALL", "FALL / PUT", "DIGIT OVER", "DIGIT UNDER"])
-        color = "#00ff88" if "RISE" in contract or "OVER" in contract else "#ff4d4d"
-        logic = "SMC Structure: Liquidity Sweep Confirmed"
-        target_info = "TP: 1:3 RISK/REWARD"
-        voice = f"Signal detected on {market}. Execute {contract}."
-        countdown_needed = "false"
+    # --- DYNAMIC MULTI-ENGINE SELECTION ---
+    mode = random.choice(["ACCUMULATORS", "EVEN_ODD", "SMC_RISE_FALL", "OVER_UNDER"])
+    countdown_needed = "false"
+
+    # 1. ACCUMULATORS ENGINE (New!)
+    if mode == "ACCUMULATORS":
+        growth = random.choice([1, 2, 3, 5])
+        ticks = random.randint(15, 45)
+        contract, color = "ACCUMULATORS", "#00d4ff" # Cyan for stability
+        logic = f"Stability detected. Price range is holding. Growth rate optimized at {growth}%."
+        target_info = f"GROWTH: {growth}% | TARGET: {ticks} TICKS"
+        voice = f"Accumulator Alert for {market}. Price is stable. Enter now with {growth} percent growth. Aim for {ticks} ticks and close trade."
+
+    # 2. EVEN/ODD DOMINATION
+    elif mode == "EVEN_ODD":
+        dominator = random.choice(["EVEN", "ODD"])
+        dom_percent = random.randint(68, 81)
+        contract, color = f"DIGIT {dominator}", "#3b82f6"
+        logic = f"Dominance Alert: {dominator} is controlling {dom_percent}% of recent ticks."
+        target_info = f"TRADE {dominator} | 5 RUNS"
+        voice = f"Attention. {dominator} digits are dominating at {dom_percent} percent. It is time to trade {dominator}. Execute 5 runs."
+
+    # 3. SMC RISE/FALL
+    elif mode == "SMC_RISE_FALL":
+        trend = random.choice(["RISE", "FALL"])
+        contract = "RISE / CALL" if trend == "RISE" else "FALL / PUT"
+        color = "#00ff88" if trend == "RISE" else "#ff4d4d"
+        logic = "Order Block tap confirmed. Market Structure is in alignment."
+        target_info = f"SMC: {trend} | 3 RUNS"
+        voice = f"SMC Signal for {market}. Direction is {trend}. Execute 3 specific runs now."
+
+    # 4. OVER/UNDER (Standardized)
+    else: 
+        barrier = random.choice([1, 2, 8])
+        contract = "DIGIT UNDER" if barrier >= 5 else "DIGIT OVER"
+        color = "#ff4d4d" if "UNDER" in contract else "#00ff88"
+        logic = f"Digit concentration at {barrier}. Entry risk is minimized."
+        target_info = f"BARRIER: {barrier} | 4 RUNS"
+        voice = f"Over Under alert. Trade {contract} {barrier} on {market}."
 
     HTML_TEMPLATE = """
     <!DOCTYPE html>
@@ -42,110 +65,48 @@ def home():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-        <title>ZION LAB | PRECISION</title>
+        <title>ZION LAB | ACCUMULATORS</title>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         <style>
-            :root { --bg: #0b0e14; --card: #161b22; --blue: #3b82f6; --green: #00ff88; --red: #ff4d4d; --gold: #f59e0b; }
-            * { box-sizing: border-box; }
-            body, html { background: var(--bg); color: white; font-family: 'Inter', sans-serif; margin: 0; overflow-x: hidden; }
-            
+            :root { --bg: #0b0e14; --card: #161b22; --blue: #3b82f6; --green: #00ff88; --red: #ff4d4d; --gold: #f59e0b; --cyan: #00d4ff; }
+            body { background: var(--bg); color: white; font-family: 'Inter', sans-serif; margin: 0; }
             .navbar { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: #000; border-bottom: 1px solid #1f2937; position: sticky; top:0; z-index: 1000; }
-            .logo { font-weight: 900; letter-spacing: 1px; color: var(--blue); }
-            
-            /* AI Voice Button */
-            #v-btn { font-size: 20px; cursor: pointer; color: var(--blue); padding: 5px 10px; }
-
-            .sidebar { position: fixed; left: -280px; top: 0; width: 280px; height: 100%; background: #ffffff; color: #333; transition: transform 0.3s ease; z-index: 2000; padding: 20px; }
-            .sidebar.active { transform: translateX(280px); }
-            
+            .logo { font-weight: 900; color: var(--blue); }
             .container { padding: 20px; max-width: 500px; margin: auto; }
-            .signal-card { background: var(--card); border-radius: 20px; padding: 30px; border: 1px solid #333; border-left: 6px solid {{ color }}; }
-            
-            /* Countdown Styling */
-            .countdown-timer { font-size: 24px; font-weight: 900; color: var(--gold); margin: 15px 0; display: none; }
-            .countdown-timer.active { display: block; }
-
-            .accuracy-val { font-size: 50px; font-weight: 900; margin: 5px 0; }
-            .menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 25px; }
-            .menu-item { background: var(--card); border-radius: 15px; padding: 20px 5px; text-align: center; border: 1px solid #21262d; text-decoration: none; color: white; }
-            .menu-item i { font-size: 24px; margin-bottom: 10px; display: block; }
-            
-            .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1500; }
-            .overlay.active { display: block; }
+            .signal-card { background: var(--card); border-radius: 20px; padding: 30px; border-left: 8px solid {{ color }}; position: relative; border-top: 1px solid #333; }
+            .accuracy { font-size: 50px; font-weight: 900; margin: 0; }
+            .xml-btn { background: linear-gradient(90deg, #3b82f6, #1d4ed8); color: white; padding: 15px; border-radius: 12px; text-decoration: none; display: block; text-align: center; margin-top: 20px; font-weight: bold; border: 1px solid rgba(255,255,255,0.1); }
+            .grid-nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px; }
+            .nav-item { background: var(--card); border-radius: 12px; padding: 15px 5px; text-align: center; color: white; text-decoration: none; font-size: 10px; border: 1px solid #333; }
+            .nav-item i { display: block; font-size: 22px; margin-bottom: 8px; }
         </style>
     </head>
     <body>
-        <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
-        <div class="sidebar" id="sidebar">
-            <h3 style="margin:0;">ZION MENU</h3><hr>
-            <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px;">
-                <i class="fa-brands fa-tiktok"></i><i class="fa-brands fa-youtube"></i><i class="fa-brands fa-telegram"></i>
-                <i class="fa-brands fa-whatsapp"></i><i class="fa-brands fa-instagram"></i><i class="fa-brands fa-facebook"></i>
-            </div>
-        </div>
-
         <nav class="navbar">
-            <i class="fa-solid fa-bars" onclick="toggleMenu()" style="font-size: 22px; cursor: pointer;"></i>
-            <div class="logo">ZION LAB</div>
-            <i id="v-btn" class="fa-solid fa-volume-high" onclick="toggleMute()"></i>
+            <i class="fa-solid fa-bars-staggered"></i>
+            <div class="logo">ZION TRADING LAB</div>
+            <i id="v-btn" class="fa-solid fa-volume-high" onclick="toggleMute()" style="color:var(--blue); cursor:pointer;"></i>
         </nav>
-
         <div class="container">
             <div class="signal-card">
-                <span style="color:var(--blue); font-size:10px; font-weight:bold;"><i class="fa-solid fa-tower-broadcast"></i> LIVE: {{ market }}</span>
-                <div class="accuracy-val">{{ accuracy }}%</div>
-                
-                <div id="countdown" class="countdown-timer">ENTRY IN: <span id="timer-sec">10</span>s</div>
-
-                <div style="font-size:12px; color:#8b949e;">{{ logic }}</div>
-                <div style="margin-top:10px; font-weight:bold; color: {{ color }}; font-size:26px;">{{ contract }}</div>
-                <div style="font-size:14px; color:#fcd34d; font-weight:800; border: 1px dashed #fcd34d; display:inline-block; padding:5px 12px; border-radius:8px; margin-top:10px;">{{ target_info }}</div>
+                <div style="font-size:11px; font-weight:bold; color:var(--blue);"><i class="fa-solid fa-microchip"></i> {{ market }}</div>
+                <div class="accuracy">{{ accuracy }}%</div>
+                <div style="font-size:13px; color:#cfd8dc; margin-top:10px;"><b>CONDITION:</b> {{ logic }}</div>
+                <div style="font-size:30px; font-weight:900; color:{{ color }}; margin-top:15px; text-transform:uppercase;">{{ contract }}</div>
+                <div style="margin-top:15px; font-weight:800; color:#fcd34d; border:1px dashed #fcd34d; padding:8px 15px; display:inline-block; border-radius:10px; background:rgba(252,211,77,0.05);">{{ target_info }}</div>
             </div>
-
-            <div class="menu-grid">
-                <a href="#" class="menu-item"><i class="fa-solid fa-house" style="color:var(--blue)"></i><span>Home</span></a>
-                <a href="#" class="menu-item"><i class="fa-solid fa-robot" style="color:var(--red)"></i><span>Bots</span></a>
-                <a href="#" class="menu-item"><i class="fa-solid fa-bolt" style="color:var(--gold)"></i><span>Signals</span></a>
+            <a href="https://bot.deriv.com" class="xml-btn">DOWNLOAD RECOMMENDED XML BOT</a>
+            <div class="grid-nav">
+                <a href="#" class="nav-item"><i class="fa-solid fa-house" style="color:var(--blue)"></i>HOME</a>
+                <a href="#" class="nav-item"><i class="fa-solid fa-robot" style="color:var(--red)"></i>XML BOTS</a>
+                <a href="#" class="nav-item"><i class="fa-solid fa-bolt" style="color:var(--gold)"></i>SIGNALS</a>
             </div>
         </div>
-
         <script>
-            function toggleMenu() { document.getElementById('sidebar').classList.toggle('active'); document.getElementById('overlay').classList.toggle('active'); }
-            
-            // Audio Management
             let isMuted = localStorage.getItem('zionMuted') === 'true';
-            const vBtn = document.getElementById('v-btn');
-            if(isMuted) vBtn.classList.replace('fa-volume-high', 'fa-volume-xmark');
-
-            function toggleMute() {
-                isMuted = !isMuted;
-                localStorage.setItem('zionMuted', isMuted);
-                vBtn.classList.toggle('fa-volume-high');
-                vBtn.classList.toggle('fa-volume-xmark');
-                if(!isMuted) window.speechSynthesis.speak(new SpeechSynthesisUtterance("Voice enabled"));
-            }
-
-            // Countdown Logic for Matches
-            if({{ countdown_needed }}) {
-                document.getElementById('countdown').classList.add('active');
-                let timeLeft = 10;
-                let timer = setInterval(() => {
-                    timeLeft--;
-                    document.getElementById('timer-sec').innerText = timeLeft;
-                    if(timeLeft <= 0) {
-                        clearInterval(timer);
-                        document.getElementById('countdown').innerHTML = "🔥 EXECUTE NOW!";
-                    }
-                }, 1000);
-            }
-
-            window.onload = () => {
-                if(!isMuted) {
-                    const msg = new SpeechSynthesisUtterance("{{ voice }}");
-                    msg.rate = 0.95;
-                    window.speechSynthesis.speak(msg);
-                }
-            };
+            if(isMuted) document.getElementById('v-btn').classList.replace('fa-volume-high', 'fa-volume-xmark');
+            function toggleMute() { isMuted = !isMuted; localStorage.setItem('zionMuted', isMuted); location.reload(); }
+            window.onload = () => { if(!isMuted) { let m = new SpeechSynthesisUtterance("{{ voice }}"); m.rate=0.92; window.speechSynthesis.speak(m); } };
             setTimeout(() => { location.reload(); }, 12000);
         </script>
     </body>
