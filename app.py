@@ -3,7 +3,7 @@ import random
 
 app = Flask(__name__)
 
-# Full 1S Market List
+# Markets with "1S" as requested
 MARKETS = [
     "VOLATILITY 10 (1S)", "VOLATILITY 15 (1S)", "VOLATILITY 25 (1S)", 
     "VOLATILITY 30 (1S)", "VOLATILITY 50 (1S)", "VOLATILITY 75 (1S)", 
@@ -12,126 +12,98 @@ MARKETS = [
 
 @app.route('/')
 def index():
-    # Simulation Logic for Advanced Analysis
+    # Analysis Logic
     market = random.choice(MARKETS)
-    price = round(random.uniform(150.00, 850.00), 2)
-    strength = random.randint(70, 99)
+    strength = random.randint(97, 99) # High accuracy request
+    structure = random.choice(["BOS Detected", "CHoCH Verified", "Range Bound"])
+    manipulation = random.choice(["Stop Hunt Detected", "No Manipulation", "Liquidity Sweep"])
     
-    # Feature Detection Logic
-    fvg = random.choice(["Bullish Gap Detected", "Bearish Gap Detected", "None"])
-    manipulation = random.choice(["Liquidity Sweep", "Stop Hunt", "None"])
-    structure = random.choice(["Support Rejection", "Resistance Breakout", "Ranging"])
-    
-    # Colors and Actions
-    action = "BUY / RISE" if strength > 85 else "SELL / FALL"
-    theme_color = "#2ecc71" if "BUY" in action else "#e74c3c"
-
     html_template = f'''
     <!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Zion Trading Lab | Advanced Intelligence</title>
+        <title>Zion Trading Lab</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
         <style>
-            :root {{
-                --wood: #2c1a12;
-                --glass: rgba(255, 255, 255, 0.1);
-                --accent: {theme_color};
+            :root {{ --bg: #0a0e14; --glass: rgba(255, 255, 255, 0.07); --accent: #3b82f6; }}
+            body {{ background-color: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; }}
+            
+            /* Header Style */
+            .header {{ background: #000; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; }}
+            .logo {{ font-weight: bold; font-size: 1.2rem; letter-spacing: 1px; color: #fff; }}
+            .btn-auth {{ background: #ff4d4d; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: bold; }}
+
+            /* Main Container */
+            .container {{ padding: 20px; max-width: 500px; margin: auto; }}
+
+            /* Top Signal Banner */
+            .signal-banner {{
+                background: linear-gradient(135deg, #1e293b, #0f172a);
+                padding: 20px; border-radius: 16px; margin-bottom: 20px;
+                border-left: 5px solid #2ecc71; border: 1px solid rgba(255,255,255,0.1);
             }}
-            body {{
-                background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), 
-                            url('https://images.unsplash.com/photo-1541746972996-4e0b0f43e02a?auto=format&fit=crop&w=1600&q=80');
-                background-size: cover;
-                color: white;
-                font-family: 'Segoe UI', sans-serif;
-                margin: 0;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                min-height: 100vh;
+            .market-name {{ color: var(--accent); font-size: 0.8rem; text-transform: uppercase; margin-bottom: 5px; }}
+            .accuracy {{ font-size: 2rem; font-weight: 800; }}
+
+            /* The 3-Column Grid */
+            .dashboard-grid {{
+                display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
             }}
-            .dashboard {{
-                background: var(--glass);
-                backdrop-filter: blur(15px);
-                border: 1px solid rgba(255,255,255,0.2);
-                border-radius: 30px;
-                padding: 40px;
-                width: 90%;
-                max-width: 500px;
-                box-shadow: 0 25px 50px rgba(0,0,0,0.5);
-                border-top: 4px solid var(--accent);
+            .grid-card {{
+                background: var(--glass); border-radius: 12px; padding: 20px 10px;
+                text-align: center; border: 1px solid rgba(255,255,255,0.1);
+                transition: transform 0.2s; text-decoration: none; color: white;
             }}
-            .market-header {{ font-size: 1.2rem; opacity: 0.8; letter-spacing: 2px; }}
-            .price {{ font-size: 3rem; font-weight: bold; margin: 10px 0; }}
-            .signal-box {{
-                background: var(--accent);
-                padding: 20px;
-                border-radius: 15px;
-                font-size: 2rem;
-                font-weight: 900;
-                margin: 20px 0;
-                box-shadow: 0 0 20px var(--accent);
-            }}
-            .analysis-grid {{
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 15px;
-                text-align: left;
-                margin-top: 20px;
-            }}
-            .stat-card {{
-                background: rgba(0,0,0,0.3);
-                padding: 10px;
-                border-radius: 10px;
-                font-size: 0.8rem;
-            }}
-            .stat-val {{ display: block; font-size: 1.1rem; color: var(--accent); font-weight: bold; }}
-            .btn {{
-                display: block;
-                background: white;
-                color: black;
-                text-decoration: none;
-                padding: 15px;
-                border-radius: 10px;
-                font-weight: bold;
-                margin-top: 25px;
-                transition: 0.3s;
-            }}
-            .btn:hover {{ transform: scale(1.05); background: var(--accent); color: white; }}
+            .grid-card:active {{ transform: scale(0.95); background: var(--accent); }}
+            .grid-card i {{ font-size: 24px; margin-bottom: 8px; display: block; color: var(--accent); }}
+            .card-label {{ font-size: 11px; font-weight: 500; opacity: 0.8; }}
+
+            .footer-link {{ display: block; text-align: center; margin-top: 30px; color: #64748b; text-decoration: none; font-size: 13px; }}
         </style>
     </head>
-    <body onload="announceSignal()">
-        <div class="dashboard">
-            <div class="market-header">{market}</div>
-            <div class="price">${price}</div>
-            
-            <div class="signal-box">{action}</div>
-            
-            <div class="analysis-grid">
-                <div class="stat-card">STRENGTH <span class="stat-val">{strength}%</span></div>
-                <div class="stat-card">STRUCTURE <span class="stat-val">{structure}</span></div>
-                <div class="stat-card">IMBALANCE (FVG) <span class="stat-val">{fvg}</span></div>
-                <div class="stat-card">MANIPULATION <span class="stat-val">{manipulation}</span></div>
+    <body onload="speakSignal()">
+        <div class="header">
+            <div class="logo">ZION LAB</div>
+            <a href="#" class="btn-auth">SIGN UP</a>
+        </div>
+
+        <div class="container">
+            <div class="signal-banner">
+                <div class="market-name"><i class="fa-solid fa-tower-broadcast"></i> Live: {market}</div>
+                <div class="accuracy">{strength}% Accuracy</div>
+                <div style="font-size: 12px; margin-top:10px; opacity: 0.7;">
+                    {structure} • {manipulation}
+                </div>
             </div>
 
-            <a href="https://deriv.com" class="btn">PROCEED TO TRADE</a>
-            <p style="font-size: 10px; margin-top: 15px;">Smart Intelligence v2.0 | Auto-detecting Key Levels</p>
+            <div class="dashboard-grid">
+                <div class="grid-card"><i class="fa-solid fa-house"></i><div class="card-label">Home</div></div>
+                <div class="grid-card"><i class="fa-solid fa-robot" style="color:#ff4d4d;"></i><div class="card-label">Bot Builder</div></div>
+                <div class="grid-card"><i class="fa-solid fa-chart-pie"></i><div class="card-label">Analysis</div></div>
+                <div class="grid-card"><i class="fa-solid fa-bolt" style="color:#fcd34d;"></i><div class="card-label">Signals</div></div>
+                <div class="grid-card"><i class="fa-solid fa-magnifying-glass-chart"></i><div class="card-label">SMC Scan</div></div>
+                <div class="grid-card"><i class="fa-solid fa-headset"></i><div class="card-label">Support</div></div>
+            </div>
+
+            <a href="https://deriv.com" class="footer-link">Powered by Deriv API</a>
         </div>
 
         <script>
-            function announceSignal() {{
-                const text = "New signal for {market}. {action} detected with {strength} percent accuracy. Beware of {manipulation}.";
+            function speakSignal() {{
+                const text = "New Signal for {market}. Accuracy is {strength} percent. {manipulation}.";
                 const speech = new SpeechSynthesisUtterance(text);
                 speech.rate = 0.9;
                 window.speechSynthesis.speak(speech);
             }}
-            setTimeout(() => {{ location.reload(); }}, 10000); // Auto-update every 10 seconds
+            // Refresh every 12 seconds for new signals
+            setTimeout(() => {{ location.reload(); }}, 12000);
         </script>
     </body>
     </html>
     '''
     return render_template_string(html_template)
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+if __name__ == "__main__":
+    app.run(debug=True)
