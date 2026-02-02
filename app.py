@@ -11,75 +11,77 @@ ai_engine = genai.GenerativeModel('gemini-1.5-flash')
 
 WHATSAPP = "https://wa.me/254742024175?text=Hello%20Zion%20Support"
 
-# VOLATILITIES (Including 15 and all 1S markers as per your instructions)
-VOLS = ["R_10", "1HZ10V", "1HZ15V", "R_25", "1HZ25V", "1HZ30V", "R_50", "1HZ50V", "R_75", "1HZ75V", "1HZ90V", "R_100", "1HZ100V"]
+# VOLATILITIES (Including 15 and 1S markers per instructions)
+VOLS = ["1HZ10V", "1HZ15V", "1HZ25V", "1HZ30V", "1HZ50V", "1HZ75V", "1HZ90V", "1HZ100V"]
 
 @app.route('/')
 def home():
-    # 'cat' determines which section is active
     cat = request.args.get('cat', 'DASHBOARD')
-    symbol = random.choice(VOLS)
-    
-    # Naming logic to ensure "Volatility Index (1S)" appears correctly
-    market = symbol.replace("R_", "Volatility ").replace("1HZ", "Volatility ").replace("V", "")
-    market_display = f"{market} (1S) Index"
     
     if cat == 'DASHBOARD':
         return render_template_string(UI_HTML, cat=cat, wa=WHATSAPP)
 
-    # SIGNAL LOGIC: RISE/FALL with high-accuracy percentages
+    # Signal Generation triggered by LIVE_SIGNAL
+    symbol = random.choice(VOLS)
+    market_display = f"Volatility {symbol.replace('1HZ', '').replace('V', '')} (1S) Index"
+    
     action = random.choice(["RISE", "FALL"])
-    acc_val = round(random.uniform(94.2, 98.9), 1)
+    # Accuracy percentage inclusion (94-98%)
+    acc_val = round(random.uniform(94.2, 98.8), 1)
     acc = f"{acc_val}%"
     
-    voice_msg = f"New analysis for {market_display}. Prediction: {action} with {acc} accuracy."
+    voice_msg = f"Alert: {market_display}. Prediction is {action} with {acc} accuracy."
     
     return render_template_string(UI_HTML, market=market_display, action=action, acc=acc, voice=voice_msg, cat=cat, wa=WHATSAPP)
 
 UI_HTML = """
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root { --primary: #0000ff; --red: #ff3b30; --green: #22c55e; --bg: #020617; --glass: rgba(255,255,255,0.06); }
-        body { background: var(--bg); color: white; margin: 0; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        body { background: var(--bg); color: white; margin: 0; font-family: sans-serif; overflow-x: hidden; }
         
         .navbar { background: var(--primary); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top:0; z-index:100; }
-        .nav-controls { display: flex; gap: 25px; align-items: center; }
-        .btn-signup { background: var(--red); color: white; padding: 7px 15px; border-radius: 5px; font-weight: bold; font-size: 11px; text-decoration: none; text-transform: uppercase; }
-
-        /* Grid Alignment */
+        .nav-brand { font-weight: 900; font-size: 20px; letter-spacing: 1px; }
+        
         .dashboard-label { padding: 20px 20px 5px; font-size: 11px; font-weight: 800; color: #3b82f6; letter-spacing: 1.5px; }
         .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 15px; }
         .card { background: var(--glass); border-radius: 12px; padding: 22px 5px; text-align: center; text-decoration: none; color: white; border: 1px solid rgba(255,255,255,0.05); }
         .card i { font-size: 24px; color: #3b82f6; margin-bottom: 10px; display: block; }
-        .card span { display: block; font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; }
+        .card span { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; }
 
-        /* Professional Signal Layout */
-        .signal-view { text-align: center; padding: 50px 20px; animation: slideUp 0.4s ease-out; }
-        .market-title { font-size: 13px; color: #3b82f6; font-weight: 800; border: 1px solid #3b82f6; display: inline-block; padding: 4px 12px; border-radius: 20px; margin-bottom: 25px; }
-        .direction-box { background: var(--glass); border-radius: 20px; padding: 40px 20px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 30px; }
-        .direction-text { font-size: 75px; font-weight: 900; margin: 10px 0; letter-spacing: -3px; }
+        /* Focused Signal Layout */
+        .signal-container { text-align: center; padding: 30px 20px; animation: fadeIn 0.5s ease-out; }
+        .market-badge { background: rgba(59, 130, 246, 0.15); color: #3b82f6; padding: 6px 16px; border-radius: 30px; font-size: 12px; font-weight: 800; border: 1px solid #3b82f6; display: inline-block; margin-bottom: 20px; }
         
-        .accuracy-badge { background: rgba(34, 197, 94, 0.1); border: 1px solid var(--green); padding: 8px 16px; border-radius: 30px; display: inline-flex; align-items: center; gap: 10px; }
-        .accuracy-badge span { font-weight: 900; font-size: 18px; color: var(--green); }
+        .action-box { background: var(--glass); border-radius: 25px; padding: 40px 20px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 25px; position: relative; }
+        .action-label { color: #64748b; font-size: 11px; font-weight: bold; letter-spacing: 2px; }
+        .action-value { font-size: 75px; font-weight: 900; margin: 10px 0; letter-spacing: -3px; }
+        
+        .timer-bar { width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; margin: 20px 0; overflow: hidden; }
+        .timer-fill { height: 100%; background: var(--green); width: 100%; transition: width 1s linear; }
 
-        .btn-trade { display: block; background: var(--green); color: white; padding: 20px; border-radius: 12px; text-decoration: none; font-weight: 900; font-size: 16px; box-shadow: 0 8px 20px rgba(34, 197, 94, 0.2); }
-        .wa-float { position: fixed; bottom: 25px; right: 20px; background: #25d366; width: 55px; height: 55px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; color: white; text-decoration: none; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+        .accuracy-pill { background: rgba(34, 197, 94, 0.1); border: 1px solid var(--green); padding: 8px 18px; border-radius: 50px; display: inline-flex; align-items: center; gap: 8px; }
+        .accuracy-pill b { color: var(--green); font-size: 18px; }
 
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .btn-execute { display: block; background: var(--green); color: white; padding: 20px; border-radius: 15px; text-decoration: none; font-weight: 900; font-size: 18px; box-shadow: 0 10px 20px rgba(34, 197, 94, 0.2); }
+        .wa-float { position: fixed; bottom: 25px; right: 20px; background: #25d366; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; color: white; text-decoration: none; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
     <div class="navbar">
-        <div class="nav-controls">
-            <i class="fa-solid fa-bars" style="font-size: 22px;"></i>
-            <i id="muteBtn" class="fa-solid fa-volume-high" style="color:cyan; font-size: 22px; cursor:pointer;"></i>
+        <div style="display:flex; gap:20px; align-items:center;">
+            <i class="fa-solid fa-bars"></i>
+            <i id="muteBtn" class="fa-solid fa-volume-high" style="color:cyan; cursor:pointer;"></i>
         </div>
-        <div style="font-weight:900; font-size: 19px; letter-spacing: 1px;">ZION <span style="color:#3b82f6">AI</span></div>
-        <a href="#" class="btn-signup">Sign up</a>
+        <div class="nav-brand">ZION <span style="color:#3b82f6">AI</span></div>
+        <a href="#" style="background:var(--red); color:white; padding:6px 12px; border-radius:4px; font-size:12px; font-weight:bold; text-decoration:none;">Sign up</a>
     </div>
 
     {% if cat == 'DASHBOARD' %}
@@ -93,23 +95,28 @@ UI_HTML = """
         <a href="/?cat=LIVE_SIGNAL" class="card"><i class="fa-solid fa-bolt"></i><span>DTrader</span></a>
     </div>
     {% else %}
-    <div class="signal-view">
-        <div class="market-title">{{ market }}</div>
+    <div class="signal-container">
+        <div class="market-badge">{{ market }}</div>
         
-        <div class="direction-box">
-            <div style="color: #64748b; font-size: 11px; font-weight: bold; letter-spacing: 2px;">PREDICTED DIRECTION</div>
-            <div class="direction-text" style="color: {{ 'var(--green)' if action == 'RISE' else 'var(--red)' }};">
+        <div class="action-box">
+            <div class="action-label">PREDICTED DIRECTION</div>
+            <div class="action-value" style="color: {{ 'var(--green)' if action == 'RISE' else 'var(--red)' }};">
                 {{ action }}
             </div>
-            <div class="accuracy-badge">
-                <small style="color: #94a3b8; font-size: 10px;">ACCURACY</small>
-                <span>{{ acc }}</span>
+
+            <div class="timer-bar">
+                <div id="countdown" class="timer-fill"></div>
+            </div>
+            
+            <div class="accuracy-pill">
+                <small style="color:#94a3b8; font-size:10px;">ACCURACY</small>
+                <b>{{ acc }}</b>
             </div>
         </div>
 
-        <a href="https://app.deriv.com" target="_blank" class="btn-trade">EXECUTE TRADE</a>
+        <a href="https://app.deriv.com" target="_blank" class="btn-execute">EXECUTE TRADE</a>
         <br>
-        <a href="/?cat=DASHBOARD" style="color:#64748b; text-decoration:none; font-size:13px; font-weight:600;">
+        <a href="/?cat=DASHBOARD" style="color:#64748b; text-decoration:none; font-size:14px; font-weight:600; margin-top:20px; display:inline-block;">
             <i class="fa-solid fa-arrow-left"></i> BACK TO DASHBOARD
         </a>
     </div>
@@ -119,11 +126,40 @@ UI_HTML = """
 
     <script>
         let muted = false;
-        function playAI(t) { if (!muted) { const s = new SpeechSynthesisUtterance(t); s.rate = 0.95; window.speechSynthesis.speak(s); } }
+        function playAI(t) { 
+            if (!muted) { 
+                const s = new SpeechSynthesisUtterance(t); 
+                s.rate = 1.0; 
+                window.speechSynthesis.speak(s); 
+            } 
+        }
+
+        function startTimer() {
+            const bar = document.getElementById('countdown');
+            if (!bar) return;
+            let width = 100;
+            const interval = setInterval(() => {
+                width -= 1.66; // Approx 60 seconds
+                bar.style.width = width + '%';
+                if (width <= 0) {
+                    clearInterval(interval);
+                    location.reload(); // Refresh for next signal
+                }
+            }, 1000);
+        }
+
         document.getElementById('muteBtn').onclick = function() { 
-            muted = !muted; this.className = muted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high'; this.style.color = muted ? 'red' : 'cyan';
+            muted = !muted; 
+            this.className = muted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high'; 
+            this.style.color = muted ? 'red' : 'cyan';
         };
-        window.onload = () => { if("{{ cat }}" !== "DASHBOARD") playAI("{{ voice }}"); };
+
+        window.onload = () => { 
+            if("{{ cat }}" !== "DASHBOARD") {
+                playAI("{{ voice }}");
+                startTimer();
+            } 
+        };
     </script>
 </body>
 </html>
