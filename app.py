@@ -371,7 +371,7 @@ def api_markets():
         "concepts": MarketConfig.TRADING_CONCEPTS
     })
 
-# --- ENHANCED UI TEMPLATE ---
+# --- ENHANCED UI TEMPLATE WITH OVERLAP FIX ---
 UI_HTML = """
 <!DOCTYPE html>
 <html lang="en">
@@ -408,10 +408,10 @@ UI_HTML = """
             overflow-x: hidden;
         }
         
-        /* Top Navigation */
+        /* Top Navigation - FIXED OVERLAP */
         .top-nav {
             background: var(--primary);
-            padding: 12px 20px;
+            padding: 12px 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -419,18 +419,23 @@ UI_HTML = """
             top: 0;
             z-index: 1000;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            flex-wrap: wrap;
+            gap: 10px;
         }
         
         .nav-left, .nav-right {
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 12px;
+            flex-shrink: 0;
         }
         
         .logo {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 900;
             color: white;
+            white-space: nowrap;
+            margin-right: 10px;
         }
         
         .logo span {
@@ -439,9 +444,14 @@ UI_HTML = """
         
         .nav-menu {
             display: flex;
-            gap: 25px;
+            gap: 18px;
             overflow-x: auto;
             scrollbar-width: none;
+            padding: 5px 0;
+            flex: 1;
+            min-width: 0;
+            justify-content: center;
+            margin: 0 10px;
         }
         
         .nav-menu::-webkit-scrollbar {
@@ -451,11 +461,12 @@ UI_HTML = """
         .nav-item {
             color: rgba(255, 255, 255, 0.7);
             text-decoration: none;
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 600;
             white-space: nowrap;
-            padding: 8px 0;
+            padding: 5px 0;
             position: relative;
+            flex-shrink: 0;
         }
         
         .nav-item.active {
@@ -475,12 +486,14 @@ UI_HTML = """
         .btn-signup {
             background: var(--accent);
             color: white;
-            padding: 8px 16px;
+            padding: 6px 12px;
             border-radius: 6px;
             font-weight: bold;
-            font-size: 12px;
+            font-size: 11px;
             text-decoration: none;
             transition: opacity 0.2s;
+            white-space: nowrap;
+            margin-left: 5px;
         }
         
         .btn-signup:hover {
@@ -492,15 +505,31 @@ UI_HTML = """
             background: none;
             border: none;
             color: white;
-            font-size: 20px;
+            font-size: 18px;
             cursor: pointer;
             padding: 5px;
             border-radius: 5px;
             transition: background 0.2s;
+            flex-shrink: 0;
         }
         
         .control-btn:hover {
             background: rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Time Display - FIXED POSITION */
+        .time-display {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--gray);
+            backdrop-filter: blur(10px);
+            white-space: nowrap;
+            margin-left: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            flex-shrink: 0;
         }
         
         /* Main Layout */
@@ -515,7 +544,7 @@ UI_HTML = """
             background: rgba(0, 0, 0, 0.3);
             border-right: 1px solid var(--border);
             padding: 20px 0;
-            display: none; /* Hidden on mobile by default */
+            display: none;
         }
         
         .sidebar-header {
@@ -576,16 +605,16 @@ UI_HTML = """
         /* Dashboard Grid */
         .dashboard-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 15px;
-            margin-bottom: 30px;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
+            margin-bottom: 25px;
         }
         
         .grid-card {
             background: var(--glass);
             border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 20px;
+            border-radius: 10px;
+            padding: 18px 12px;
             text-align: center;
             text-decoration: none;
             color: white;
@@ -593,23 +622,23 @@ UI_HTML = """
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
         
         .grid-card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-3px);
             border-color: var(--secondary);
-            box-shadow: 0 10px 25px rgba(49, 109, 202, 0.2);
+            box-shadow: 0 8px 20px rgba(49, 109, 202, 0.2);
         }
         
         .grid-card i {
-            font-size: 28px;
+            font-size: 24px;
             color: var(--secondary);
             margin-bottom: 5px;
         }
         
         .card-title {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 700;
             color: #94a3b8;
             text-transform: uppercase;
@@ -617,39 +646,42 @@ UI_HTML = """
         }
         
         .card-desc {
-            font-size: 10px;
+            font-size: 9px;
             color: rgba(255, 255, 255, 0.6);
-            margin-top: 5px;
+            margin-top: 3px;
+            line-height: 1.3;
         }
         
         /* Signal Display */
         .signal-display {
             text-align: center;
-            padding: 40px 20px;
+            padding: 30px 15px;
             max-width: 500px;
             margin: 0 auto;
         }
         
         .market-name {
-            font-size: 14px;
+            font-size: 13px;
             color: var(--secondary);
             text-transform: uppercase;
             font-weight: 800;
             letter-spacing: 1px;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
         
         .concept-name {
-            font-size: 16px;
+            font-size: 14px;
             color: var(--gray);
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+            font-weight: 600;
         }
         
         .signal-action {
-            font-size: 72px;
+            font-size: 64px;
             font-weight: 900;
-            margin: 20px 0;
-            text-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            margin: 15px 0;
+            text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            line-height: 1;
         }
         
         .signal-rise {
@@ -667,32 +699,38 @@ UI_HTML = """
         .signal-accuracy {
             background: rgba(34, 197, 94, 0.15);
             color: var(--success);
-            padding: 8px 20px;
-            border-radius: 20px;
+            padding: 6px 18px;
+            border-radius: 18px;
             font-weight: bold;
-            font-size: 18px;
+            font-size: 16px;
             display: inline-block;
-            margin: 15px 0;
+            margin: 12px 0;
             border: 2px solid rgba(34, 197, 94, 0.3);
         }
         
         .signal-reason {
             color: var(--gray);
-            font-size: 14px;
-            margin: 15px 0 30px;
+            font-size: 13px;
+            margin: 12px 0 25px;
             line-height: 1.5;
+            padding: 0 10px;
+        }
+        
+        .signal-reason i {
+            margin-right: 6px;
+            color: var(--secondary);
         }
         
         .execute-btn {
             display: block;
             background: linear-gradient(135deg, var(--success), #16a34a);
             color: white;
-            padding: 18px 40px;
-            border-radius: 12px;
+            padding: 16px 35px;
+            border-radius: 10px;
             text-decoration: none;
             font-weight: 900;
-            font-size: 16px;
-            margin: 30px auto;
+            font-size: 15px;
+            margin: 25px auto;
             width: fit-content;
             transition: all 0.3s;
             box-shadow: 0 5px 15px rgba(34, 197, 94, 0.3);
@@ -703,20 +741,24 @@ UI_HTML = """
             box-shadow: 0 8px 20px rgba(34, 197, 94, 0.4);
         }
         
+        .execute-btn i {
+            margin-right: 8px;
+        }
+        
         /* Voice Broadcast */
         .voice-broadcast {
             background: var(--glass);
             border: 1px solid var(--border);
-            padding: 20px;
-            border-radius: 15px;
-            margin-top: 30px;
+            padding: 18px;
+            border-radius: 12px;
+            margin-top: 25px;
         }
         
         .broadcast-header {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--secondary);
             font-weight: 700;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
@@ -731,10 +773,11 @@ UI_HTML = """
             flex: 1;
             background: rgba(0, 0, 0, 0.3);
             border: 1px solid var(--secondary);
-            padding: 12px 15px;
+            padding: 10px 14px;
             color: white;
             border-radius: 8px;
-            font-size: 14px;
+            font-size: 13px;
+            min-width: 0;
         }
         
         #broadcastText:focus {
@@ -746,11 +789,13 @@ UI_HTML = """
             background: var(--secondary);
             border: none;
             color: white;
-            padding: 12px 25px;
+            padding: 10px 22px;
             border-radius: 8px;
             font-weight: bold;
             cursor: pointer;
             transition: opacity 0.2s;
+            font-size: 13px;
+            white-space: nowrap;
         }
         
         .speak-btn:hover {
@@ -760,19 +805,19 @@ UI_HTML = """
         /* WhatsApp Float */
         .wa-float {
             position: fixed;
-            bottom: 25px;
-            right: 20px;
+            bottom: 20px;
+            right: 15px;
             background: #25d366;
-            width: 55px;
-            height: 55px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 28px;
+            font-size: 24px;
             text-decoration: none;
             color: white;
-            box-shadow: 0 5px 15px rgba(37, 211, 102, 0.3);
+            box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
             z-index: 1000;
             transition: transform 0.3s;
         }
@@ -781,21 +826,86 @@ UI_HTML = """
             transform: scale(1.1);
         }
         
-        /* Time Display */
-        .time-display {
-            position: fixed;
-            top: 15px;
-            right: 100px;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--gray);
-            backdrop-filter: blur(10px);
+        /* Responsive Design */
+        @media (max-width: 767px) {
+            .top-nav {
+                padding: 10px;
+                gap: 8px;
+            }
+            
+            .nav-left {
+                order: 1;
+                width: 100%;
+                justify-content: space-between;
+                margin-bottom: 5px;
+            }
+            
+            .nav-menu {
+                order: 2;
+                width: 100%;
+                margin: 0;
+                justify-content: flex-start;
+                overflow-x: auto;
+                padding: 8px 0;
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+                margin-top: 5px;
+            }
+            
+            .nav-right {
+                order: 3;
+                width: 100%;
+                justify-content: flex-end;
+                margin-top: 5px;
+            }
+            
+            .nav-item {
+                font-size: 11px;
+                padding: 4px 0;
+            }
+            
+            .time-display {
+                font-size: 10px;
+                padding: 3px 8px;
+            }
+            
+            .btn-signup {
+                padding: 5px 10px;
+                font-size: 10px;
+            }
+            
+            .logo {
+                font-size: 18px;
+            }
+            
+            .signal-action {
+                font-size: 56px;
+            }
+            
+            .signal-accuracy {
+                font-size: 14px;
+                padding: 5px 16px;
+            }
+            
+            .execute-btn {
+                padding: 14px 30px;
+                font-size: 14px;
+            }
         }
         
-        /* Responsive Design */
+        @media (min-width: 768px) and (max-width: 1024px) {
+            .nav-menu {
+                gap: 15px;
+            }
+            
+            .nav-item {
+                font-size: 11px;
+            }
+            
+            .time-display {
+                font-size: 11px;
+            }
+        }
+        
         @media (min-width: 768px) {
             .sidebar {
                 display: block;
@@ -810,11 +920,19 @@ UI_HTML = """
             .dashboard-grid {
                 grid-template-columns: repeat(4, 1fr);
             }
+            
+            .nav-menu {
+                gap: 20px;
+            }
+            
+            .nav-item {
+                font-size: 12px;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Top Navigation -->
+    <!-- Top Navigation - FIXED -->
     <nav class="top-nav">
         <div class="nav-left">
             <button class="control-btn" id="menuToggle">
@@ -891,7 +1009,7 @@ UI_HTML = """
                 <div class="voice-broadcast">
                     <div class="broadcast-header">AI VOICE BROADCAST</div>
                     <div class="broadcast-controls">
-                        <input type="text" id="broadcastText" placeholder="Broadcast message...">
+                        <input type="text" id="broadcastText" placeholder="Broadcast message..." value="Welcome to ZION AI Trading Lab">
                         <button class="speak-btn" onclick="speakCustom()">SPEAK</button>
                     </div>
                 </div>
@@ -991,6 +1109,13 @@ UI_HTML = """
                 const sidebar = document.getElementById('sidebar');
                 sidebar.style.display = sidebar.style.display === 'block' ? 'none' : 'block';
             };
+            
+            // Auto-speak welcome message on dashboard
+            if ("{{ cat }}" === "DASHBOARD") {
+                setTimeout(() => {
+                    playAI("Welcome to ZION AI Trading Lab. Ready for high accuracy signals.");
+                }, 1500);
+            }
         };
         
         // Auto-refresh signal every 2 minutes
@@ -1015,6 +1140,7 @@ if __name__ == "__main__":
     📈 Volatility Markets: {len(MarketConfig.VOLATILITY_MARKETS)}
     🔗 WhatsApp: {WHATSAPP}
     🌐 Server: http://localhost:{port}
+    ✅ Overlap issue fixed - Navigation optimized
     """)
     
     app.run(host='0.0.0.0', port=port, debug=debug)
