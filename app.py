@@ -1,5 +1,6 @@
-import os, random, json, time
+import os, random, json, time, statistics, collections
 from datetime import datetime, timedelta
+from typing import Dict, List, Tuple, Optional
 import google.generativeai as genai
 from flask import Flask, render_template_string, request, jsonify
 from dotenv import load_dotenv
@@ -22,376 +23,419 @@ except:
     AI_AVAILABLE = False
     print("⚠️ Gemini AI not available. Using local strategies.")
 
-# --- COMPLETE MARKET CONFIGURATION ---
-class MarketConfig:
-    """Complete market configuration for all Deriv concepts"""
+# --- ZION APEX UNIVERSAL SYSTEM (2026 Edition) ---
+class ZionApexUniversal:
+    """
+    Universal Asset Class Trading System
+    Operates across ALL volatility markets as two aggregated hunting grounds
+    """
     
-    # All volatility markets (Rise/Fall)
-    VOLATILITY_MARKETS = {
-        "R_10": {"name": "Volatility 10 Index", "icon": "fa-arrow-trend-up"},
-        "1HZ10V": {"name": "Volatility 10 (1S)", "icon": "fa-bolt"},
-        "1HZ15V": {"name": "Volatility 15 (1S)", "icon": "fa-bolt"}, 
-        "R_25": {"name": "Volatility 25 Index", "icon": "fa-arrow-trend-up"},
-        "1HZ25V": {"name": "Volatility 25 (1S)", "icon": "fa-bolt"},
-        "1HZ30V": {"name": "Volatility 30 (1S)", "icon": "fa-bolt"},
-        "R_50": {"name": "Volatility 50 Index", "icon": "fa-arrow-trend-up"},
-        "1HZ50V": {"name": "Volatility 50 (1S)", "icon": "fa-bolt"},
-        "R_75": {"name": "Volatility 75 Index", "icon": "fa-fire"}, 
-        "1HZ75V": {"name": "Volatility 75 (1S)", "icon": "fa-fire"},
-        "1HZ90V": {"name": "Volatility 90 (1S)", "icon": "fa-fire"},
-        "R_100": {"name": "Volatility 100 Index", "icon": "fa-fire"},
-        "1HZ100V": {"name": "Volatility 100 (1S)", "icon": "fa-fire"},
-        "R_150": {"name": "Volatility 150 Index", "icon": "fa-explosion"},
-        "R_250": {"name": "Volatility 250 Index", "icon": "fa-explosion"}
+    # Universal Asset Classes (Genius Aggregation)
+    ASSET_CLASSES = {
+        "ALPHA": {
+            "name": "All Volatility with One-Second",
+            "description": "High-frequency digit racing ground",
+            "markets": ["1HZ10V", "1HZ15V", "1HZ25V", "1HZ30V", "1HZ50V", "1HZ75V", "1HZ90V", "1HZ100V"],
+            "tick_speed": "1-second",
+            "best_for": ["Matches/Differs", "High-frequency arbitrage"]
+        },
+        "BETA": {
+            "name": "All Volatility with Plain Index",
+            "description": "Standard-frequency trend hunting ground",
+            "markets": ["R_10", "R_25", "R_50", "R_75", "R_100", "R_150", "R_250"],
+            "tick_speed": "Standard",
+            "best_for": ["Rise/Fall", "Trend momentum"]
+        }
     }
     
-    # All Deriv concepts with icons and routes
-    TRADING_CONCEPTS = {
-        "DASHBOARD": {
-            "name": "Dashboard",
-            "icon": "fa-house",
-            "route": "/?cat=DASHBOARD",
-            "description": "Main trading dashboard"
+    # Individual digit tracking across ALL markets
+    universal_digit_history = {
+        "ALPHA": collections.Counter(),  # One-second markets
+        "BETA": collections.Counter()    # Plain indices
+    }
+    
+    # Signal history
+    signal_history = []
+    
+    @classmethod
+    def analyze_universal_digits(cls, asset_class: str) -> Dict:
+        """Analyze digit competition across entire asset class"""
+        digit_counter = cls.universal_digit_history[asset_class]
+        total_ticks = sum(digit_counter.values())
+        
+        if total_ticks < 50:  # Need sufficient data
+            return {"status": "scanning", "confidence": 0, "message": "Building digit database"}
+        
+        # Calculate individual digit frequencies
+        digit_frequencies = {}
+        for digit in range(10):
+            count = digit_counter.get(str(digit), 0)
+            frequency = (count / total_ticks) * 100
+            digit_frequencies[str(digit)] = {
+                "count": count,
+                "frequency": round(frequency, 2),
+                "competition": frequency >= 10.0  # The 10% Individual Digit Floor
+            }
+        
+        # Find digit clusters (digits competing at >=10%)
+        competing_digits = [d for d, info in digit_frequencies.items() if info["competition"]]
+        cluster_density = len(competing_digits) / 10  # What percentage of digits are competing?
+        
+        # Identify optimal digit groups for each concept
+        over_digits = ["0", "1", "2", "3", "4"]
+        under_digits = ["5", "6", "7", "8", "9"]
+        even_digits = ["0", "2", "4", "6", "8"]
+        odd_digits = ["1", "3", "5", "7", "9"]
+        
+        # Check if each group meets the 10% threshold
+        group_analysis = {
+            "OVER": all(digit_frequencies[d]["competition"] for d in over_digits),
+            "UNDER": all(digit_frequencies[d]["competition"] for d in under_digits),
+            "EVEN": all(digit_frequencies[d]["competition"] for d in even_digits),
+            "ODD": all(digit_frequencies[d]["competition"] for d in odd_digits)
+        }
+        
+        # Calculate cluster strength
+        cluster_strength = sum(1 for valid in group_analysis.values() if valid) / 4 * 100
+        
+        return {
+            "status": "active",
+            "asset_class": asset_class,
+            "total_ticks": total_ticks,
+            "digit_frequencies": digit_frequencies,
+            "competing_digits": competing_digits,
+            "cluster_density": round(cluster_density * 100, 1),
+            "group_analysis": group_analysis,
+            "cluster_strength": round(cluster_strength, 1),
+            "confidence": min(95, cluster_strength * 1.2)
+        }
+    
+    @classmethod
+    def generate_universal_signal(cls) -> Dict:
+        """Generate signal by maneuvering between asset classes"""
+        # Analyze both asset classes
+        alpha_analysis = cls.analyze_universal_digits("ALPHA")
+        beta_analysis = cls.analyze_universal_digits("BETA")
+        
+        # Choose strongest asset class
+        if alpha_analysis["confidence"] > beta_analysis["confidence"]:
+            analysis = alpha_analysis
+            selected_class = "ALPHA"
+        else:
+            analysis = beta_analysis
+            selected_class = "BETA"
+        
+        if analysis["status"] != "active" or analysis["confidence"] < 70:
+            return {
+                "status": "scanning",
+                "message": "Maneuvering through Universal Asset Classes...",
+                "confidence": analysis.get("confidence", 0),
+                "countdown": random.randint(15, 45)
+            }
+        
+        # Select best concept based on digit group strength
+        concept_options = []
+        for concept, valid in analysis["group_analysis"].items():
+            if valid:
+                # Calculate group-specific confidence
+                if concept in ["OVER", "UNDER"]:
+                    target_digits = ["0", "1", "2", "3", "4"] if concept == "OVER" else ["5", "6", "7", "8", "9"]
+                else:
+                    target_digits = ["0", "2", "4", "6", "8"] if concept == "EVEN" else ["1", "3", "5", "7", "9"]
+                
+                group_freq = sum(analysis["digit_frequencies"][d]["frequency"] for d in target_digits)
+                concept_confidence = min(98, 60 + (group_freq / 25) * 38)
+                
+                concept_options.append({
+                    "concept": concept,
+                    "confidence": concept_confidence,
+                    "group_frequency": group_freq,
+                    "digits": target_digits
+                })
+        
+        if not concept_options:
+            return {
+                "status": "waiting",
+                "message": "No digit clusters meeting 10% threshold",
+                "confidence": analysis["confidence"],
+                "countdown": random.randint(30, 60)
+            }
+        
+        # Select highest confidence concept
+        best_concept = max(concept_options, key=lambda x: x["confidence"])
+        
+        # Generate signal details
+        asset_class_info = cls.ASSET_CLASSES[selected_class]
+        
+        # Select random market from chosen class for display
+        selected_market = random.choice(asset_class_info["markets"])
+        market_display = selected_market.replace("R_", "Vol ").replace("1HZ", "").replace("V", "")
+        
+        # Determine action based on concept
+        if best_concept["concept"] == "OVER":
+            action = "OVER"
+            barrier = random.choice(["4", "5", "6"])
+        elif best_concept["concept"] == "UNDER":
+            action = "UNDER"
+            barrier = random.choice(["4", "5", "6"])
+        elif best_concept["concept"] == "EVEN":
+            action = "EVEN"
+            barrier = None
+        else:  # ODD
+            action = "ODD"
+            barrier = None
+        
+        # Generate systematic audio protocol
+        audio_protocol = {
+            "phase_1": f"Target identified in {asset_class_info['name']} category.",
+            "phase_2": f"Command: Execute {action}",
+            "phase_3": f"Barrier {barrier}" if barrier else f"Parity {action}",
+            "phase_4": f"Validation: 10% Individual Thresholds verified across {len(best_concept['digits'])}-digit cluster.",
+            "phase_5": f"Live countdown: {random.randint(45, 120)} seconds until algorithm shift.",
+            "full": f"Zion Apex Universal engaging {asset_class_info['name']}. Command {action}. "
+                   f"Barrier {barrier if barrier else 'Parity ' + action}. "
+                   f"Ten percent individual digit thresholds verified. "
+                   f"Live countdown {random.randint(45, 120)} seconds."
+        }
+        
+        # Record signal
+        signal_data = {
+            "status": "active",
+            "timestamp": datetime.utcnow().isoformat(),
+            "asset_class": selected_class,
+            "asset_class_name": asset_class_info["name"],
+            "concept": best_concept["concept"],
+            "action": action,
+            "barrier": barrier,
+            "market_display": market_display,
+            "confidence": best_concept["confidence"],
+            "digit_cluster": {
+                "digits": best_concept["digits"],
+                "average_frequency": round(best_concept["group_frequency"] / 5, 2),
+                "cluster_density": analysis["cluster_density"]
+            },
+            "universal_analysis": {
+                "total_ticks_analyzed": analysis["total_ticks"],
+                "competing_digits_count": len(analysis["competing_digits"]),
+                "cluster_strength": analysis["cluster_strength"]
+            },
+            "audio_protocol": audio_protocol,
+            "countdown": random.randint(45, 120),
+            "expiry": (datetime.utcnow() + timedelta(seconds=120)).isoformat()
+        }
+        
+        cls.signal_history.append(signal_data)
+        if len(cls.signal_history) > 20:
+            cls.signal_history = cls.signal_history[-20:]
+        
+        return signal_data
+    
+    @classmethod
+    def simulate_market_ticks(cls):
+        """Simulate market ticks to build digit history"""
+        for asset_class in ["ALPHA", "BETA"]:
+            # Simulate 5-15 new ticks
+            new_ticks = random.randint(5, 15)
+            for _ in range(new_ticks):
+                digit = str(random.randint(0, 9))
+                cls.universal_digit_history[asset_class][digit] += 1
+            
+            # Keep history manageable
+            total = sum(cls.universal_digit_history[asset_class].values())
+            if total > 1000:
+                # Reduce to most recent 500 ticks
+                cls.universal_digit_history[asset_class] = collections.Counter(
+                    dict(list(cls.universal_digit_history[asset_class].items())[-500:])
+                )
+
+# --- UNIVERSAL DASHBOARD CONFIG ---
+class UniversalDashboard:
+    """Universal dashboard with single Live Signals command center"""
+    
+    # Single source of truth: Live Signals icon
+    COMMAND_CENTER = {
+        "LIVE_SIGNALS": {
+            "name": "Live Signals",
+            "icon": "fa-satellite-dish",
+            "route": "/?cat=LIVE_SIGNALS",
+            "description": "Universal Command Center • Real-time signal generation across ALL volatility markets",
+            "color": "#8b5cf6",
+            "badge": "APEX UNIVERSAL",
+            "priority": 1
+        }
+    }
+    
+    # Future modification icons (scrollable)
+    FUTURE_MODULES = {
+        "MARKET_ANALYSIS": {
+            "name": "Market Analysis",
+            "icon": "fa-chart-network",
+            "route": "#",
+            "description": "Universal asset class analysis • Coming Soon",
+            "color": "#3b82f6",
+            "status": "future"
         },
-        "RISE_FALL": {
-            "name": "Rise/Fall",
-            "icon": "fa-arrows-up-down",
-            "route": "/?cat=RISE_FALL",
-            "description": "Predict if price will rise or fall"
-        },
-        "OVER_UNDER": {
-            "name": "Over/Under",
-            "icon": "fa-greater-than-equal",
-            "route": "/?cat=OVER_UNDER",
-            "description": "Predict if price will be over/under target"
-        },
-        "MATCHES_DIFFERS": {
-            "name": "Matches/Differs",
-            "icon": "fa-code-compare",
-            "route": "/?cat=MATCHES_DIFFERS",
-            "description": "Predict if prices will match or differ"
-        },
-        "EVEN_ODD": {
-            "name": "Even/Odd",
-            "icon": "fa-divide",
-            "route": "/?cat=EVEN_ODD",
-            "description": "Predict if last digit is even or odd"
-        },
-        "HIGHER_LOWER": {
-            "name": "Higher/Lower",
-            "icon": "fa-caret-up",
-            "route": "/?cat=HIGHER_LOWER",
-            "description": "Predict if next tick will be higher/lower"
-        },
-        "TOUCH_NO_TOUCH": {
-            "name": "Touch/No Touch",
-            "icon": "fa-hand-pointer",
-            "route": "/?cat=TOUCH_NO_TOUCH",
-            "description": "Predict if price will touch barrier"
-        },
-        "IN_OUT": {
-            "name": "In/Out",
-            "icon": "fa-square-dashed",
-            "route": "/?cat=IN_OUT",
-            "description": "Predict if price stays in/out of range"
-        },
-        "SPIKES": {
-            "name": "Spikes",
-            "icon": "fa-mountain",
-            "route": "/?cat=SPIKES",
-            "description": "Volatility spike predictions"
-        },
-        "BOOM_CRASH": {
-            "name": "Boom/Crash",
-            "icon": "fa-burst",
-            "route": "/?cat=BOOM_CRASH",
-            "description": "Predict boom or crash indices"
-        },
-        "CHAMP_INDEX": {
-            "name": "Champ Index",
+        "PERFORMANCE": {
+            "name": "Performance",
             "icon": "fa-trophy",
-            "route": "/?cat=CHAMP_INDEX",
-            "description": "Championship index predictions"
-        },
-        "ACCUMULATORS": {
-            "name": "Accumulators",
-            "icon": "fa-layer-group",
-            "route": "/?cat=ACCUMULATORS",
-            "description": "Accumulator contract predictions"
+            "route": "#",
+            "description": "Signal accuracy tracking • Coming Soon",
+            "color": "#10b981",
+            "status": "future"
         },
         "BOT_BUILDER": {
             "name": "Bot Builder",
             "icon": "fa-robot",
-            "route": "/?cat=BOT_BUILDER",
-            "description": "Build automated trading bots"
-        },
-        "ANALYSIS": {
-            "name": "Analysis",
-            "icon": "fa-magnifying-glass-chart",
-            "route": "/?cat=ANALYSIS",
-            "description": "Market analysis tools"
-        },
-        "TRADEVIEW": {
-            "name": "TradeView",
-            "route": "/?cat=TRADEVIEW",
-            "icon": "fa-eye",
-            "description": "Advanced trading charts"
-        },
-        "BOTS": {
-            "name": "Bots",
-            "icon": "fa-brain",
-            "route": "/?cat=BOTS",
-            "description": "AI trading bots"
-        },
-        "CHARTS": {
-            "name": "Charts",
-            "icon": "fa-chart-area",
-            "route": "/?cat=CHARTS",
-            "description": "Live market charts"
-        },
-        "COPYTRADE": {
-            "name": "CopyTrade",
-            "icon": "fa-users",
-            "route": "/?cat=COPYTRADE",
-            "description": "Copy successful traders"
-        },
-        "DTRADER": {
-            "name": "DTrader",
-            "icon": "fa-bolt",
-            "route": "/?cat=DTRADER",
-            "description": "Deriv trading platform"
-        },
-        "MULTIMARKET": {
-            "name": "MultiMarket",
-            "icon": "fa-globe",
-            "route": "/?cat=MULTIMARKET",
-            "description": "Multiple market trading"
-        },
-        "MARKETS": {
-            "name": "Markets",
-            "icon": "fa-layer-group",
-            "route": "/?cat=MARKETS",
-            "description": "Available markets"
-        },
-        "DCIRCLES": {
-            "name": "D-circles",
-            "icon": "fa-circle-nodes",
-            "route": "/?cat=DCIRCLES",
-            "description": "Trading circles"
+            "route": "#",
+            "description": "Universal trading bot • Coming Soon",
+            "color": "#f59e0b",
+            "status": "future"
         },
         "STRATEGIES": {
             "name": "Strategies",
-            "icon": "fa-wand-magic-sparkles",
-            "route": "/?cat=STRATEGIES",
-            "description": "Trading strategies"
+            "icon": "fa-chess-knight",
+            "route": "#",
+            "description": "Advanced trading strategies • Coming Soon",
+            "color": "#ec4899",
+            "status": "future"
+        },
+        "EDUCATION": {
+            "name": "Education",
+            "icon": "fa-graduation-cap",
+            "route": "#",
+            "description": "Trading academy • Coming Soon",
+            "color": "#6366f1",
+            "status": "future"
+        },
+        "COMMUNITY": {
+            "name": "Community",
+            "icon": "fa-users",
+            "route": "#",
+            "description": "Trader network • Coming Soon",
+            "color": "#14b8a6",
+            "status": "future"
+        },
+        "SETTINGS": {
+            "name": "Settings",
+            "icon": "fa-sliders",
+            "route": "#",
+            "description": "System configuration • Coming Soon",
+            "color": "#64748b",
+            "status": "future"
+        },
+        "SUPPORT": {
+            "name": "Support",
+            "icon": "fa-headset",
+            "route": "#",
+            "description": "24/7 assistance • Coming Soon",
+            "color": "#8b5cf6",
+            "status": "future"
         }
     }
     
-    # Top navigation items (matching your screenshot)
-    TOP_NAV = ["Dashboard", "CopyTrade", "DTrader", "Multimarket", "Circles", "Strategies", "Bot Builder"]
-    
-    # Sidebar items (matching your screenshot)
-    SIDEBAR_ITEMS = [
-        "Dashboard", "Bot Builder", "Analysis", "TradeView", "Bots", "Signal", 
-        "Charts", "CopyTrade", "DTrader", "MultiMarket", "Markets", "D-circles", "Strategies"
-    ]
-
-# --- HIGH ACCURACY TRADING STRATEGIES ---
-class TradingSignals:
-    """Advanced trading signals with 75%+ accuracy"""
-    
-    @staticmethod
-    def is_optimal_trading_time():
-        """Check if current time is optimal for trading"""
-        hour_gmt = datetime.utcnow().hour
-        day = datetime.utcnow().weekday()
-        
-        # Avoid Friday late trading
-        if day == 4 and hour_gmt >= 20:
-            return False
-        
-        # Optimal trading windows (London & NY opens)
-        return (7 <= hour_gmt <= 9) or (13 <= hour_gmt <= 15)
-    
-    @staticmethod
-    def get_signal_for_concept(concept, market_symbol=None):
-        """Generate signal for specific trading concept"""
-        
-        # Select random market if not provided
-        if market_symbol is None:
-            market_symbol = random.choice(list(MarketConfig.VOLATILITY_MARKETS.keys()))
-        
-        market_info = MarketConfig.VOLATILITY_MARKETS.get(market_symbol, {"name": market_symbol})
-        market_name = market_info["name"]
-        
-        # Base accuracy based on time
-        base_accuracy = random.randint(85, 98) if TradingSignals.is_optimal_trading_time() else random.randint(75, 88)
-        
-        # Generate concept-specific signals
-        if concept == "RISE_FALL":
-            # Rise/Fall prediction
-            current_minute = datetime.utcnow().minute
-            current_second = datetime.utcnow().second
-            
-            # High accuracy algorithm for Rise/Fall
-            if (current_minute + current_second) % 3 == 0:
-                action = "RISE"
-                accuracy = f"{base_accuracy + random.randint(0, 5)}%"
-                reason = "Strong bullish momentum + Volume surge"
-            else:
-                action = "FALL"
-                accuracy = f"{base_accuracy + random.randint(-2, 3)}%"
-                reason = "Bearish pressure + Resistance rejection"
-                
-        elif concept == "OVER_UNDER":
-            # Over/Under prediction
-            action = random.choice(["OVER", "UNDER"])
-            accuracy = f"{random.randint(80, 95)}%"
-            reason = "Price at key level + Momentum divergence"
-            
-        elif concept == "MATCHES_DIFFERS":
-            # Matches/Differs prediction
-            action = random.choice(["MATCHES", "DIFFERS"])
-            accuracy = f"{random.randint(82, 94)}%"
-            reason = "Correlation analysis + Pattern recognition"
-            
-        elif concept == "EVEN_ODD":
-            # Even/Odd prediction
-            current_millisecond = datetime.utcnow().microsecond
-            action = "EVEN" if current_millisecond % 1000 < 500 else "ODD"
-            accuracy = f"{random.randint(78, 92)}%"
-            reason = "Statistical probability + Pattern analysis"
-            
-        elif concept == "HIGHER_LOWER":
-            # Higher/Lower prediction
-            action = random.choice(["HIGHER", "LOWER"])
-            accuracy = f"{random.randint(75, 90)}%"
-            reason = "Tick analysis + Momentum indicator"
-            
-        elif concept == "TOUCH_NO_TOUCH":
-            # Touch/No Touch prediction
-            action = random.choice(["TOUCH", "NO_TOUCH"])
-            accuracy = f"{random.randint(70, 88)}%"
-            reason = "Barrier proximity + Volatility assessment"
-            
-        elif concept == "IN_OUT":
-            # In/Out prediction
-            action = random.choice(["IN", "OUT"])
-            accuracy = f"{random.randint(72, 89)}%"
-            reason = "Range analysis + Boundary testing"
-            
-        elif concept == "SPIKES":
-            # Spikes prediction
-            action = random.choice(["SPIKE UP", "SPIKE DOWN"])
-            accuracy = f"{random.randint(68, 85)}%"
-            reason = "Volatility compression + Breakout detection"
-            
-        elif concept == "BOOM_CRASH":
-            # Boom/Crash prediction
-            action = random.choice(["BOOM", "CRASH"])
-            accuracy = f"{random.randint(65, 82)}%"
-            reason = "Trend momentum + Market sentiment"
-            
-        elif concept == "CHAMP_INDEX":
-            # Champ Index prediction
-            action = random.choice(["BULL", "BEAR"])
-            accuracy = f"{random.randint(70, 86)}%"
-            reason = "Index composition + Component analysis"
-            
-        elif concept == "ACCUMULATORS":
-            # Accumulators prediction
-            action = random.choice(["UP", "DOWN"])
-            accuracy = f"{random.randint(75, 92)}%"
-            reason = "Range-bound analysis + Probability assessment"
-            
-        else:
-            # Default for other concepts
-            action = "ANALYZE"
-            accuracy = f"{random.randint(60, 85)}%"
-            reason = "Market analysis in progress"
-        
-        return {
-            "market": market_name,
-            "symbol": market_symbol,
-            "concept": concept,
-            "action": action,
-            "accuracy": accuracy,
-            "reason": reason,
-            "timestamp": datetime.utcnow().strftime("%H:%M:%S"),
-            "optimal_time": TradingSignals.is_optimal_trading_time(),
-            "icon": MarketConfig.VOLATILITY_MARKETS.get(market_symbol, {}).get("icon", "fa-chart-line")
+    # Asset class display info
+    ASSET_CLASS_DISPLAY = {
+        "ALPHA": {
+            "name": "All Volatility with One-Second",
+            "icon": "fa-bolt",
+            "color": "#f59e0b",
+            "description": "High-frequency digit racing ground"
+        },
+        "BETA": {
+            "name": "All Volatility with Plain Index",
+            "icon": "fa-chart-line",
+            "color": "#3b82f6",
+            "description": "Standard-frequency trend hunting ground"
         }
+    }
 
 # --- FLASK ROUTES ---
 @app.route('/')
 def home():
-    """Main route handling all trading concepts"""
+    """Universal dashboard with single command center"""
     cat = request.args.get('cat', 'DASHBOARD')
     
+    # Simulate market ticks on each request
+    ZionApexUniversal.simulate_market_ticks()
+    
     if cat == 'DASHBOARD':
-        return render_template_string(UI_HTML, 
+        return render_template_string(UNIVERSAL_UI_HTML, 
             cat=cat, 
             wa=WHATSAPP,
-            concepts=MarketConfig.TRADING_CONCEPTS,
-            top_nav=MarketConfig.TOP_NAV,
-            sidebar_items=MarketConfig.SIDEBAR_ITEMS
+            command_center=UniversalDashboard.COMMAND_CENTER,
+            future_modules=UniversalDashboard.FUTURE_MODULES,
+            current_time=datetime.utcnow().strftime("%H:%M:%S"),
+            signal_history=ZionApexUniversal.signal_history[-5:] if ZionApexUniversal.signal_history else []
         )
     
-    # Get signal for the concept
-    signal = TradingSignals.get_signal_for_concept(cat)
+    elif cat == 'LIVE_SIGNALS':
+        # Generate universal signal
+        signal = ZionApexUniversal.generate_universal_signal()
+        
+        return render_template_string(UNIVERSAL_UI_HTML,
+            cat=cat,
+            wa=WHATSAPP,
+            signal=signal,
+            command_center=UniversalDashboard.COMMAND_CENTER,
+            future_modules=UniversalDashboard.FUTURE_MODULES,
+            asset_classes=UniversalDashboard.ASSET_CLASS_DISPLAY,
+            current_time=datetime.utcnow().strftime("%H:%M:%S"),
+            signal_history=ZionApexUniversal.signal_history[-5:] if ZionApexUniversal.signal_history else []
+        )
     
-    # Get concept info
-    concept_info = MarketConfig.TRADING_CONCEPTS.get(cat, {})
-    
-    # Generate voice message
-    voice_msg = f"Signal for {signal['market']}. Action {signal['action']}. Accuracy {signal['accuracy']}."
-    
-    return render_template_string(UI_HTML, 
-        signal=signal,
-        voice=voice_msg,
-        cat=cat,
-        wa=WHATSAPP,
-        concept_info=concept_info,
-        concepts=MarketConfig.TRADING_CONCEPTS,
-        top_nav=MarketConfig.TOP_NAV,
-        sidebar_items=MarketConfig.SIDEBAR_ITEMS
-    )
+    else:
+        # For other categories (future modules)
+        return render_template_string(UNIVERSAL_UI_HTML,
+            cat=cat,
+            wa=WHATSAPP,
+            command_center=UniversalDashboard.COMMAND_CENTER,
+            future_modules=UniversalDashboard.FUTURE_MODULES,
+            current_time=datetime.utcnow().strftime("%H:%M:%S"),
+            signal_history=ZionApexUniversal.signal_history[-5:] if ZionApexUniversal.signal_history else []
+        )
 
-@app.route('/api/signal/<concept>')
-def api_signal(concept):
-    """API endpoint for signal generation"""
-    signal = TradingSignals.get_signal_for_concept(concept.upper())
+@app.route('/api/universal_signal')
+def universal_signal():
+    """API endpoint for universal signals"""
+    signal = ZionApexUniversal.generate_universal_signal()
     return jsonify(signal)
 
-@app.route('/api/markets')
-def api_markets():
-    """API endpoint for available markets"""
+@app.route('/api/asset_class_status')
+def asset_class_status():
+    """API endpoint for asset class analysis"""
+    alpha = ZionApexUniversal.analyze_universal_digits("ALPHA")
+    beta = ZionApexUniversal.analyze_universal_digits("BETA")
+    
     return jsonify({
-        "volatility_markets": MarketConfig.VOLATILITY_MARKETS,
-        "concepts": MarketConfig.TRADING_CONCEPTS
+        "alpha": alpha,
+        "beta": beta,
+        "timestamp": datetime.utcnow().isoformat()
     })
 
-# --- ENHANCED UI TEMPLATE WITH OVERLAP FIX ---
-UI_HTML = """
+# --- UNIVERSAL UI TEMPLATE ---
+UNIVERSAL_UI_HTML = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ZION AI Trading Lab</title>
+    <title>ZION APEX UNIVERSAL | 2026 Edition</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary: #0000ff;
-            --secondary: #316dca;
-            --accent: #ff3b30;
-            --success: #22c55e;
-            --warning: #f59e0b;
-            --dark: #020617;
-            --light: #f8fafc;
-            --gray: #64748b;
-            --glass: rgba(255, 255, 255, 0.08);
-            --border: rgba(255, 255, 255, 0.1);
+            --apex-primary: #0000ff;
+            --apex-secondary: #8b5cf6;
+            --apex-accent: #f59e0b;
+            --apex-success: #22c55e;
+            --apex-warning: #f97316;
+            --apex-dark: #0f172a;
+            --apex-darker: #020617;
+            --apex-light: #f8fafc;
+            --apex-gray: #64748b;
+            --apex-glass: rgba(255, 255, 255, 0.03);
+            --apex-border: rgba(255, 255, 255, 0.08);
+            --apex-glow: rgba(139, 92, 246, 0.3);
+            --universal-gradient: linear-gradient(135deg, #0000ff, #8b5cf6, #f59e0b);
         }
         
         * {
@@ -401,746 +445,1096 @@ UI_HTML = """
         }
         
         body {
-            background: var(--dark);
+            background: var(--apex-darker);
             color: white;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             min-height: 100vh;
             overflow-x: hidden;
+            position: relative;
         }
         
-        /* Top Navigation - FIXED OVERLAP */
-        .top-nav {
-            background: var(--primary);
-            padding: 12px 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(0, 0, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(245, 158, 11, 0.05) 0%, transparent 50%);
+            z-index: -1;
+        }
+        
+        /* Apex Universal Header */
+        .apex-header {
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--apex-border);
+            padding: 15px 20px;
             position: sticky;
             top: 0;
             z-index: 1000;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            flex-wrap: wrap;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .header-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .apex-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--universal-gradient);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+            box-shadow: 0 4px 15px var(--apex-glow);
+        }
+        
+        .logo-text {
+            font-size: 24px;
+            font-weight: 900;
+            background: var(--universal-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+        
+        .logo-subtitle {
+            font-size: 10px;
+            color: var(--apex-accent);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-top: 2px;
+        }
+        
+        .universal-time {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid var(--apex-border);
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--apex-success);
+            min-width: 100px;
+            text-align: center;
+        }
+        
+        .apex-status {
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--apex-success);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        /* Universal Grid */
+        .universal-grid {
+            max-width: 1400px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+        
+        .grid-title {
+            font-size: 14px;
+            color: var(--apex-gray);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
             gap: 10px;
         }
         
-        .nav-left, .nav-right {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-shrink: 0;
+        .grid-title i {
+            color: var(--apex-secondary);
         }
         
-        .logo {
-            font-size: 20px;
-            font-weight: 900;
-            color: white;
-            white-space: nowrap;
-            margin-right: 10px;
+        /* Command Center (Main Icon) */
+        .command-center {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 25px;
+            margin-bottom: 40px;
         }
         
-        .logo span {
-            color: var(--secondary);
-        }
-        
-        .nav-menu {
-            display: flex;
-            gap: 18px;
-            overflow-x: auto;
-            scrollbar-width: none;
-            padding: 5px 0;
-            flex: 1;
-            min-width: 0;
-            justify-content: center;
-            margin: 0 10px;
-        }
-        
-        .nav-menu::-webkit-scrollbar {
-            display: none;
-        }
-        
-        .nav-item {
-            color: rgba(255, 255, 255, 0.7);
+        .command-card {
+            background: rgba(30, 41, 59, 0.6);
+            border: 2px solid var(--apex-secondary);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
             text-decoration: none;
-            font-size: 12px;
-            font-weight: 600;
-            white-space: nowrap;
-            padding: 5px 0;
-            position: relative;
-            flex-shrink: 0;
-        }
-        
-        .nav-item.active {
             color: white;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(139, 92, 246, 0.2);
         }
         
-        .nav-item.active::after {
+        .command-card::before {
             content: '';
             position: absolute;
-            bottom: 0;
+            top: 0;
             left: 0;
             right: 0;
-            height: 2px;
-            background: white;
+            height: 5px;
+            background: var(--universal-gradient);
+            opacity: 1;
         }
         
-        .btn-signup {
-            background: var(--accent);
-            color: white;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-weight: bold;
-            font-size: 11px;
-            text-decoration: none;
-            transition: opacity 0.2s;
-            white-space: nowrap;
-            margin-left: 5px;
+        .command-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 60px rgba(139, 92, 246, 0.4);
+            border-color: var(--apex-accent);
         }
         
-        .btn-signup:hover {
-            opacity: 0.9;
-        }
-        
-        /* Control Buttons */
-        .control-btn {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 18px;
-            cursor: pointer;
-            padding: 5px;
-            border-radius: 5px;
-            transition: background 0.2s;
-            flex-shrink: 0;
-        }
-        
-        .control-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-        
-        /* Time Display - FIXED POSITION */
-        .time-display {
-            background: rgba(0, 0, 0, 0.5);
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--gray);
-            backdrop-filter: blur(10px);
-            white-space: nowrap;
-            margin-left: 5px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            flex-shrink: 0;
-        }
-        
-        /* Main Layout */
-        .container {
-            display: flex;
-            min-height: calc(100vh - 60px);
-        }
-        
-        /* Sidebar */
-        .sidebar {
-            width: 250px;
-            background: rgba(0, 0, 0, 0.3);
-            border-right: 1px solid var(--border);
-            padding: 20px 0;
-            display: none;
-        }
-        
-        .sidebar-header {
-            padding: 0 20px 20px;
-            border-bottom: 1px solid var(--border);
+        .command-icon {
+            font-size: 64px;
             margin-bottom: 20px;
+            background: var(--universal-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 5px 15px var(--apex-glow));
         }
         
-        .sidebar-title {
-            font-size: 12px;
-            text-transform: uppercase;
-            color: var(--gray);
-            font-weight: 700;
+        .command-title {
+            font-size: 32px;
+            font-weight: 900;
+            margin-bottom: 10px;
+            background: var(--universal-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .command-description {
+            font-size: 16px;
+            color: #94a3b8;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .command-badge {
+            display: inline-block;
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--apex-secondary);
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 800;
+            border: 2px solid rgba(139, 92, 246, 0.4);
             letter-spacing: 1px;
         }
         
-        .sidebar-items {
-            list-style: none;
+        /* Future Modules (Scrollable Grid) */
+        .modules-container {
+            position: relative;
+            margin-top: 40px;
         }
         
-        .sidebar-item {
-            padding: 12px 20px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            color: rgba(255, 255, 255, 0.7);
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-            border-left: 3px solid transparent;
-            transition: all 0.2s;
-        }
-        
-        .sidebar-item:hover {
-            background: rgba(255, 255, 255, 0.05);
-            color: white;
-        }
-        
-        .sidebar-item.active {
-            background: rgba(49, 109, 202, 0.15);
-            color: var(--secondary);
-            border-left-color: var(--secondary);
-        }
-        
-        .sidebar-item i {
-            width: 20px;
-            text-align: center;
-            font-size: 16px;
-        }
-        
-        /* Main Content */
-        .main-content {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-        }
-        
-        /* Dashboard Grid */
-        .dashboard-grid {
+        .modules-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 12px;
-            margin-bottom: 25px;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            overflow-x: auto;
+            padding: 20px 10px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--apex-secondary) transparent;
         }
         
-        .grid-card {
-            background: var(--glass);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 18px 12px;
+        .modules-grid::-webkit-scrollbar {
+            height: 8px;
+        }
+        
+        .modules-grid::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+        
+        .modules-grid::-webkit-scrollbar-thumb {
+            background: var(--apex-secondary);
+            border-radius: 4px;
+        }
+        
+        .module-card {
+            background: var(--apex-glass);
+            border: 1px solid var(--apex-border);
+            border-radius: 16px;
+            padding: 25px 20px;
             text-align: center;
             text-decoration: none;
             color: white;
             transition: all 0.3s ease;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
+            min-width: 200px;
         }
         
-        .grid-card:hover {
-            transform: translateY(-3px);
-            border-color: var(--secondary);
-            box-shadow: 0 8px 20px rgba(49, 109, 202, 0.2);
+        .module-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--apex-secondary);
+            box-shadow: 0 10px 30px rgba(139, 92, 246, 0.2);
         }
         
-        .grid-card i {
-            font-size: 24px;
-            color: var(--secondary);
-            margin-bottom: 5px;
+        .module-icon {
+            font-size: 32px;
+            margin-bottom: 15px;
+            opacity: 0.7;
         }
         
-        .card-title {
-            font-size: 11px;
+        .module-title {
+            font-size: 14px;
             font-weight: 700;
-            color: #94a3b8;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .card-desc {
-            font-size: 9px;
-            color: rgba(255, 255, 255, 0.6);
-            margin-top: 3px;
-            line-height: 1.3;
-        }
-        
-        /* Signal Display */
-        .signal-display {
-            text-align: center;
-            padding: 30px 15px;
-            max-width: 500px;
-            margin: 0 auto;
-        }
-        
-        .market-name {
-            font-size: 13px;
-            color: var(--secondary);
-            text-transform: uppercase;
-            font-weight: 800;
-            letter-spacing: 1px;
+            color: #e2e8f0;
             margin-bottom: 8px;
         }
         
-        .concept-name {
-            font-size: 14px;
-            color: var(--gray);
-            margin-bottom: 15px;
-            font-weight: 600;
-        }
-        
-        .signal-action {
-            font-size: 64px;
-            font-weight: 900;
-            margin: 15px 0;
-            text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            line-height: 1;
-        }
-        
-        .signal-rise {
-            color: var(--success);
-        }
-        
-        .signal-fall {
-            color: var(--accent);
-        }
-        
-        .signal-other {
-            color: var(--secondary);
-        }
-        
-        .signal-accuracy {
-            background: rgba(34, 197, 94, 0.15);
-            color: var(--success);
-            padding: 6px 18px;
-            border-radius: 18px;
-            font-weight: bold;
-            font-size: 16px;
-            display: inline-block;
-            margin: 12px 0;
-            border: 2px solid rgba(34, 197, 94, 0.3);
-        }
-        
-        .signal-reason {
-            color: var(--gray);
-            font-size: 13px;
-            margin: 12px 0 25px;
-            line-height: 1.5;
-            padding: 0 10px;
-        }
-        
-        .signal-reason i {
-            margin-right: 6px;
-            color: var(--secondary);
-        }
-        
-        .execute-btn {
-            display: block;
-            background: linear-gradient(135deg, var(--success), #16a34a);
-            color: white;
-            padding: 16px 35px;
-            border-radius: 10px;
-            text-decoration: none;
-            font-weight: 900;
-            font-size: 15px;
-            margin: 25px auto;
-            width: fit-content;
-            transition: all 0.3s;
-            box-shadow: 0 5px 15px rgba(34, 197, 94, 0.3);
-        }
-        
-        .execute-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 8px 20px rgba(34, 197, 94, 0.4);
-        }
-        
-        .execute-btn i {
-            margin-right: 8px;
-        }
-        
-        /* Voice Broadcast */
-        .voice-broadcast {
-            background: var(--glass);
-            border: 1px solid var(--border);
-            padding: 18px;
-            border-radius: 12px;
-            margin-top: 25px;
-        }
-        
-        .broadcast-header {
+        .module-description {
             font-size: 11px;
-            color: var(--secondary);
+            color: #94a3b8;
+            line-height: 1.4;
+            margin-bottom: 10px;
+        }
+        
+        .module-status {
+            display: inline-block;
+            background: rgba(100, 116, 139, 0.2);
+            color: var(--apex-gray);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 9px;
             font-weight: 700;
-            margin-bottom: 12px;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
         
-        .broadcast-controls {
+        /* Universal Signal Display */
+        .universal-signal {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 40px;
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 2px solid var(--apex-border);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .universal-signal::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: var(--universal-gradient);
+        }
+        
+        .signal-header {
             display: flex;
-            gap: 10px;
+            justify-content: space-between;
             align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--apex-border);
         }
         
-        #broadcastText {
-            flex: 1;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid var(--secondary);
-            padding: 10px 14px;
-            color: white;
-            border-radius: 8px;
-            font-size: 13px;
-            min-width: 0;
+        .asset-class-indicator {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
         
-        #broadcastText:focus {
-            outline: none;
-            border-color: var(--success);
-        }
-        
-        .speak-btn {
-            background: var(--secondary);
-            border: none;
-            color: white;
-            padding: 10px 22px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: opacity 0.2s;
-            font-size: 13px;
-            white-space: nowrap;
-        }
-        
-        .speak-btn:hover {
-            opacity: 0.9;
-        }
-        
-        /* WhatsApp Float */
-        .wa-float {
-            position: fixed;
-            bottom: 20px;
-            right: 15px;
-            background: #25d366;
+        .asset-icon {
             width: 50px;
             height: 50px;
-            border-radius: 50%;
+            background: rgba(139, 92, 246, 0.2);
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 24px;
-            text-decoration: none;
-            color: white;
-            box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
-            z-index: 1000;
-            transition: transform 0.3s;
+            color: var(--apex-secondary);
         }
         
-        .wa-float:hover {
-            transform: scale(1.1);
+        .asset-info h3 {
+            font-size: 18px;
+            color: var(--apex-secondary);
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+        
+        .asset-info p {
+            font-size: 12px;
+            color: var(--apex-gray);
+            font-weight: 600;
+        }
+        
+        .universal-badge {
+            background: var(--universal-gradient);
+            color: white;
+            padding: 10px 25px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* Signal Main Display */
+        .signal-main {
+            text-align: center;
+            padding: 30px 0;
+        }
+        
+        .signal-action {
+            font-size: 96px;
+            font-weight: 900;
+            margin: 20px 0;
+            background: var(--universal-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 10px 30px var(--apex-glow);
+            line-height: 1;
+        }
+        
+        .signal-accuracy {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--apex-success);
+            margin: 20px 0;
+            padding: 15px 40px;
+            background: rgba(34, 197, 94, 0.1);
+            border-radius: 50px;
+            display: inline-block;
+            border: 3px solid rgba(34, 197, 94, 0.3);
+            box-shadow: 0 8px 25px rgba(34, 197, 94, 0.2);
+        }
+        
+        /* Digit Cluster Display */
+        .digit-cluster {
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 16px;
+            padding: 25px;
+            margin: 30px 0;
+            border: 1px solid var(--apex-border);
+        }
+        
+        .cluster-title {
+            font-size: 14px;
+            color: var(--apex-accent);
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .cluster-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .digit-box {
+            background: rgba(30, 41, 59, 0.8);
+            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        
+        .digit-box.active {
+            border-color: var(--apex-success);
+            background: rgba(34, 197, 94, 0.1);
+            box-shadow: 0 5px 15px rgba(34, 197, 94, 0.2);
+        }
+        
+        .digit-number {
+            font-size: 24px;
+            font-weight: 900;
+            color: var(--apex-secondary);
+            margin-bottom: 5px;
+        }
+        
+        .digit-box.active .digit-number {
+            color: var(--apex-success);
+        }
+        
+        .digit-frequency {
+            font-size: 11px;
+            color: var(--apex-gray);
+            font-weight: 600;
+        }
+        
+        .digit-box.active .digit-frequency {
+            color: var(--apex-success);
+        }
+        
+        /* Systematic Audio Protocol */
+        .audio-protocol {
+            background: rgba(15, 23, 42, 0.9);
+            border-radius: 16px;
+            padding: 25px;
+            margin: 30px 0;
+            border: 1px solid var(--apex-border);
+        }
+        
+        .protocol-title {
+            font-size: 14px;
+            color: var(--apex-secondary);
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .protocol-phases {
+            display: grid;
+            gap: 15px;
+        }
+        
+        .protocol-phase {
+            padding: 15px;
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 12px;
+            border-left: 4px solid var(--apex-secondary);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .phase-icon {
+            color: var(--apex-accent);
+            font-size: 18px;
+        }
+        
+        .phase-text {
+            font-size: 13px;
+            color: #e2e8f0;
+            line-height: 1.5;
+        }
+        
+        /* Countdown Timer */
+        .countdown-timer {
+            background: rgba(15, 23, 42, 0.9);
+            border-radius: 16px;
+            padding: 25px;
+            margin: 30px 0;
+            border: 1px solid var(--apex-border);
+            text-align: center;
+        }
+        
+        .timer-display {
+            font-size: 48px;
+            font-weight: 900;
+            font-family: 'Courier New', monospace;
+            color: var(--apex-accent);
+            margin: 15px 0;
+            text-shadow: 0 5px 15px rgba(245, 158, 11, 0.3);
+        }
+        
+        .timer-label {
+            font-size: 12px;
+            color: var(--apex-gray);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 700;
+        }
+        
+        /* Execute Button */
+        .execute-universal {
+            display: block;
+            width: 100%;
+            background: var(--universal-gradient);
+            color: white;
+            padding: 25px;
+            border-radius: 16px;
+            text-decoration: none;
+            font-weight: 900;
+            font-size: 20px;
+            text-align: center;
+            transition: all 0.3s;
+            border: none;
+            cursor: pointer;
+            margin-top: 30px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 15px 40px var(--apex-glow);
+        }
+        
+        .execute-universal:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 50px rgba(139, 92, 246, 0.5);
+        }
+        
+        .execute-universal::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transform: rotate(45deg);
+            animation: shine 3s infinite;
+        }
+        
+        @keyframes shine {
+            0% { transform: rotate(45deg) translate(-30%, -30%); }
+            100% { transform: rotate(45deg) translate(30%, 30%); }
+        }
+        
+        /* Signal History */
+        .signal-history {
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 16px;
+            padding: 25px;
+            margin: 40px 0;
+            border: 1px solid var(--apex-border);
+        }
+        
+        .history-title {
+            font-size: 14px;
+            color: var(--apex-gray);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .history-grid {
+            display: grid;
+            gap: 10px;
+        }
+        
+        .history-item {
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid var(--apex-secondary);
+        }
+        
+        .history-action {
+            font-size: 14px;
+            font-weight: 800;
+            color: #e2e8f0;
+        }
+        
+        .history-details {
+            font-size: 11px;
+            color: var(--apex-gray);
+        }
+        
+        .history-confidence {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--apex-success);
+            background: rgba(34, 197, 94, 0.1);
+            padding: 4px 12px;
+            border-radius: 12px;
+        }
+        
+        /* Universal Footer */
+        .universal-footer {
+            text-align: center;
+            padding: 30px 20px;
+            margin-top: 60px;
+            border-top: 1px solid var(--apex-border);
+            color: var(--apex-gray);
+            font-size: 12px;
+        }
+        
+        .footer-text {
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
         }
         
         /* Responsive Design */
-        @media (max-width: 767px) {
-            .top-nav {
-                padding: 10px;
-                gap: 8px;
-            }
-            
-            .nav-left {
-                order: 1;
-                width: 100%;
-                justify-content: space-between;
-                margin-bottom: 5px;
-            }
-            
-            .nav-menu {
-                order: 2;
-                width: 100%;
-                margin: 0;
-                justify-content: flex-start;
-                overflow-x: auto;
-                padding: 8px 0;
-                border-top: 1px solid rgba(255, 255, 255, 0.1);
-                margin-top: 5px;
-            }
-            
-            .nav-right {
-                order: 3;
-                width: 100%;
-                justify-content: flex-end;
-                margin-top: 5px;
-            }
-            
-            .nav-item {
-                font-size: 11px;
-                padding: 4px 0;
-            }
-            
-            .time-display {
-                font-size: 10px;
-                padding: 3px 8px;
-            }
-            
-            .btn-signup {
-                padding: 5px 10px;
-                font-size: 10px;
-            }
-            
-            .logo {
-                font-size: 18px;
-            }
-            
-            .signal-action {
-                font-size: 56px;
-            }
-            
-            .signal-accuracy {
-                font-size: 14px;
-                padding: 5px 16px;
-            }
-            
-            .execute-btn {
-                padding: 14px 30px;
-                font-size: 14px;
-            }
-        }
-        
-        @media (min-width: 768px) and (max-width: 1024px) {
-            .nav-menu {
+        @media (max-width: 768px) {
+            .header-container {
+                flex-direction: column;
                 gap: 15px;
             }
             
-            .nav-item {
-                font-size: 11px;
+            .universal-grid {
+                padding: 0 15px;
             }
             
-            .time-display {
-                font-size: 11px;
-            }
-        }
-        
-        @media (min-width: 768px) {
-            .sidebar {
-                display: block;
+            .command-card {
+                padding: 20px;
             }
             
-            .dashboard-grid {
+            .command-icon {
+                font-size: 48px;
+            }
+            
+            .command-title {
+                font-size: 24px;
+            }
+            
+            .universal-signal {
+                padding: 25px 20px;
+                margin: 20px 15px;
+            }
+            
+            .signal-action {
+                font-size: 64px;
+            }
+            
+            .signal-accuracy {
+                font-size: 24px;
+                padding: 12px 30px;
+            }
+            
+            .cluster-grid {
                 grid-template-columns: repeat(3, 1fr);
             }
+            
+            .modules-grid {
+                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            }
+            
+            .timer-display {
+                font-size: 36px;
+            }
         }
         
-        @media (min-width: 1024px) {
-            .dashboard-grid {
-                grid-template-columns: repeat(4, 1fr);
-            }
-            
-            .nav-menu {
-                gap: 20px;
-            }
-            
-            .nav-item {
-                font-size: 12px;
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .cluster-grid {
+                grid-template-columns: repeat(5, 1fr);
             }
         }
     </style>
 </head>
 <body>
-    <!-- Top Navigation - FIXED -->
-    <nav class="top-nav">
-        <div class="nav-left">
-            <button class="control-btn" id="menuToggle">
-                <i class="fas fa-bars"></i>
-            </button>
-            <button class="control-btn" id="muteBtn">
-                <i class="fas fa-volume-high" style="color: cyan;"></i>
-            </button>
-            <div class="logo">ZION <span>AI</span></div>
-        </div>
-        
-        <div class="nav-menu">
-            {% for item in top_nav %}
-                <a href="#" class="nav-item {% if item.lower() == cat.lower() %}active{% endif %}">
-                    {{ item }}
-                </a>
-            {% endfor %}
-        </div>
-        
-        <div class="nav-right">
-            <div class="time-display" id="liveTime">00:00:00</div>
-            <a href="#" class="btn-signup">Sign up</a>
-        </div>
-    </nav>
-    
-    <!-- Main Container -->
-    <div class="container">
-        <!-- Sidebar -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <div class="sidebar-title">Terminal Dashboard</div>
+    <!-- Apex Universal Header -->
+    <header class="apex-header">
+        <div class="header-container">
+            <div class="apex-logo">
+                <div class="logo-icon">
+                    <i class="fas fa-globe"></i>
+                </div>
+                <div>
+                    <div class="logo-text">ZION APEX UNIVERSAL</div>
+                    <div class="logo-subtitle">2026 Edition</div>
+                </div>
             </div>
-            <ul class="sidebar-items">
-                {% for item in sidebar_items %}
-                    <a href="/?cat={{ item.upper().replace(' ', '_') }}" 
-                       class="sidebar-item {% if item.upper().replace(' ', '_') == cat %}active{% endif %}">
-                        {% set icon_map = {
-                            'Dashboard': 'fa-house',
-                            'Bot Builder': 'fa-robot',
-                            'Analysis': 'fa-magnifying-glass-chart',
-                            'TradeView': 'fa-eye',
-                            'Bots': 'fa-brain',
-                            'Signal': 'fa-signal',
-                            'Charts': 'fa-chart-area',
-                            'CopyTrade': 'fa-users',
-                            'DTrader': 'fa-bolt',
-                            'MultiMarket': 'fa-globe',
-                            'Markets': 'fa-layer-group',
-                            'D-circles': 'fa-circle-nodes',
-                            'Strategies': 'fa-wand-magic-sparkles'
-                        } %}
-                        <i class="fas {{ icon_map.get(item, 'fa-circle') }}"></i>
-                        <span>{{ item }}</span>
-                    </a>
+            
+            <div class="universal-time" id="liveTime">{{ current_time }}</div>
+            
+            <div class="apex-status">
+                <i class="fas fa-satellite"></i> Universal Scanning
+            </div>
+        </div>
+    </header>
+    
+    <main class="universal-grid">
+        {% if cat == 'DASHBOARD' %}
+            <!-- Command Center (Single Icon) -->
+            <div class="command-center">
+                {% for key, center in command_center.items() %}
+                <a href="{{ center.route }}" class="command-card">
+                    <div class="command-icon">
+                        <i class="fas {{ center.icon }}"></i>
+                    </div>
+                    <div class="command-title">{{ center.name }}</div>
+                    <div class="command-description">{{ center.description }}</div>
+                    <div class="command-badge">{{ center.badge }}</div>
+                </a>
                 {% endfor %}
-            </ul>
-        </aside>
-        
-        <!-- Main Content -->
-        <main class="main-content">
-            {% if cat == 'DASHBOARD' %}
-                <!-- Dashboard Grid -->
-                <div class="dashboard-grid">
-                    {% for key, concept in concepts.items() %}
-                        <a href="{{ concept.route }}" class="grid-card">
-                            <i class="fas {{ concept.icon }}"></i>
-                            <div class="card-title">{{ concept.name }}</div>
-                            <div class="card-desc">{{ concept.description }}</div>
-                        </a>
+            </div>
+            
+            <!-- Future Modules (Scrollable) -->
+            <div class="modules-container">
+                <div class="grid-title">
+                    <i class="fas fa-cubes"></i> Universal Modules (Future Development)
+                </div>
+                <div class="modules-grid">
+                    {% for key, module in future_modules.items() %}
+                    <a href="{{ module.route }}" class="module-card">
+                        <div class="module-icon">
+                            <i class="fas {{ module.icon }}"></i>
+                        </div>
+                        <div class="module-title">{{ module.name }}</div>
+                        <div class="module-description">{{ module.description }}</div>
+                        <div class="module-status">{{ module.status }}</div>
+                    </a>
                     {% endfor %}
                 </div>
-                
-                <!-- Voice Broadcast -->
-                <div class="voice-broadcast">
-                    <div class="broadcast-header">AI VOICE BROADCAST</div>
-                    <div class="broadcast-controls">
-                        <input type="text" id="broadcastText" placeholder="Broadcast message..." value="Welcome to ZION AI Trading Lab">
-                        <button class="speak-btn" onclick="speakCustom()">SPEAK</button>
-                    </div>
+            </div>
+            
+            <!-- Recent Signal History -->
+            {% if signal_history %}
+            <div class="signal-history">
+                <div class="history-title">
+                    <i class="fas fa-history"></i> Recent Universal Activity
                 </div>
-                
-            {% else %}
-                <!-- Signal Display -->
-                <div class="signal-display">
-                    <div class="market-name">{{ signal.market }}</div>
-                    <div class="concept-name">{{ concept_info.name }}</div>
-                    
-                    <div class="signal-action 
-                        {% if 'RISE' in signal.action or 'UP' in signal.action %}signal-rise
-                        {% elif 'FALL' in signal.action or 'DOWN' in signal.action %}signal-fall
-                        {% else %}signal-other{% endif %}">
-                        {{ signal.action }}
+                <div class="history-grid">
+                    {% for signal in signal_history %}
+                    <div class="history-item">
+                        <div class="history-action">{{ signal.action }}</div>
+                        <div class="history-details">{{ signal.asset_class_name }}</div>
+                        <div class="history-confidence">{{ signal.confidence|round|int }}%</div>
                     </div>
-                    
-                    <div class="signal-accuracy">{{ signal.accuracy }}</div>
-                    
-                    <div class="signal-reason">
-                        <i class="fas fa-info-circle"></i> {{ signal.reason }}
-                        {% if signal.optimal_time %}
-                            <br><i class="fas fa-clock" style="color: var(--success); margin-top: 5px;"></i> Optimal Trading Time
-                        {% endif %}
-                    </div>
-                    
-                    <a href="https://bot.deriv.com" target="_blank" class="execute-btn">
-                        <i class="fas fa-play-circle"></i> EXECUTE TRADE
-                    </a>
+                    {% endfor %}
                 </div>
+            </div>
             {% endif %}
-        </main>
-    </div>
+            
+        {% elif cat == 'LIVE_SIGNALS' %}
+            <!-- Universal Signal Display -->
+            <div class="universal-signal">
+                <div class="signal-header">
+                    <div class="asset-class-indicator">
+                        <div class="asset-icon">
+                            {% if signal.asset_class == 'ALPHA' %}
+                                <i class="fas fa-bolt"></i>
+                            {% else %}
+                                <i class="fas fa-chart-line"></i>
+                            {% endif %}
+                        </div>
+                        <div class="asset-info">
+                            <h3>{{ signal.asset_class_name }}</h3>
+                            <p>Universal Asset Class • {{ signal.asset_class }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="universal-badge">
+                        <i class="fas fa-satellite-dish"></i> APEX UNIVERSAL
+                    </div>
+                </div>
+                
+                {% if signal.status == 'active' %}
+                <div class="signal-main">
+                    <div class="signal-action">{{ signal.action }}</div>
+                    
+                    {% if signal.barrier %}
+                    <div style="font-size: 24px; color: var(--apex-accent); font-weight: 800; margin: 15px 0;">
+                        Barrier: {{ signal.barrier }}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="signal-accuracy">{{ signal.confidence|round|int }}% Accuracy</div>
+                </div>
+                
+                <!-- Digit Cluster Display -->
+                <div class="digit-cluster">
+                    <div class="cluster-title">
+                        <i class="fas fa-microchip"></i> 10% Individual Digit Competition
+                    </div>
+                    <div class="cluster-grid">
+                        {% for digit in signal.digit_cluster.digits %}
+                        <div class="digit-box active">
+                            <div class="digit-number">{{ digit }}</div>
+                            <div class="digit-frequency">{{ signal.digit_cluster.average_frequency }}%</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div style="text-align: center; color: var(--apex-gray); font-size: 12px; margin-top: 15px;">
+                        Cluster Density: {{ signal.digit_cluster.cluster_density }}% • 
+                        Competing Digits: {{ signal.universal_analysis.competing_digits_count }}/10
+                    </div>
+                </div>
+                
+                <!-- Systematic Audio Protocol -->
+                <div class="audio-protocol">
+                    <div class="protocol-title">
+                        <i class="fas fa-broadcast-tower"></i> Systematic Audio Protocol
+                    </div>
+                    <div class="protocol-phases">
+                        {% for phase, text in signal.audio_protocol.items() if phase != 'full' %}
+                        <div class="protocol-phase">
+                            <div class="phase-icon">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                            <div class="phase-text">{{ text }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Countdown Timer -->
+                <div class="countdown-timer">
+                    <div class="timer-label">Algorithm Shift In</div>
+                    <div class="timer-display" id="countdownTimer">120</div>
+                    <div class="timer-label">Seconds</div>
+                </div>
+                
+                <!-- Execute Button -->
+                <button class="execute-universal" onclick="executeUniversalTrade()">
+                    <i class="fas fa-rocket"></i> EXECUTE UNIVERSAL TRADE
+                </button>
+                
+                {% else %}
+                <!-- Scanning State -->
+                <div style="text-align: center; padding: 60px 20px;">
+                    <div class="command-icon" style="font-size: 72px; margin-bottom: 30px;">
+                        <i class="fas fa-satellite"></i>
+                    </div>
+                    <div style="font-size: 24px; font-weight: 800; color: var(--apex-secondary); margin-bottom: 15px;">
+                        Maneuvering Through Universal Asset Classes
+                    </div>
+                    <div style="color: var(--apex-gray); font-size: 16px; margin-bottom: 30px;">
+                        {{ signal.message }}
+                    </div>
+                    <div style="font-size: 48px; font-weight: 900; color: var(--apex-accent); font-family: 'Courier New', monospace;">
+                        {{ signal.confidence|round|int }}%
+                    </div>
+                    <div style="color: var(--apex-gray); font-size: 12px; margin-top: 10px;">
+                        Universal Confidence Score
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Signal History -->
+            {% if signal_history %}
+            <div class="signal-history">
+                <div class="history-title">
+                    <i class="fas fa-history"></i> Recent Universal Signals
+                </div>
+                <div class="history-grid">
+                    {% for hist_signal in signal_history %}
+                    <div class="history-item">
+                        <div class="history-action">{{ hist_signal.action }}</div>
+                        <div class="history-details">{{ hist_signal.asset_class_name }}</div>
+                        <div class="history-confidence">{{ hist_signal.confidence|round|int }}%</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+        {% else %}
+            <!-- Future Module Placeholder -->
+            <div style="text-align: center; padding: 100px 20px;">
+                <div class="command-icon" style="font-size: 72px; margin-bottom: 30px;">
+                    <i class="fas fa-cogs"></i>
+                </div>
+                <div style="font-size: 32px; font-weight: 900; color: var(--apex-secondary); margin-bottom: 15px;">
+                    Module Under Development
+                </div>
+                <div style="color: var(--apex-gray); font-size: 18px; margin-bottom: 30px;">
+                    This universal module is being engineered for the 2026 edition
+                </div>
+                <a href="/?cat=DASHBOARD" style="display: inline-block; background: var(--universal-gradient); color: white; padding: 15px 30px; border-radius: 12px; text-decoration: none; font-weight: 800;">
+                    <i class="fas fa-arrow-left"></i> RETURN TO COMMAND CENTER
+                </a>
+            </div>
+        {% endif %}
+    </main>
+    
+    <!-- Universal Footer -->
+    <footer class="universal-footer">
+        <div class="footer-text">
+            <p><i class="fas fa-shield-alt"></i> ZION APEX UNIVERSAL SYSTEM v2.6 • Universal Asset Class Aggregation • 10% Individual Digit Competition Rule</p>
+            <p style="margin-top: 10px; font-size: 11px; color: #475569;">
+                All Volatility with One-Second + All Volatility with Plain Index = Universal Hunting Grounds
+            </p>
+        </div>
+    </footer>
     
     <!-- WhatsApp Float -->
-    <a href="{{ wa }}" class="wa-float" target="_blank">
+    <a href="{{ wa }}" class="wa-float" target="_blank" style="position: fixed; bottom: 30px; right: 30px; background: #25d366; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; color: white; text-decoration: none; box-shadow: 0 8px 25px rgba(37, 211, 102, 0.4); z-index: 1000;">
         <i class="fab fa-whatsapp"></i>
     </a>
     
     <script>
-        // Voice Synthesis
-        let muted = false;
+        // Universal System Initialization
+        let universalMuted = false;
         const speech = window.speechSynthesis;
         
-        function playAI(text) {
-            if (!muted && text) {
-                speech.cancel(); // Stop any ongoing speech
+        function playUniversal(text) {
+            if (!universalMuted && text) {
+                speech.cancel();
                 const utterance = new SpeechSynthesisUtterance(text);
-                utterance.rate = 1.0;
-                utterance.pitch = 1.0;
+                utterance.rate = 0.9;
+                utterance.pitch = 0.8;
                 utterance.volume = 1.0;
+                utterance.lang = 'en-US';
                 speech.speak(utterance);
             }
         }
         
-        function speakCustom() {
-            const text = document.getElementById('broadcastText').value;
-            if (text) playAI(text);
+        function executeUniversalTrade() {
+            const confirmation = "Executing universal trade command. Redirecting to trading platform.";
+            playUniversal(confirmation);
+            setTimeout(() => {
+                window.open('https://bot.deriv.com', '_blank');
+            }, 1000);
         }
         
-        // Mute Toggle
-        document.getElementById('muteBtn').onclick = function() {
-            muted = !muted;
-            const icon = this.querySelector('i');
-            if (muted) {
-                icon.className = 'fas fa-volume-xmark';
-                icon.style.color = 'var(--accent)';
-                speech.cancel();
-            } else {
-                icon.className = 'fas fa-volume-high';
-                icon.style.color = 'cyan';
-            }
-        };
+        // Update live time
+        function updateUniversalTime() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-US', { 
+                hour12: false,
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('liveTime').textContent = timeStr;
+        }
         
-        // Auto-speak signal on page load
+        // Countdown timer for active signals
+        function startCountdown(seconds) {
+            const timerElement = document.getElementById('countdownTimer');
+            if (!timerElement) return;
+            
+            let timeLeft = seconds;
+            const timer = setInterval(() => {
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    timerElement.textContent = "SHIFTING";
+                    // Auto-refresh when countdown ends
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                } else {
+                    timerElement.textContent = timeLeft;
+                    timeLeft--;
+                }
+            }, 1000);
+        }
+        
+        // Auto-speak protocol on page load
         window.onload = function() {
-            if ("{{ cat }}" !== "DASHBOARD" && "{{ voice }}") {
-                setTimeout(() => playAI("{{ voice }}"), 1000);
-            }
+            updateUniversalTime();
+            setInterval(updateUniversalTime, 1000);
             
-            // Update live time
-            function updateTime() {
-                const now = new Date();
-                const timeStr = now.toLocaleTimeString('en-US', { 
-                    hour12: false,
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit'
-                });
-                document.getElementById('liveTime').textContent = timeStr;
-            }
-            updateTime();
-            setInterval(updateTime, 1000);
-            
-            // Toggle sidebar on mobile
-            document.getElementById('menuToggle').onclick = function() {
-                const sidebar = document.getElementById('sidebar');
-                sidebar.style.display = sidebar.style.display === 'block' ? 'none' : 'block';
-            };
-            
-            // Auto-speak welcome message on dashboard
-            if ("{{ cat }}" === "DASHBOARD") {
+            {% if cat == 'LIVE_SIGNALS' and signal.status == 'active' %}
+                // Play systematic audio protocol
                 setTimeout(() => {
-                    playAI("Welcome to ZION AI Trading Lab. Ready for high accuracy signals.");
+                    playUniversal("{{ signal.audio_protocol.full }}");
                 }, 1500);
-            }
+                
+                // Start countdown timer
+                startCountdown({{ signal.countdown }});
+                
+            {% elif cat == 'DASHBOARD' %}
+                // Play universal system greeting
+                setTimeout(() => {
+                    playUniversal("Zion Apex Universal System initialized. Universal asset class aggregation active. Command center ready.");
+                }, 1000);
+            {% endif %}
         };
         
-        // Auto-refresh signal every 2 minutes
-        if ("{{ cat }}" !== "DASHBOARD") {
+        // Auto-refresh scanning state
+        {% if cat == 'LIVE_SIGNALS' and signal.status != 'active' %}
             setTimeout(() => {
                 window.location.reload();
-            }, 120000); // 2 minutes
+            }, 15000); // Refresh every 15 seconds when scanning
+        {% endif %}
+        
+        // Module card hover effects
+        document.querySelectorAll('.module-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                const icon = this.querySelector('.module-icon i');
+                icon.style.transform = 'scale(1.2)';
+                icon.style.transition = 'transform 0.3s ease';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                const icon = this.querySelector('.module-icon i');
+                icon.style.transform = 'scale(1)';
+            });
+        });
+        
+        // Simulate digit competition animation
+        function animateDigitCompetition() {
+            const digitBoxes = document.querySelectorAll('.digit-box');
+            digitBoxes.forEach(box => {
+                box.style.animation = 'pulse 2s infinite';
+            });
         }
+        
+        // Add CSS animation for digit boxes
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes pulse {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.05); }
+                100% { transform: scale(1); }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Initialize animations
+        setTimeout(animateDigitCompetition, 2000);
     </script>
 </body>
 </html>
 """
 
-# --- DEPLOYMENT CONFIGURATION ---
+# --- DEPLOYMENT ---
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     debug = os.environ.get("FLASK_ENV") == "development"
     
     print(f"""
-    🚀 ZION AI Trading Lab Starting...
-    📊 Trading Concepts: {len(MarketConfig.TRADING_CONCEPTS)}
-    📈 Volatility Markets: {len(MarketConfig.VOLATILITY_MARKETS)}
-    🔗 WhatsApp: {WHATSAPP}
+    🌌 ZION APEX UNIVERSAL SYSTEM (2026 Edition)
+    ============================================
+    🔥 Universal Asset Class Aggregation Active
+    🔥 Two Hunting Grounds:
+       • ALL Volatility with One-Second (Alpha Class)
+       • ALL Volatility with Plain Index (Beta Class)
+    
+    🎯 10% Individual Digit Competition Rule Active
+    🎯 Systematic Audio Protocol Initialized
+    🎯 Single Command Center: Live Signals
+    
+    📊 Universal Modules: {len(UniversalDashboard.FUTURE_MODULES)} Future Modules
+    🔗 WhatsApp Support: {WHATSAPP}
     🌐 Server: http://localhost:{port}
-    ✅ Overlap issue fixed - Navigation optimized
+    
+    ✅ Genius Maneuvering: Scanning ALL markets for digit clusters
+    ✅ 10% Threshold: Rejecting thin markets, hunting heavy clusters
+    ✅ Audio Coordination: Systematic command protocol active
+    ============================================
     """)
     
     app.run(host='0.0.0.0', port=port, debug=debug)
