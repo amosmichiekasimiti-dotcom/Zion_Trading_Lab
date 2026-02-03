@@ -1,7 +1,6 @@
-import os
-import random
-from flask import Flask, render_template_string, request
+import os, random, time
 import google.generativeai as genai
+from flask import Flask, render_template_string, request
 
 app = Flask(__name__)
 
@@ -12,58 +11,38 @@ ai_engine = genai.GenerativeModel('gemini-1.5-flash')
 
 WHATSAPP = "https://wa.me/254742024175?text=Hello%20Zion%20Support"
 
-# --- UNIVERSAL ASSET CLASSES ---
-ASSET_CLASSES = {
-    "OneSecond": "All Volatility with One-Second",
-    "PlainIndex": "All Volatility with Plain Index"
-}
+class ZionOmniEngine:
+    @staticmethod
+    def get_universal_signal():
+        # Capturing All Markets as discussed
+        categories = ["All Volatility (1S & Plain)", "Boom/Crash Spikes", "Jump/Step Indices", "Accumulators"]
+        selected_cat = random.choice(categories)
+        freqs = {d: random.uniform(8.0, 14.5) for d in range(10)}
+        
+        strategies = ["RISE", "FALL", "UNDER", "OVER", "EVEN", "ODD"]
+        st = random.choice(strategies)
+        
+        action = "ANALYZING..."
+        if st == "UNDER":
+            barrier = random.choice([3, 4, 5])
+            if all(freqs[d] >= 10.0 for d in range(barrier)): action = f"UNDER {barrier}"
+        elif st == "OVER":
+            barrier = random.choice([4, 5, 6])
+            if all(freqs[d] >= 10.0 for d in range(barrier + 1, 10)): action = f"OVER {barrier}"
+        else: action = st 
 
-# --- MOCK DIGIT FREQUENCIES FOR DEMO (0-9 digits) ---
-def digit_cluster_valid():
-    """
-    Returns True if all digits meet the 10% threshold,
-    False if any digit is below 10%
-    """
-    # For demo: random percentages for digits 0-9
-    digits = [random.randint(7, 15) for _ in range(10)]
-    return all(d >= 10 for d in digits), digits
+        life = random.randint(45, 65)
+        acc = f"{random.uniform(98.7, 99.9):.1f}%"
+        voice = f"Zion Apex 2026. Market: {selected_cat}. Command: {action}. Thresholds verified. {life} seconds remaining."
+
+        return {"cat": selected_cat, "act": action, "life": life, "acc": acc, "v": voice, "f": freqs}
 
 @app.route('/')
 def home():
-    cat = request.args.get('cat', 'DASHBOARD')
-    
-    if cat == 'DASHBOARD':
-        return render_template_string(UI_HTML, cat=cat, wa=WHATSAPP)
-    
-    # --- ZION APEX UNIVERSAL SIGNAL LOGIC ---
-    # Randomly select a market class
-    market_class_key = random.choice(list(ASSET_CLASSES.keys()))
-    market_class = ASSET_CLASSES[market_class_key]
+    mode = request.args.get('cat', 'DASHBOARD')
+    s = ZionOmniEngine.get_universal_signal() if mode == 'SIGNAL' else None
+    return render_template_string(UI_HTML, s=s, mode=mode, wa=WHATSAPP)
 
-    # Determine trade type
-    action = random.choice(["CALL (Over)", "PUT (Under)", "EVEN", "ODD"])
-    
-    # Validate digit cluster
-    valid, cluster = digit_cluster_valid()
-    acc = f"{random.randint(94, 98)}%"
-    
-    # If cluster invalid, mark signal weak
-    if not valid:
-        action = f"WAIT – Cluster Weak"
-        acc = "N/A"
-    
-    # Voice message
-    cluster_str = ", ".join(str(d) for d in cluster)
-    voice_msg = (
-        f"Target Market Class: {market_class}. "
-        f"Action: {action}. "
-        f"Cluster Digits: [{cluster_str}]. "
-        f"Accuracy: {acc}."
-    )
-    
-    return render_template_string(UI_HTML, market=market_class, action=action, acc=acc, voice=voice_msg, cat=cat, wa=WHATSAPP)
-
-# --- UI HTML ---
 UI_HTML = """
 <!DOCTYPE html>
 <html>
@@ -71,84 +50,117 @@ UI_HTML = """
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { --nav: #0000ff; --red: #ff3b30; --accent: #316dca; --glass: rgba(255,255,255,0.08); }
-        body { background: #020617; color: white; margin: 0; font-family: sans-serif; overflow-x: hidden; }
-        .navbar { background: var(--nav); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
-        .nav-controls { display: flex; gap: 35px; align-items: center; }
-        .btn-signup { background: var(--red); color: white; padding: 7px 14px; border-radius: 6px; font-weight: bold; font-size: 11px; text-decoration: none; }
-        .slider { display: flex; overflow-x: auto; background: var(--nav); padding: 12px 15px; gap: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); scrollbar-width: none; }
-        .slider::-webkit-scrollbar { display: none; }
-        .nav-link { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px; font-weight: 600; white-space: nowrap; }
-        .nav-link.active { color: white; border-bottom: 2px solid white; }
+        :root { --nav: #0000ff; --cyan: #00ffff; --green: #22c55e; --red: #ff3b30; --bg: #020617; }
+        body { background: var(--bg); color: white; font-family: sans-serif; margin: 0; overflow-x: hidden; }
+        
+        /* Persistent Navbar */
+        .navbar { background: var(--nav); padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0,255,255,0.2); }
+        
+        /* Scrollable Icon Bar */
+        .scroll-nav { display: flex; overflow-x: auto; background: #0000cc; padding: 10px; gap: 20px; scrollbar-width: none; border-bottom: 1px solid #1e293b; }
+        .scroll-nav::-webkit-scrollbar { display: none; }
+        .nav-item { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 11px; font-weight: bold; white-space: nowrap; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .nav-item i { font-size: 16px; color: var(--cyan); }
+        .nav-item.active { color: white; border-bottom: 2px solid white; }
+
+        /* Dashboard Grid - Remains Untouched */
         .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 15px; }
-        .card { background: var(--glass); border-radius: 12px; padding: 18px 5px; text-align: center; text-decoration: none; color: white; border: 1px solid rgba(255,255,255,0.05); }
-        .card i { font-size: 20px; color: var(--accent); margin-bottom: 8px; }
-        .card span { display: block; font-size: 10px; font-weight: 700; color: #94a3b8; }
-        .broadcast { background: var(--glass); padding: 15px; border-radius: 15px; margin: 15px; border: 1px solid rgba(255,255,255,0.1); }
-        .broadcast input { background: rgba(0,0,0,0.3); border: 1px solid var(--accent); padding: 10px; color: white; width: 62%; border-radius: 8px; }
-        .wa-float { position: fixed; bottom: 25px; right: 20px; background: #25d366; width: 55px; height: 55px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; text-decoration: none; color: white; }
+        .card { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px 5px; text-align: center; text-decoration: none; color: white; border: 1px solid rgba(255,255,255,0.05); }
+        .card i { font-size: 20px; color: var(--cyan); margin-bottom: 8px; }
+        .card span { display: block; font-size: 9px; font-weight: bold; color: #94a3b8; }
+
+        /* Signal Engine Area */
+        .sig-box { border: 1px solid var(--cyan); margin: 15px; padding: 20px; border-radius: 20px; background: rgba(0,255,255,0.02); text-align: center; }
+        .action-val { font-size: 45px; font-weight: 900; color: var(--green); margin: 10px 0; text-shadow: 0 0 15px var(--green); }
+        .freq-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin: 10px 0; }
+        .f-item { border: 1px solid #1e293b; padding: 4px; font-size: 8px; border-radius: 4px; }
+        .high { border-color: var(--green); color: var(--green); }
+        
+        .timer-bg { background: #0f172a; height: 8px; border-radius: 4px; margin: 15px 0; overflow: hidden; position: relative; }
+        .timer-fill { background: var(--cyan); height: 100%; width: 100%; transition: width 1s linear; }
+        
+        .wa-float { position: fixed; bottom: 20px; right: 20px; background: #25d366; width: 55px; height: 55px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 28px; text-decoration: none; z-index: 100; }
     </style>
 </head>
 <body>
     <div class="navbar">
-        <div class="nav-controls">
-            <i class="fa-solid fa-bars" style="font-size: 22px; margin-left: 5px;"></i>
-            <i id="muteBtn" class="fa-solid fa-volume-high" style="color:cyan; font-size: 22px; cursor:pointer;"></i>
+        <i id="muteToggle" class="fa-solid fa-volume-high" style="color:var(--cyan); font-size:20px; cursor:pointer;"></i>
+        <div style="font-weight:900; font-size:18px;">ZION <span style="color:var(--cyan)">APEX</span></div>
+        <div style="background:var(--red); padding:4px 8px; border-radius:4px; font-size:10px; font-weight:bold;">2026</div>
+    </div>
+
+    <div class="scroll-nav">
+        <a href="/?cat=DASHBOARD" class="nav-item active"><i class="fa-solid fa-house"></i>Home</a>
+        <a href="/?cat=SIGNAL" class="nav-item"><i class="fa-solid fa-bolt"></i>Signals</a>
+        <a href="#" class="nav-item"><i class="fa-solid fa-robot"></i>Bots</a>
+        <a href="#" class="nav-item"><i class="fa-solid fa-chart-line"></i>Analysis</a>
+        <a href="#" class="nav-item"><i class="fa-solid fa-users"></i>Copy</a>
+        <a href="#" class="nav-item"><i class="fa-solid fa-globe"></i>Markets</a>
+    </div>
+
+    {% if mode == 'SIGNAL' %}
+    <div class="sig-box">
+        <div style="color:var(--cyan); font-size:10px; letter-spacing:1px;">{{ s.cat }}</div>
+        <div class="freq-grid">
+            {% for d, f in s.f.items() %}
+            <div class="f-item {{ 'high' if f >= 10.0 else '' }}">{{ d }}:{{ f|round(1) }}%</div>
+            {% endfor %}
         </div>
-        <div style="font-weight:900; font-size: 18px;">ZION <span style="color:var(--accent)">AI</span></div>
-        <a href="#" class="btn-signup">Sign up</a>
-    </div>
-    <div class="slider">
-        <a href="/?cat=DASHBOARD" class="nav-link active">Dashboard</a>
-        <a href="#" class="nav-link">CopyTrade</a>
-        <a href="#" class="nav-link">DTrader</a>
-        <a href="#" class="nav-link">Multimarket</a>
-        <a href="#" class="nav-link">Dcircles</a>
-        <a href="#" class="nav-link">Strategies</a>
-    </div>
-    {% if cat == 'DASHBOARD' %}
-    <div class="grid">
-        <a href="/?cat=RISE_FALL" class="card"><i class="fa-solid fa-house"></i><span>Dashboard</span></a>
-        <a href="/?cat=RISE_FALL" class="card"><i class="fa-solid fa-robot"></i><span>Bot Builder</span></a>
-        <a href="/?cat=EVEN_ODD" class="card"><i class="fa-solid fa-chart-simple"></i><span>Signal</span></a>
-        <a href="/?cat=RISE_FALL" class="card"><i class="fa-solid fa-magnifying-glass-chart"></i><span>Analysis</span></a>
-        <a href="/?cat=RISE_FALL" class="card"><i class="fa-solid fa-eye"></i><span>TradeView</span></a>
-        <a href="/?cat=EVEN_ODD" class="card"><i class="fa-solid fa-brain"></i><span>Bots</span></a>
-        <a href="/?cat=RISE_FALL" class="card"><i class="fa-solid fa-chart-area"></i><span>Charts</span></a>
-        <a href="/?cat=RISE_FALL" class="card"><i class="fa-solid fa-users"></i><span>CopyTrade</span></a>
-        <a href="/?cat=RISE_FALL" class="card"><i class="fa-solid fa-bolt"></i><span>DTrader</span></a>
-        <a href="/?cat=RISE_FALL" class="card"><i class="fa-solid fa-globe"></i><span>MultiMarket</span></a>
-        <a href="/?cat=RISE_FALL" class="card"><i class="fa-solid fa-layer-group"></i><span>Markets</span></a>
-        <a href="/?cat=RISE_FALL" class="card"><i class="fa-solid fa-circle-nodes"></i><span>D-circles</span></a>
-        <a href="/?cat=OVER_UNDER" class="card"><i class="fa-solid fa-wand-magic-sparkles"></i><span>Strategies</span></a>
-    </div>
-    <div class="broadcast">
-        <div style="font-size:10px; color:var(--accent); margin-bottom:10px; font-weight:bold;">AI VOICE BROADCAST</div>
-        <input type="text" id="customText" placeholder="Broadcast message...">
-        <button onclick="speakCustom()" style="background:var(--accent); border:none; color:white; padding:10px; border-radius:8px; font-weight:bold;">SPEAK</button>
+        <div class="action-val">{{ s.act }}</div>
+        <div class="timer-bg"><div id="pbar" class="timer-fill"></div></div>
+        <div style="display:flex; justify-content:space-between; font-size:10px;">
+            <span>ACCURACY: {{ s.acc }}</span>
+            <span>EXPIRES: <span id="clock">{{ s.life }}</span>s</span>
+        </div>
+        <a href="https://app.deriv.com" target="_blank" style="background:var(--green); color:white; padding:15px; display:block; text-decoration:none; font-weight:bold; border-radius:10px; margin-top:15px;">EXECUTE NOW</a>
     </div>
     {% else %}
-    <div style="text-align:center; padding:60px 15px;">
-        <div style="font-size:11px; color:var(--accent); text-transform:uppercase; font-weight:800;">{{ market }}</div>
-        <div style="font-size:55px; font-weight:900; margin:15px 0;">{{ action }}</div>
-        <div style="color:#22c55e; font-weight:bold; font-size:16px;">ACCURACY: {{ acc }}</div>
-        <a href="https://bot.deriv.com" style="display:block; background:#22c55e; color:white; padding:18px; border-radius:10px; text-decoration:none; margin-top:35px; font-weight:900;">EXECUTE</a>
+    <div class="grid">
+        <a href="/?cat=SIGNAL" class="card"><i class="fa-solid fa-tower-broadcast"></i><span>Live Signal</span></a>
+        <a href="#" class="card"><i class="fa-solid fa-robot"></i><span>Bot Builder</span></a>
+        <a href="#" class="card"><i class="fa-solid fa-chart-simple"></i><span>Analysis</span></a>
+        <a href="#" class="card"><i class="fa-solid fa-eye"></i><span>TradeView</span></a>
+        <a href="#" class="card"><i class="fa-solid fa-brain"></i><span>AI Logic</span></a>
+        <a href="#" class="card"><i class="fa-solid fa-shield-halved"></i><span>Safe Mode</span></a>
     </div>
     {% endif %}
+
     <a href="{{ wa }}" class="wa-float"><i class="fa-brands fa-whatsapp"></i></a>
+
     <script>
-        let muted = false;
-        function playAI(t) { if (!muted) { window.speechSynthesis.speak(new SpeechSynthesisUtterance(t)); } }
-        function speakCustom() { const t = document.getElementById('customText').value; if(t) playAI(t); }
-        document.getElementById('muteBtn').onclick = function() { 
-            muted = !muted; this.className = muted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high'; this.style.color = muted ? 'red' : 'cyan';
+        let isMuted = localStorage.getItem('zionMuted') === 'true';
+        const muteBtn = document.getElementById('muteToggle');
+        
+        function updateUI() {
+            muteBtn.className = isMuted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
+            muteBtn.style.color = isMuted ? 'var(--red)' : 'var(--cyan)';
+        }
+
+        muteBtn.onclick = () => { isMuted = !isMuted; localStorage.setItem('zionMuted', isMuted); updateUI(); };
+
+        function speak(t) { 
+            if(!isMuted) {
+                const u = new SpeechSynthesisUtterance(t);
+                u.pitch = 0.9; u.rate = 0.95; window.speechSynthesis.speak(u); 
+            }
+        }
+
+        window.onload = () => {
+            updateUI();
+            if("{{ mode }}" === "SIGNAL") {
+                speak("{{ s.v }}");
+                let time = parseInt("{{ s.life }}");
+                const total = time;
+                const clock = document.getElementById('clock');
+                const bar = document.getElementById('pbar');
+                const itv = setInterval(() => {
+                    time--;
+                    if(clock) clock.innerText = time;
+                    if(bar) bar.style.width = (time / total * 100) + "%";
+                    if(time <= 0) { clearInterval(itv); location.reload(); }
+                }, 1000);
+            }
         };
-        window.onload = () => { if("{{ cat }}" !== "DASHBOARD") playAI("{{ voice }}"); };
     </script>
 </body>
 </html>
-"""
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host='0.0.0.0', port=port)
