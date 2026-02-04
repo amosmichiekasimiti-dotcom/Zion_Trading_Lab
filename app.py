@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Orbitron:wght@400;500;700;900&display=swap" rel="stylesheet">
     <style>
+        /* CSS Variables */
         :root {
             --primary: #00ff88;
             --primary-dark: #00cc6a;
@@ -19,15 +20,14 @@
             --danger: #ff4757;
             --warning: #ffa502;
             --success: #00ff88;
-            --gradient: linear-gradient(135deg, #00ff88 0%, #6c63ff 100%);
         }
-
+        
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
+        
         body {
             font-family: 'Roboto', sans-serif;
             background: var(--dark-bg);
@@ -35,10 +35,9 @@
             overflow-x: hidden;
             min-height: 100vh;
         }
-
+        
         .header {
             background: rgba(10, 14, 23, 0.95);
-            backdrop-filter: blur(10px);
             border-bottom: 2px solid var(--primary);
             padding: 1rem 2rem;
             display: flex;
@@ -48,22 +47,22 @@
             top: 0;
             z-index: 1000;
         }
-
+        
         .logo-container {
             display: flex;
             align-items: center;
             gap: 15px;
         }
-
+        
         .logo {
             font-family: 'Orbitron', sans-serif;
             font-size: 2rem;
             font-weight: 900;
-            background: var(--gradient);
+            background: linear-gradient(135deg, #00ff88 0%, #6c63ff 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-
+        
         .version-badge {
             background: var(--primary);
             color: var(--dark-bg);
@@ -72,13 +71,13 @@
             font-size: 0.8rem;
             font-weight: 700;
         }
-
+        
         .nav-menu {
             display: flex;
             gap: 2rem;
             list-style: none;
         }
-
+        
         .nav-link {
             color: var(--text-light);
             text-decoration: none;
@@ -90,18 +89,18 @@
             align-items: center;
             gap: 8px;
         }
-
+        
         .nav-link:hover {
             background: var(--primary);
             color: var(--dark-bg);
         }
-
+        
         .header-controls {
             display: flex;
             align-items: center;
             gap: 1rem;
         }
-
+        
         .btn {
             padding: 10px 24px;
             border: none;
@@ -113,17 +112,17 @@
             align-items: center;
             gap: 8px;
         }
-
+        
         .btn-primary {
-            background: var(--gradient);
+            background: linear-gradient(135deg, #00ff88 0%, #6c63ff 100%);
             color: white;
         }
-
+        
         .btn-danger {
             background: var(--danger);
             color: white;
         }
-
+        
         .market-scroll-container {
             background: var(--card-bg);
             margin: 20px 2rem;
@@ -131,18 +130,18 @@
             padding: 15px;
             overflow: hidden;
         }
-
+        
         .market-scroll-bar {
             display: flex;
             gap: 15px;
             overflow-x: auto;
             padding: 10px;
         }
-
+        
         .market-scroll-bar::-webkit-scrollbar {
             display: none;
         }
-
+        
         .market-card {
             min-width: 180px;
             background: var(--dark-bg);
@@ -154,73 +153,73 @@
             cursor: pointer;
             flex-shrink: 0;
         }
-
+        
         .market-card.active {
             border-color: var(--primary);
         }
-
+        
         .market-icon {
             font-size: 2rem;
             margin-bottom: 10px;
             color: var(--primary);
         }
-
+        
         .market-name {
             font-weight: 600;
             font-size: 1.1rem;
             margin-bottom: 5px;
         }
-
+        
         .market-status {
             font-size: 0.9rem;
             color: var(--text-dim);
         }
-
+        
         .dashboard {
             display: grid;
             grid-template-columns: 3fr 1fr;
             gap: 20px;
             padding: 0 2rem 2rem;
         }
-
+        
         .signals-section {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
             gap: 20px;
         }
-
+        
         .signal-card {
             background: var(--card-bg);
             border-radius: 15px;
             padding: 25px;
             border-left: 5px solid var(--primary);
         }
-
+        
         .signal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
         }
-
+        
         .signal-type {
             font-size: 1.2rem;
             font-weight: 700;
             color: var(--primary);
         }
-
+        
         .confidence-badge {
-            background: var(--gradient);
+            background: linear-gradient(135deg, #00ff88 0%, #6c63ff 100%);
             color: white;
             padding: 6px 12px;
             border-radius: 20px;
             font-weight: 700;
         }
-
+        
         .signal-details {
             margin-bottom: 20px;
         }
-
+        
         .signal-metric {
             display: flex;
             justify-content: space-between;
@@ -228,27 +227,27 @@
             padding-bottom: 10px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
-
+        
         .metric-label {
             color: var(--text-dim);
         }
-
+        
         .metric-value {
             font-weight: 600;
         }
-
+        
         .countdown-timer {
             text-align: center;
             margin: 20px 0;
             font-family: 'Orbitron', sans-serif;
         }
-
+        
         .timer-display {
             font-size: 3rem;
             font-weight: 700;
             color: var(--primary);
         }
-
+        
         .execute-btn {
             width: 100%;
             padding: 15px;
@@ -261,26 +260,26 @@
             cursor: pointer;
             margin-top: 15px;
         }
-
+        
         .execute-btn:disabled {
             background: #666;
             cursor: not-allowed;
         }
-
+        
         .voice-panel {
             background: var(--card-bg);
             border-radius: 15px;
             padding: 25px;
             border: 2px solid var(--secondary);
         }
-
+        
         .voice-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
         }
-
+        
         .voice-title {
             display: flex;
             align-items: center;
@@ -289,26 +288,26 @@
             font-weight: 700;
             color: var(--secondary);
         }
-
+        
         .voice-controls {
             display: flex;
             gap: 15px;
             align-items: center;
         }
-
+        
         .toggle-switch {
             position: relative;
             display: inline-block;
             width: 60px;
             height: 30px;
         }
-
+        
         .toggle-switch input {
             opacity: 0;
             width: 0;
             height: 0;
         }
-
+        
         .toggle-slider {
             position: absolute;
             cursor: pointer;
@@ -320,7 +319,7 @@
             transition: .4s;
             border-radius: 34px;
         }
-
+        
         .toggle-slider:before {
             position: absolute;
             content: "";
@@ -332,15 +331,15 @@
             transition: .4s;
             border-radius: 50%;
         }
-
+        
         input:checked + .toggle-slider {
             background-color: var(--success);
         }
-
+        
         input:checked + .toggle-slider:before {
             transform: translateX(30px);
         }
-
+        
         .voice-message-box {
             background: var(--dark-bg);
             padding: 20px;
@@ -349,7 +348,7 @@
             margin-bottom: 20px;
             border: 1px solid rgba(108, 99, 255, 0.3);
         }
-
+        
         .speak-btn {
             width: 100%;
             background: var(--secondary);
@@ -365,13 +364,13 @@
             justify-content: center;
             gap: 10px;
         }
-
+        
         .sidebar {
             background: var(--card-bg);
             border-radius: 15px;
             padding: 25px;
         }
-
+        
         .sidebar-title {
             font-size: 1.3rem;
             font-weight: 700;
@@ -381,7 +380,7 @@
             align-items: center;
             gap: 10px;
         }
-
+        
         .credential-item {
             background: var(--dark-bg);
             padding: 15px;
@@ -389,20 +388,20 @@
             margin-bottom: 15px;
             border-left: 4px solid var(--secondary);
         }
-
+        
         .credential-label {
             font-size: 0.9rem;
             color: var(--text-dim);
             margin-bottom: 5px;
         }
-
+        
         .credential-value {
             font-family: 'Orbitron', monospace;
             font-size: 0.9rem;
             color: var(--primary);
             word-break: break-all;
         }
-
+        
         .whatsapp-btn {
             width: 100%;
             background: #25D366;
@@ -420,14 +419,14 @@
             margin-top: 20px;
             text-decoration: none;
         }
-
+        
         .footer {
             background: var(--card-bg);
             padding: 2rem;
             margin-top: 2rem;
             border-top: 2px solid var(--primary-dark);
         }
-
+        
         .footer-content {
             display: flex;
             justify-content: space-between;
@@ -435,40 +434,40 @@
             flex-wrap: wrap;
             gap: 20px;
         }
-
+        
         .footer-logo {
             font-family: 'Orbitron', sans-serif;
             font-size: 1.5rem;
             font-weight: 900;
-            background: var(--gradient);
+            background: linear-gradient(135deg, #00ff88 0%, #6c63ff 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-
+        
         .footer-links {
             display: flex;
             gap: 2rem;
             list-style: none;
         }
-
+        
         .footer-link {
             color: var(--text-dim);
             text-decoration: none;
         }
-
+        
         .copyright {
             color: var(--text-dim);
             font-size: 0.9rem;
             text-align: center;
             margin-top: 1rem;
         }
-
+        
         @media (max-width: 1200px) {
             .dashboard {
                 grid-template-columns: 1fr;
             }
         }
-
+        
         @media (max-width: 768px) {
             .header {
                 flex-direction: column;
