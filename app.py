@@ -6,7 +6,92 @@
     <title>ZION AI Ultimate Terminal | PRO v3.0.4</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Orbitron:wght@400;500;700;900&display=swap" rel="stylesheet">
-    <style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script>
+        // APP CONFIGURATION
+        const CONFIG = {
+            APP_ID: "124918",
+            REAL_TOKEN: "m04oxPdV6cV6pX4",
+            DEMO_TOKEN: "kTYefK9bFG3UPGh",
+            GEMINI_KEY: "AIzaSyDM7cKxbQwbwBXOubb01Iel2WrFi8oEh2E",
+            WHATSAPP_LINK: "https://wa.me/254742024175",
+            VERSION: "3.0.4-PRO"
+        };
+
+        // Market Data
+        const MARKETS = [
+            { name: "Volatility 10 (1s) Index", symbol: "V10_1S", active: true },
+            { name: "Volatility 10 Index", symbol: "V10", active: true },
+            { name: "Volatility 15 (1s) Index", symbol: "V15_1S", active: false },
+            { name: "Volatility 25 (1s) Index", symbol: "V25_1S", active: true },
+            { name: "Volatility 25 Index", symbol: "V25", active: false },
+            { name: "Volatility 30 (1s) Index", symbol: "V30_1S", active: false },
+            { name: "Volatility 50 (1s) Index", symbol: "V50", active: true },
+            { name: "Volatility 50 Index", symbol: "V50", active: false },
+            { name: "Volatility 75 (1s) Index", symbol: "V75_1S", active: false },
+            { name: "Volatility 75 Index", symbol: "V75", active: false },
+            { name: "Volatility 90 (1s) Index", symbol: "V90_1S", active: false },
+            { name: "Volatility 100 (1s) Index", symbol: "V100_1S", active: false },
+            { name: "Volatility 100 Index", symbol: "V100", active: false }
+        ];
+
+        // Signal Data
+        const SIGNALS = [
+            {
+                id: 1,
+                type: "RISE/FALL",
+                confidence: 94,
+                market: "Volatility 10 Index",
+                direction: "RISE",
+                duration: "2 minutes",
+                mtfa: "Aligned",
+                gemini: "Confirmed",
+                countdown: 10,
+                active: true
+            },
+            {
+                id: 2,
+                type: "EVEN/ODD",
+                confidence: 92,
+                market: "Volatility 25 (1s) Index",
+                direction: "ODD",
+                streak: "4 Consecutive Evens",
+                probability: "92.3%",
+                payout: "45%",
+                countdown: 8,
+                active: true
+            },
+            {
+                id: 3,
+                type: "OVER/UNDER",
+                confidence: 91,
+                market: "Volatility 50 Index",
+                direction: "Under 3/4",
+                payout: "42%",
+                gravity: "High Cluster 5-9",
+                gemini: "Validated",
+                countdown: 15,
+                active: true
+            },
+            {
+                id: 4,
+                type: "MATCHES/DIFFERS",
+                confidence: "SCANNING",
+                market: "Volatility 75 (1s) Index",
+                status: "Scanning MTFA...",
+                coldDigits: "Analyzing...",
+                frequency: "Processing...",
+                confidenceVal: "Calculating...",
+                countdown: null,
+                active: false
+            }
+        ];
+
+        // CSS Styles
+        const styles = `
         :root {
             --primary: #00ff88;
             --primary-dark: #00cc6a;
@@ -562,534 +647,574 @@
                 grid-template-columns: 1fr;
             }
         }
-    </style>
-</head>
-<body>
-    <!-- Header -->
-    <header class="header">
-        <div class="logo-container">
-            <div class="logo">ZION AI</div>
-            <div class="version-badge">v3.0.4-PRO</div>
-        </div>
-        
-        <nav>
-            <ul class="nav-menu">
-                <li><a href="#" class="nav-link active"><i class="fas fa-chart-line"></i> Dashboard</a></li>
-                <li><a href="#" class="nav-link"><i class="fas fa-robot"></i> Bot Builder</a></li>
-                <li><a href="#" class="nav-link"><i class="fas fa-bolt"></i> Signals</a></li>
-                <li><a href="#" class="nav-link"><i class="fas fa-chart-bar"></i> Analysis</a></li>
-                <li><a href="#" class="nav-link"><i class="fas fa-copy"></i> CopyTrade</a></li>
-                <li><a href="#" class="nav-link"><i class="fas fa-globe"></i> MultiMarket</a></li>
-                <li><a href="#" class="nav-link"><i class="fas fa-cogs"></i> Strategies</a></li>
-            </ul>
-        </nav>
-        
-        <div class="header-controls">
-            <button class="btn btn-primary" onclick="startTrading()">
-                <i class="fas fa-play"></i> Start Trading
-            </button>
-            <button class="btn btn-danger" onclick="emergencyStop()">
-                <i class="fas fa-stop"></i> Emergency Stop
-            </button>
-        </div>
-    </header>
+        `;
 
-    <!-- Market Scroll Bar -->
-    <div class="market-scroll-container">
-        <div class="market-scroll-bar" id="marketScroll">
-            <!-- Markets will be populated by JavaScript -->
-        </div>
-    </div>
+        // App Component
+        class ZIONApp {
+            constructor() {
+                this.isTrading = false;
+                this.voiceEnabled = true;
+                this.timers = {};
+                this.init();
+            }
 
-    <!-- Main Dashboard -->
-    <main class="dashboard">
-        <!-- Signals Section -->
-        <div class="signals-section">
-            <!-- Signal Card 1 -->
-            <div class="signal-card">
-                <div class="signal-header">
-                    <div class="signal-type">RISE/FALL</div>
-                    <div class="confidence-badge">94%</div>
-                </div>
-                <div class="signal-details">
-                    <div class="signal-metric">
-                        <span class="metric-label">Market:</span>
-                        <span class="metric-value">Volatility 10 Index</span>
-                    </div>
-                    <div class="signal-metric">
-                        <span class="metric-label">Direction:</span>
-                        <span class="metric-value" style="color: var(--success)">RISE</span>
-                    </div>
-                    <div class="signal-metric">
-                        <span class="metric-label">Duration:</span>
-                        <span class="metric-value">2 minutes</span>
-                    </div>
-                    <div class="signal-metric">
-                        <span class="metric-label">MTFA:</span>
-                        <span class="metric-value" style="color: var(--success)">Aligned</span>
-                    </div>
-                    <div class="signal-metric">
-                        <span class="metric-label">Gemini AI:</span>
-                        <span class="metric-value" style="color: var(--success)">Confirmed</span>
-                    </div>
-                </div>
-                <div class="countdown-timer">
-                    <div class="timer-display" id="timer1">00:10</div>
-                    <div style="color: var(--text-dim); font-size: 0.9rem;">XML Bot Sync Countdown</div>
-                </div>
-                <button class="execute-btn" onclick="executeTrade('rise_fall')" id="executeBtn1">
-                    <i class="fas fa-rocket"></i> EXECUTE TRADE
-                </button>
-            </div>
+            init() {
+                // Add styles
+                const styleSheet = document.createElement("style");
+                styleSheet.textContent = styles;
+                document.head.appendChild(styleSheet);
 
-            <!-- Signal Card 2 -->
-            <div class="signal-card">
-                <div class="signal-header">
-                    <div class="signal-type">EVEN/ODD</div>
-                    <div class="confidence-badge">92%</div>
-                </div>
-                <div class="signal-details">
-                    <div class="signal-metric">
-                        <span class="metric-label">Market:</span>
-                        <span class="metric-value">Volatility 25 (1s) Index</span>
-                    </div>
-                    <div class="signal-metric">
-                        <span class="metric-label">Prediction:</span>
-                        <span class="metric-value" style="color: var(--secondary)">ODD</span>
-                    </div>
-                    <div class="signal-metric">
-                        <span class="metric-label">Streak:</span>
-                        <span class="metric-value">4 Consecutive Evens</span>
-                    </div>
-                    <div class="signal-metric">
-                        <span class="metric-label">Probability:</span>
-                        <span class="metric-value" style="color: var(--success)">92.3%</span>
-                    </div>
-                    <div class="signal-metric">
-                        <span class="metric-label">Payout:</span>
-                        <span class="metric-value" style="color: var(--warning)">45%</span>
-                    </div>
-                </div>
-                <div class="countdown-timer">
-                    <div class="timer-display" id="timer2">00:08</div>
-                    <div style="color: var(--text-dim); font-size: 0.9rem;">XML Bot Sync Countdown</div>
-                </div>
-                <button class="execute-btn" onclick="executeTrade('even_odd')" id="executeBtn2">
-                    <i class="fas fa-rocket"></i> EXECUTE TRADE
-                </button>
-            </div>
+                // Render app
+                this.render();
+                this.bindEvents();
+                this.startDemo();
+            }
 
-            <!-- Signal Card 3 -->
-            <div class="signal-card">
-                <div class="signal-header">
-                    <div class="signal-type">OVER/UNDER</div>
-                    <div class="confidence-badge">91%</div>
-                </div>
-                <div class="signal-details">
-                    <div class="signal-metric">
-                        <span class="metric-label">Market:</span>
-                        <span class="metric-value">Volatility 50 Index</span>
-                    </div>
-                    <div class="signal-metric">
-                        <span class="metric-label">Barrier:</span>
-                        <span class="metric-value" style="color: var(--danger)">Under 3/4</span>
-                    </div>
-                    <div class="signal-metric">
-                        <span class="metric-label">Expected Payout:</span>
-                        <span class="metric-value" style="color: var(--warning)">42%</span>
-                    </div>
-                    <div class="signal-metric">
-                        <span class="metric-label">Digit Gravity:</span>
-                        <span class="metric-value" style="color: var(--success)">High Cluster 5-9</span>
-                    </div>
-                    <div class="signal-metric">
-                        <span class="metric-label">Gemini AI:</span>
-                        <span class="metric-value" style="color: var(--success)">Validated</span>
-                    </div>
-                </div>
-                <div class="countdown-timer">
-                    <div class="timer-display" id="timer3">00:15</div>
-                    <div style="color: var(--text-dim); font-size: 0.9rem;">XML Bot Sync Countdown</div>
-                </div>
-                <button class="execute-btn" onclick="executeTrade('over_under')" id="executeBtn3">
-                    <i class="fas fa-rocket"></i> EXECUTE TRADE
-                </button>
-            </div>
+            render() {
+                const app = document.getElementById('app');
+                app.innerHTML = `
+                    <!-- Header -->
+                    <header class="header">
+                        <div class="logo-container">
+                            <div class="logo">ZION AI</div>
+                            <div class="version-badge">${CONFIG.VERSION}</div>
+                        </div>
+                        
+                        <nav>
+                            <ul class="nav-menu">
+                                <li><a href="#" class="nav-link active"><i class="fas fa-chart-line"></i> Dashboard</a></li>
+                                <li><a href="#" class="nav-link"><i class="fas fa-robot"></i> Bot Builder</a></li>
+                                <li><a href="#" class="nav-link"><i class="fas fa-bolt"></i> Signals</a></li>
+                                <li><a href="#" class="nav-link"><i class="fas fa-chart-bar"></i> Analysis</a></li>
+                                <li><a href="#" class="nav-link"><i class="fas fa-copy"></i> CopyTrade</a></li>
+                                <li><a href="#" class="nav-link"><i class="fas fa-globe"></i> MultiMarket</a></li>
+                                <li><a href="#" class="nav-link"><i class="fas fa-cogs"></i> Strategies</a></li>
+                            </ul>
+                        </nav>
+                        
+                        <div class="header-controls">
+                            <button class="btn btn-primary" id="startTradingBtn">
+                                <i class="fas fa-play"></i> Start Trading
+                            </button>
+                            <button class="btn btn-danger" id="emergencyStopBtn">
+                                <i class="fas fa-stop"></i> Emergency Stop
+                            </button>
+                        </div>
+                    </header>
 
-            <!-- Signal Card 4 (Scanning) -->
-            <div class="signal-card">
-                <div class="signal-header">
-                    <div class="signal-type">MATCHES/DIFFERS</div>
-                    <div class="confidence-badge">SCANNING</div>
-                </div>
-                <div class="signal-details">
-                    <div class="signal-metric">
-                        <span class="metric-label">Status:</span>
-                        <span class="metric-value" style="color: var(--warning)">Scanning MTFA...</span>
+                    <!-- Market Scroll Bar -->
+                    <div class="market-scroll-container">
+                        <div class="market-scroll-bar" id="marketScroll">
+                            ${this.renderMarkets()}
+                        </div>
                     </div>
-                    <div class="signal-metric">
-                        <span class="metric-label">Market:</span>
-                        <span class="metric-value">Volatility 75 (1s) Index</span>
-                    </div>
-                    <div class="signal-metric">
-                        <span class="metric-label">Cold Digits:</span>
-                        <span class="metric-value">Analyzing...</span>
-                    </div>
-                    <div class="signal-metric">
-                        <span class="metric-label">Frequency:</span>
-                        <span class="metric-value">Processing...</span>
-                    </div>
-                    <div class="signal-metric">
-                        <span class="metric-label">Confidence:</span>
-                        <span class="metric-value" style="color: var(--warning)">Calculating...</span>
-                    </div>
-                </div>
-                <div class="countdown-timer">
-                    <div class="timer-display" style="color: var(--warning); font-size: 2rem;">
-                        <i class="fas fa-sync fa-spin"></i>
-                    </div>
-                    <div style="color: var(--text-dim); font-size: 0.9rem;">AI Analysis in Progress</div>
-                </div>
-                <button class="execute-btn" disabled>
-                    <i class="fas fa-hourglass-half"></i> AWAITING SIGNAL
-                </button>
-            </div>
-        </div>
 
-        <!-- Sidebar with Credentials & Voice Panel -->
-        <div class="sidebar-section">
-            <!-- AI Voice Broadcast Panel -->
-            <div class="voice-panel">
-                <div class="voice-header">
-                    <div class="voice-title">
-                        <i class="fas fa-broadcast-tower"></i>
-                        AI VOICE BROADCAST
-                    </div>
-                    <div class="voice-controls">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="voiceToggle" checked>
-                            <span class="toggle-slider"></span>
-                        </label>
-                        <span style="font-size: 0.9rem; color: var(--text-dim);">Voice ON</span>
-                    </div>
-                </div>
-                <div class="voice-message-box" id="voiceMessage">
-                    Signal validated for Volatility 10 Index. Rise contract, 2 minute duration. Confidence 94%. MTFA aligned. Prepare XML bot for execution in 10 seconds...
-                </div>
-                <button class="speak-btn" onclick="speakMessage()" id="speakBtn">
-                    <i class="fas fa-volume-up"></i> SPEAK MESSAGE
-                </button>
-            </div>
+                    <!-- Main Dashboard -->
+                    <main class="dashboard">
+                        <!-- Signals Section -->
+                        <div class="signals-section">
+                            ${this.renderSignals()}
+                        </div>
 
-            <!-- Credentials Panel -->
-            <div class="sidebar">
-                <div class="sidebar-title">
-                    <i class="fas fa-key"></i> SECURE CREDENTIALS
-                </div>
+                        <!-- Sidebar with Credentials & Voice Panel -->
+                        <div class="sidebar-section">
+                            <!-- AI Voice Broadcast Panel -->
+                            <div class="voice-panel">
+                                <div class="voice-header">
+                                    <div class="voice-title">
+                                        <i class="fas fa-broadcast-tower"></i>
+                                        AI VOICE BROADCAST
+                                    </div>
+                                    <div class="voice-controls">
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="voiceToggle" checked>
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                        <span id="voiceStatus" style="font-size: 0.9rem; color: var(--success);">Voice ON</span>
+                                    </div>
+                                </div>
+                                <div class="voice-message-box" id="voiceMessage">
+                                    Signal validated for Volatility 10 Index. Rise contract, 2 minute duration. Confidence 94%. MTFA aligned. Prepare XML bot for execution in 10 seconds...
+                                </div>
+                                <button class="speak-btn" id="speakBtn">
+                                    <i class="fas fa-volume-up"></i> SPEAK MESSAGE
+                                </button>
+                            </div>
+
+                            <!-- Credentials Panel -->
+                            <div class="sidebar">
+                                <div class="sidebar-title">
+                                    <i class="fas fa-key"></i> SECURE CREDENTIALS
+                                </div>
+                                
+                                ${this.renderCredentials()}
+                                
+                                <a href="${CONFIG.WHATSAPP_LINK}" target="_blank" class="whatsapp-btn">
+                                    <i class="fab fa-whatsapp"></i> WHATSAPP SUPPORT
+                                </a>
+                            </div>
+                        </div>
+                    </main>
+
+                    <!-- Footer -->
+                    <footer class="footer">
+                        <div class="footer-content">
+                            <div class="footer-logo">ZION AI TRADING LAB</div>
+                            <ul class="footer-links">
+                                <li><a href="#" class="footer-link">Dashboard</a></li>
+                                <li><a href="#" class="footer-link">CopyTrade</a></li>
+                                <li><a href="#" class="footer-link">DTrader</a></li>
+                                <li><a href="#" class="footer-link">MultiMarket</a></li>
+                                <li><a href="#" class="footer-link">Circles</a></li>
+                                <li><a href="#" class="footer-link">Strategies</a></li>
+                            </ul>
+                        </div>
+                        <div class="copyright">
+                            © 2024 ZION AI Ultimate Terminal. All rights reserved. | Version ${CONFIG.VERSION} | For authorized use only.
+                        </div>
+                    </footer>
+                `;
+            }
+
+            renderMarkets() {
+                return MARKETS.map(market => `
+                    <div class="market-card ${market.active ? 'active' : ''}" data-market="${market.symbol}">
+                        <div class="market-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="market-name">${market.name.split(' ')[1]}</div>
+                        <div class="market-status">
+                            ${market.active ? '<span style="color: var(--success)">● ACTIVE</span>' : '<span style="color: var(--text-dim)">○ INACTIVE</span>'}
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            renderSignals() {
+                return SIGNALS.map(signal => {
+                    const isScanning = signal.confidence === "SCANNING";
+                    return `
+                        <div class="signal-card">
+                            <div class="signal-header">
+                                <div class="signal-type">${signal.type}</div>
+                                <div class="confidence-badge" style="${isScanning ? 'background: var(--warning);' : ''}">
+                                    ${signal.confidence}${typeof signal.confidence === 'number' ? '%' : ''}
+                                </div>
+                            </div>
+                            <div class="signal-details">
+                                ${this.renderSignalDetails(signal)}
+                            </div>
+                            ${isScanning ? this.renderScanningSignal() : this.renderActiveSignal(signal)}
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            renderSignalDetails(signal) {
+                let details = '';
                 
-                <div class="credential-item">
-                    <div class="credential-label">APP ID</div>
-                    <div class="credential-value">124918</div>
-                </div>
+                if (signal.type === "RISE/FALL") {
+                    details = `
+                        <div class="signal-metric">
+                            <span class="metric-label">Market:</span>
+                            <span class="metric-value">${signal.market}</span>
+                        </div>
+                        <div class="signal-metric">
+                            <span class="metric-label">Direction:</span>
+                            <span class="metric-value" style="color: var(--success)">${signal.direction}</span>
+                        </div>
+                        <div class="signal-metric">
+                            <span class="metric-label">Duration:</span>
+                            <span class="metric-value">${signal.duration}</span>
+                        </div>
+                        <div class="signal-metric">
+                            <span class="metric-label">MTFA:</span>
+                            <span class="metric-value" style="color: var(--success)">${signal.mtfa}</span>
+                        </div>
+                        <div class="signal-metric">
+                            <span class="metric-label">Gemini AI:</span>
+                            <span class="metric-value" style="color: var(--success)">${signal.gemini}</span>
+                        </div>
+                    `;
+                } else if (signal.type === "EVEN/ODD") {
+                    details = `
+                        <div class="signal-metric">
+                            <span class="metric-label">Market:</span>
+                            <span class="metric-value">${signal.market}</span>
+                        </div>
+                        <div class="signal-metric">
+                            <span class="metric-label">Prediction:</span>
+                            <span class="metric-value" style="color: var(--secondary)">${signal.direction}</span>
+                        </div>
+                        <div class="signal-metric">
+                            <span class="metric-label">Streak:</span>
+                            <span class="metric-value">${signal.streak}</span>
+                        </div>
+                        <div class="signal-metric">
+                            <span class="metric-label">Probability:</span>
+                            <span class="metric-value" style="color: var(--success)">${signal.probability}</span>
+                        </div>
+                        <div class="signal-metric">
+                            <span class="metric-label">Payout:</span>
+                            <span class="metric-value" style="color: var(--warning)">${signal.payout}</span>
+                        </div>
+                    `;
+                } else if (signal.type === "OVER/UNDER") {
+                    details = `
+                        <div class="signal-metric">
+                            <span class="metric-label">Market:</span>
+                            <span class="metric-value">${signal.market}</span>
+                        </div>
+                        <div class="signal-metric">
+                            <span class="metric-label">Barrier:</span>
+                            <span class="metric-value" style="color: var(--danger)">${signal.direction}</span>
+                        </div>
+                        <div class="signal-metric">
+                            <span class="metric-label">Expected Payout:</span>
+                            <span class="metric-value" style="color: var(--warning)">${signal.payout}</span>
+                        </div>
+                        <div class="signal-metric">
+                            <span class="metric-label">Digit Gravity:</span>
+                            <span class="metric-value" style="color: var(--success)">${signal.gravity}</span>
+                        </div>
+                        <div class="signal-metric">
+                            <span class="metric-label">Gemini AI:</span>
+                            <span class="metric-value" style="color: var(--success)">${signal.gemini}</span>
+                        </div>
+                    `;
+                } else {
+                    details = `
+                        <div class="signal-metric">
+                            <span class="metric-label">Status:</span>
+                            <span class="metric-value" style="color: var(--warning)">${signal.status}</span>
+                        </div>
+                        <div class="signal-metric">
+                            <span class="metric-label">Market:</span>
+                            <span class="metric-value">${signal.market}</span>
+                        </div>
+                        <div class="signal-metric">
+                            <span class="metric-label">Cold Digits:</span>
+                            <span class="metric-value">${signal.coldDigits}</span>
+                        </div>
+                        <div class="signal-metric">
+                            <span class="metric-label">Frequency:</span>
+                            <span class="metric-value">${signal.frequency}</span>
+                        </div>
+                        <div class="signal-metric">
+                            <span class="metric-label">Confidence:</span>
+                            <span class="metric-value" style="color: var(--warning)">${signal.confidenceVal}</span>
+                        </div>
+                    `;
+                }
                 
-                <div class="credential-item">
-                    <div class="credential-label">REAL TOKEN</div>
-                    <div class="credential-value">m04oxPdV6cV6pX4</div>
-                </div>
-                
-                <div class="credential-item">
-                    <div class="credential-label">DEMO TOKEN</div>
-                    <div class="credential-value">kTYefK9bFG3UPGh</div>
-                </div>
-                
-                <div class="credential-item">
-                    <div class="credential-label">GEMINI API KEY</div>
-                    <div class="credential-value">AIzaSyDM7cKxbQwbwBXOubb01Iel2WrFi8oEh2E</div>
-                </div>
-                
-                <div class="credential-item">
-                    <div class="credential-label">VERSION</div>
-                    <div class="credential-value">3.0.4-PRO</div>
-                </div>
-                
-                <a href="https://wa.me/254742024175" target="_blank" class="whatsapp-btn">
-                    <i class="fab fa-whatsapp"></i> WHATSAPP SUPPORT
-                </a>
-            </div>
-        </div>
-    </main>
+                return details;
+            }
 
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="footer-content">
-            <div class="footer-logo">ZION AI TRADING LAB</div>
-            <ul class="footer-links">
-                <li><a href="#" class="footer-link">Dashboard</a></li>
-                <li><a href="#" class="footer-link">CopyTrade</a></li>
-                <li><a href="#" class="footer-link">DTrader</a></li>
-                <li><a href="#" class="footer-link">MultiMarket</a></li>
-                <li><a href="#" class="footer-link">Circles</a></li>
-                <li><a href="#" class="footer-link">Strategies</a></li>
-            </ul>
-        </div>
-        <div class="copyright">
-            © 2024 ZION AI Ultimate Terminal. All rights reserved. | Version 3.0.4-PRO | For authorized use only.
-        </div>
-    </footer>
-
-    <script>
-        // Market Data
-        const markets = [
-            { name: "Volatility 10 (1s) Index", icon: "fas fa-chart-line", active: true },
-            { name: "Volatility 10 Index", icon: "fas fa-chart-line", active: true },
-            { name: "Volatility 15 (1s) Index", icon: "fas fa-chart-line", active: false },
-            { name: "Volatility 25 (1s) Index", icon: "fas fa-chart-line", active: true },
-            { name: "Volatility 25 Index", icon: "fas fa-chart-line", active: false },
-            { name: "Volatility 30 (1s) Index", icon: "fas fa-chart-line", active: false },
-            { name: "Volatility 50 (1s) Index", icon: "fas fa-chart-line", active: true },
-            { name: "Volatility 50 Index", icon: "fas fa-chart-line", active: false },
-            { name: "Volatility 75 (1s) Index", icon: "fas fa-chart-line", active: false },
-            { name: "Volatility 75 Index", icon: "fas fa-chart-line", active: false },
-            { name: "Volatility 90 (1s) Index", icon: "fas fa-chart-line", active: false },
-            { name: "Volatility 100 (1s) Index", icon: "fas fa-chart-line", active: false },
-            { name: "Volatility 100 Index", icon: "fas fa-chart-line", active: false }
-        ];
-
-        // Initialize Markets
-        function initializeMarkets() {
-            const marketScroll = document.getElementById('marketScroll');
-            markets.forEach(market => {
-                const marketCard = document.createElement('div');
-                marketCard.className = `market-card ${market.active ? 'active' : ''}`;
-                marketCard.innerHTML = `
-                    <div class="market-icon">
-                        <i class="${market.icon}"></i>
+            renderActiveSignal(signal) {
+                return `
+                    <div class="countdown-timer">
+                        <div class="timer-display" id="timer${signal.id}">${this.formatTime(signal.countdown)}</div>
+                        <div style="color: var(--text-dim); font-size: 0.9rem;">XML Bot Sync Countdown</div>
                     </div>
-                    <div class="market-name">${market.name.split(' ')[1]}</div>
-                    <div class="market-status">
-                        ${market.active ? '<span style="color: var(--success)">● ACTIVE</span>' : '<span style="color: var(--text-dim)">○ INACTIVE</span>'}
+                    <button class="execute-btn" onclick="app.executeTrade(${signal.id})" id="executeBtn${signal.id}">
+                        <i class="fas fa-rocket"></i> EXECUTE TRADE
+                    </button>
+                `;
+            }
+
+            renderScanningSignal() {
+                return `
+                    <div class="countdown-timer">
+                        <div class="timer-display" style="color: var(--warning); font-size: 2rem;">
+                            <i class="fas fa-sync fa-spin"></i>
+                        </div>
+                        <div style="color: var(--text-dim); font-size: 0.9rem;">AI Analysis in Progress</div>
+                    </div>
+                    <button class="execute-btn" disabled>
+                        <i class="fas fa-hourglass-half"></i> AWAITING SIGNAL
+                    </button>
+                `;
+            }
+
+            renderCredentials() {
+                return `
+                    <div class="credential-item">
+                        <div class="credential-label">APP ID</div>
+                        <div class="credential-value">${CONFIG.APP_ID}</div>
+                    </div>
+                    
+                    <div class="credential-item">
+                        <div class="credential-label">REAL TOKEN</div>
+                        <div class="credential-value">${CONFIG.REAL_TOKEN}</div>
+                    </div>
+                    
+                    <div class="credential-item">
+                        <div class="credential-label">DEMO TOKEN</div>
+                        <div class="credential-value">${CONFIG.DEMO_TOKEN}</div>
+                    </div>
+                    
+                    <div class="credential-item">
+                        <div class="credential-label">GEMINI API KEY</div>
+                        <div class="credential-value">${CONFIG.GEMINI_KEY}</div>
+                    </div>
+                    
+                    <div class="credential-item">
+                        <div class="credential-label">VERSION</div>
+                        <div class="credential-value">${CONFIG.VERSION}</div>
                     </div>
                 `;
-                marketCard.onclick = () => selectMarket(market.name);
-                marketScroll.appendChild(marketCard);
-            });
-        }
+            }
 
-        // Select Market
-        function selectMarket(marketName) {
-            console.log(`Selected market: ${marketName}`);
-            // In production, this would update the signals for the selected market
-            speakMessage(`Market switched to ${marketName}. Loading signals...`);
-        }
+            formatTime(seconds) {
+                if (!seconds) return "00:00";
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
 
-        // Countdown Timers
-        const timers = {
-            timer1: { seconds: 10, interval: null },
-            timer2: { seconds: 8, interval: null },
-            timer3: { seconds: 15, interval: null }
-        };
+            bindEvents() {
+                // Start Trading
+                document.getElementById('startTradingBtn').addEventListener('click', () => this.startTrading());
 
-        function startCountdown(timerId, seconds) {
-            const timerElement = document.getElementById(timerId);
-            const buttonId = timerId.replace('timer', 'executeBtn');
-            const executeBtn = document.getElementById(buttonId);
-            
-            timers[timerId].seconds = seconds;
-            
-            timers[timerId].interval = setInterval(() => {
-                timers[timerId].seconds--;
-                
-                if (timers[timerId].seconds <= 0) {
-                    clearInterval(timers[timerId].interval);
-                    timerElement.textContent = "00:00";
-                    timerElement.style.color = "var(--danger)";
-                    executeBtn.disabled = true;
-                    executeBtn.innerHTML = '<i class="fas fa-clock"></i> EXPIRED';
-                    speakMessage("Countdown expired. Signal no longer valid.");
-                } else {
-                    const minutes = Math.floor(timers[timerId].seconds / 60);
-                    const secs = timers[timerId].seconds % 60;
-                    timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-                    
-                    // Color change warning
-                    if (timers[timerId].seconds <= 5) {
-                        timerElement.style.color = "var(--warning)";
-                        if (timers[timerId].seconds === 5) {
-                            speakMessage("5 seconds remaining. Prepare to execute.");
+                // Emergency Stop
+                document.getElementById('emergencyStopBtn').addEventListener('click', () => this.emergencyStop());
+
+                // Voice Toggle
+                document.getElementById('voiceToggle').addEventListener('change', (e) => {
+                    this.voiceEnabled = e.target.checked;
+                    const status = document.getElementById('voiceStatus');
+                    if (this.voiceEnabled) {
+                        status.textContent = "Voice ON";
+                        status.style.color = "var(--success)";
+                        this.speak("Voice broadcast activated. Ready for signal announcements.");
+                    } else {
+                        status.textContent = "Voice OFF";
+                        status.style.color = "var(--text-dim)";
+                        window.speechSynthesis.cancel();
+                    }
+                });
+
+                // Speak Button
+                document.getElementById('speakBtn').addEventListener('click', () => this.speak());
+
+                // Market Selection
+                document.querySelectorAll('.market-card').forEach(card => {
+                    card.addEventListener('click', () => {
+                        const market = card.dataset.market;
+                        this.selectMarket(market);
+                    });
+                });
+
+                // Prevent right-click
+                document.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    alert("Right-click disabled for security reasons.");
+                });
+            }
+
+            startDemo() {
+                // Start countdowns after a delay
+                setTimeout(() => {
+                    SIGNALS.forEach(signal => {
+                        if (signal.countdown && signal.active) {
+                            this.startCountdown(signal.id, signal.countdown);
                         }
+                    });
+                }, 1000);
+
+                // Welcome message
+                setTimeout(() => {
+                    if (this.voiceEnabled) {
+                        this.speak("Welcome to ZION AI Ultimate Terminal version 3.0.4 PRO. System initialized. Multi Time Frame Analysis active. Google Gemini AI integrated. Ready for trading.");
+                    }
+                }, 2000);
+            }
+
+            startCountdown(signalId, seconds) {
+                const timerElement = document.getElementById(`timer${signalId}`);
+                const buttonElement = document.getElementById(`executeBtn${signalId}`);
+                
+                if (!timerElement || !buttonElement) return;
+
+                this.timers[signalId] = {
+                    seconds: seconds,
+                    interval: setInterval(() => {
+                        this.timers[signalId].seconds--;
+                        
+                        if (this.timers[signalId].seconds <= 0) {
+                            clearInterval(this.timers[signalId].interval);
+                            timerElement.textContent = "00:00";
+                            timerElement.style.color = "var(--danger)";
+                            buttonElement.disabled = true;
+                            buttonElement.innerHTML = '<i class="fas fa-clock"></i> EXPIRED';
+                            
+                            if (this.voiceEnabled) {
+                                this.speak(`Signal ${signalId} countdown expired.`);
+                            }
+                        } else {
+                            timerElement.textContent = this.formatTime(this.timers[signalId].seconds);
+                            
+                            if (this.timers[signalId].seconds <= 5) {
+                                timerElement.style.color = "var(--warning)";
+                                
+                                if (this.timers[signalId].seconds === 5 && this.voiceEnabled) {
+                                    this.speak(`5 seconds remaining for signal ${signalId}. Prepare to execute.`);
+                                }
+                            }
+                        }
+                    }, 1000)
+                };
+            }
+
+            executeTrade(signalId) {
+                const signal = SIGNALS.find(s => s.id === signalId);
+                if (!signal) return;
+
+                if (this.voiceEnabled) {
+                    let message = "";
+                    switch(signal.type) {
+                        case "RISE/FALL":
+                            message = `Executing ${signal.direction} contract on ${signal.market}. ${signal.duration} duration. XML bot synchronized.`;
+                            break;
+                        case "EVEN/ODD":
+                            message = `Executing ${signal.direction} prediction on ${signal.market}. Statistical streak analysis confirmed.`;
+                            break;
+                        case "OVER/UNDER":
+                            message = `Executing ${signal.direction} barrier on ${signal.market}. ${signal.payout} payout confirmed.`;
+                            break;
+                    }
+                    this.speak(message);
+                }
+
+                // Show execution alert
+                alert(`Trade executed: ${signal.type}\nMarket: ${signal.market}\nXML Bot synchronized successfully!`);
+
+                // Reset countdown for demo
+                if (this.timers[signalId]) {
+                    clearInterval(this.timers[signalId].interval);
+                }
+                this.startCountdown(signalId, signal.countdown);
+            }
+
+            startTrading() {
+                if (confirm("Start ZION AI trading engine? This will begin signal generation and execution.")) {
+                    if (this.voiceEnabled) {
+                        this.speak("ZION AI trading engine starting. Initializing Multi Time Frame Analysis. Loading market data. All systems nominal.");
+                    }
+
+                    this.isTrading = true;
+                    
+                    // Update UI
+                    const startBtn = document.getElementById('startTradingBtn');
+                    startBtn.innerHTML = '<i class="fas fa-sync fa-spin"></i> TRADING ACTIVE';
+                    startBtn.style.background = 'var(--success)';
+
+                    // Start all countdowns
+                    SIGNALS.forEach(signal => {
+                        if (signal.countdown && signal.active) {
+                            if (this.timers[signal.id]) {
+                                clearInterval(this.timers[signal.id].interval);
+                            }
+                            this.startCountdown(signal.id, signal.countdown);
+                        }
+                    });
+
+                    // Simulate scanning signal activation
+                    setTimeout(() => {
+                        const scanningSignal = SIGNALS.find(s => s.id === 4);
+                        if (scanningSignal) {
+                            scanningSignal.confidence = 89;
+                            scanningSignal.coldDigits = "3, 7 (Cold)";
+                            scanningSignal.frequency = "15 ticks absent";
+                            scanningSignal.confidenceVal = "89%";
+                            scanningSignal.countdown = 12;
+                            scanningSignal.active = true;
+                            
+                            // Update UI
+                            this.render();
+                            this.bindEvents();
+                            this.startCountdown(4, 12);
+                            
+                            if (this.voiceEnabled) {
+                                this.speak("New signal generated. Matches/Differs contract ready. Confidence 89 percent.");
+                            }
+                        }
+                    }, 3000);
+                }
+            }
+
+            emergencyStop() {
+                if (confirm("EMERGENCY STOP: This will halt all trading activity and cancel pending signals. Continue?")) {
+                    // Stop all timers
+                    Object.values(this.timers).forEach(timer => {
+                        if (timer.interval) {
+                            clearInterval(timer.interval);
+                        }
+                    });
+                    this.timers = {};
+
+                    // Disable all execute buttons
+                    document.querySelectorAll('.execute-btn').forEach(btn => {
+                        btn.disabled = true;
+                        btn.innerHTML = '<i class="fas fa-stop"></i> TRADING HALTED';
+                    });
+
+                    // Reset start button
+                    const startBtn = document.getElementById('startTradingBtn');
+                    startBtn.innerHTML = '<i class="fas fa-play"></i> START TRADING';
+                    startBtn.style.background = '';
+
+                    this.isTrading = false;
+
+                    if (this.voiceEnabled) {
+                        this.speak("Emergency stop activated. All trading halted. Signals cancelled. System in safe mode.");
                     }
                 }
-            }, 1000);
-        }
+            }
 
-        // Execute Trade
-        function executeTrade(type) {
-            const voiceToggle = document.getElementById('voiceToggle');
-            
-            if (voiceToggle.checked) {
-                switch(type) {
-                    case 'rise_fall':
-                        speakMessage("Executing Rise contract on Volatility 10 Index. 2 minute duration. XML bot synchronized.");
-                        break;
-                    case 'even_odd':
-                        speakMessage("Executing Odd prediction on Volatility 25 1 second Index. Statistical streak analysis confirmed.");
-                        break;
-                    case 'over_under':
-                        speakMessage("Executing Under 3/4 barrier on Volatility 50 Index. 42 percent payout confirmed.");
-                        break;
+            selectMarket(marketSymbol) {
+                console.log(`Selected market: ${marketSymbol}`);
+                if (this.voiceEnabled) {
+                    const market = MARKETS.find(m => m.symbol === marketSymbol);
+                    if (market) {
+                        this.speak(`Market switched to ${market.name}. Loading signals...`);
+                    }
                 }
             }
-            
-            // Simulate trade execution
-            alert(`Trade executed: ${type.toUpperCase().replace('_', ' ')}\nXML Bot synchronized successfully!`);
-            
-            // Reset countdown for demo purposes
-            setTimeout(() => {
-                startCountdown('timer1', 10);
-                startCountdown('timer2', 8);
-                startCountdown('timer3', 15);
-            }, 2000);
-        }
 
-        // Voice Functions
-        function speakMessage(customMessage = null) {
-            const voiceToggle = document.getElementById('voiceToggle');
-            const speakBtn = document.getElementById('speakBtn');
-            const voiceMessage = document.getElementById('voiceMessage');
-            
-            if (!voiceToggle.checked) {
-                alert("Voice is turned off. Enable voice in the broadcast panel.");
-                return;
-            }
-            
-            const message = customMessage || voiceMessage.textContent;
-            
-            // Disable button during speech
-            speakBtn.disabled = true;
-            speakBtn.innerHTML = '<i class="fas fa-volume-up"></i> SPEAKING...';
-            
-            // Use Web Speech API
-            if ('speechSynthesis' in window) {
-                const speech = new SpeechSynthesisUtterance(message);
-                speech.rate = 1.2;
-                speech.pitch = 1.0;
-                speech.volume = 1;
-                
-                speech.onend = function() {
+            speak(customMessage = null) {
+                if (!this.voiceEnabled) return;
+
+                const message = customMessage || document.getElementById('voiceMessage').textContent;
+                const speakBtn = document.getElementById('speakBtn');
+
+                // Disable button during speech
+                speakBtn.disabled = true;
+                speakBtn.innerHTML = '<i class="fas fa-volume-up"></i> SPEAKING...';
+
+                if ('speechSynthesis' in window) {
+                    const speech = new SpeechSynthesisUtterance(message);
+                    speech.rate = 1.2;
+                    speech.pitch = 1.0;
+                    speech.volume = 1;
+                    
+                    speech.onend = () => {
+                        speakBtn.disabled = false;
+                        speakBtn.innerHTML = '<i class="fas fa-volume-up"></i> SPEAK MESSAGE';
+                    };
+                    
+                    window.speechSynthesis.speak(speech);
+                } else {
+                    alert("Your browser doesn't support speech synthesis. Please use Chrome or Edge.");
                     speakBtn.disabled = false;
                     speakBtn.innerHTML = '<i class="fas fa-volume-up"></i> SPEAK MESSAGE';
-                };
-                
-                window.speechSynthesis.speak(speech);
-            } else {
-                alert("Your browser doesn't support speech synthesis. Please use Chrome or Edge.");
-                speakBtn.disabled = false;
-                speakBtn.innerHTML = '<i class="fas fa-volume-up"></i> SPEAK MESSAGE';
-            }
-        }
-
-        // Start Trading
-        function startTrading() {
-            if (confirm("Start ZION AI trading engine? This will begin signal generation and execution.")) {
-                speakMessage("ZION AI trading engine starting. Initializing Multi Time Frame Analysis. Loading market data. All systems nominal.");
-                
-                // Start countdowns
-                startCountdown('timer1', 10);
-                startCountdown('timer2', 8);
-                startCountdown('timer3', 15);
-                
-                // Update UI
-                document.querySelector('.btn-primary').innerHTML = '<i class="fas fa-sync fa-spin"></i> TRADING ACTIVE';
-                document.querySelector('.btn-primary').style.background = 'var(--success)';
-                
-                // Simulate market scanning
-                setTimeout(() => {
-                    const scanningCard = document.querySelectorAll('.signal-card')[3];
-                    scanningCard.querySelector('.confidence-badge').textContent = "89%";
-                    scanningCard.querySelector('.confidence-badge').style.background = "var(--gradient)";
-                    scanningCard.querySelectorAll('.signal-metric')[2].querySelector('.metric-value').textContent = "3, 7 (Cold)";
-                    scanningCard.querySelectorAll('.signal-metric')[3].querySelector('.metric-value').textContent = "15 ticks absent";
-                    scanningCard.querySelectorAll('.signal-metric')[4].querySelector('.metric-value').textContent = "89%";
-                    scanningCard.querySelectorAll('.signal-metric')[4].querySelector('.metric-value').style.color = "var(--success)";
-                    scanningCard.querySelector('.timer-display').innerHTML = "00:12";
-                    scanningCard.querySelector('.timer-display').style.color = "var(--primary)";
-                    scanningCard.querySelector('.execute-btn').disabled = false;
-                    scanningCard.querySelector('.execute-btn').innerHTML = '<i class="fas fa-rocket"></i> EXECUTE TRADE';
-                    scanningCard.querySelector('.execute-btn').onclick = () => executeTrade('matches_differs');
-                }, 3000);
-            }
-        }
-
-        // Emergency Stop
-        function emergencyStop() {
-            if (confirm("EMERGENCY STOP: This will halt all trading activity and cancel pending signals. Continue?")) {
-                // Stop all countdowns
-                Object.keys(timers).forEach(timerId => {
-                    if (timers[timerId].interval) {
-                        clearInterval(timers[timerId].interval);
-                    }
-                });
-                
-                // Disable all execute buttons
-                document.querySelectorAll('.execute-btn').forEach(btn => {
-                    btn.disabled = true;
-                    btn.innerHTML = '<i class="fas fa-stop"></i> TRADING HALTED';
-                });
-                
-                // Reset UI
-                document.querySelector('.btn-primary').innerHTML = '<i class="fas fa-play"></i> START TRADING';
-                document.querySelector('.btn-primary').style.background = '';
-                
-                speakMessage("Emergency stop activated. All trading halted. Signals cancelled. System in safe mode.");
-            }
-        }
-
-        // Voice Toggle
-        document.getElementById('voiceToggle').addEventListener('change', function() {
-            const statusText = this.nextElementSibling.nextElementSibling;
-            if (this.checked) {
-                statusText.textContent = "Voice ON";
-                statusText.style.color = "var(--success)";
-                speakMessage("Voice broadcast activated. Ready for signal announcements.");
-            } else {
-                statusText.textContent = "Voice OFF";
-                statusText.style.color = "var(--text-dim)";
-                // Clear speech queue
-                window.speechSynthesis.cancel();
-            }
-        });
-
-        // Initialize on load
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeMarkets();
-            
-            // Auto-start countdowns for demo
-            setTimeout(() => {
-                startCountdown('timer1', 10);
-                startCountdown('timer2', 8);
-                startCountdown('timer3', 15);
-            }, 1000);
-            
-            // Welcome message
-            setTimeout(() => {
-                if (document.getElementById('voiceToggle').checked) {
-                    speakMessage("Welcome to ZION AI Ultimate Terminal version 3.0.4 PRO. System initialized. Multi Time Frame Analysis active. Google Gemini AI integrated. Ready for trading.");
                 }
-            }, 2000);
-        });
+            }
+        }
 
-        // Prevent right-click for security
-        document.addEventListener('contextmenu', function(e) {
-            e.preventDefault();
-            alert("Right-click disabled for security reasons.");
-        });
-
-        // Prevent text selection on credentials
-        document.querySelectorAll('.credential-value').forEach(el => {
-            el.addEventListener('selectstart', function(e) {
-                e.preventDefault();
-            });
-        });
+        // Initialize App
+        const app = new ZIONApp();
+        window.app = app; // Make app available globally
     </script>
 </body>
 </html>
