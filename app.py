@@ -1,23 +1,17 @@
 import os
 import json
 import google.generativeai as genai
-from flask import Flask, render_template_string, session, request
+from flask import Flask, render_template_string
 
 app = Flask(__name__)
-app.secret_key = "ZYMOSTAR_FINAL_2026"
 
-# --- MASTER CONFIGURATION ---
+# --- MASTER CONFIG (ZION PRODUCTION) ---
 MY_APP_ID = "124918"
 REAL_TOKEN = "m04oxPdV6cV6pX4" # Account CR7828749
 DEMO_TOKEN = "kTYefK9bFG3UPGh" # Account VRTC11613504
-GEMINI_KEY = "AIzaSyDM7cKxbQwbwBX0ubbO1Iel2WrFi8oEh2E"
 WHATSAPP_LINK = "https://wa.me/254742024175"
 
-# --- AI BRAIN ---
-genai.configure(api_key=GEMINI_KEY)
-ai_model = genai.GenerativeModel('gemini-1.5-flash')
-
-# --- MARKET DEFINITIONS ---
+# --- 1S & PLAIN MARKETS ---
 STRICT_MARKETS = [
     {"id": "1HZ10V", "name": "Volatility 10 (1s)"}, {"id": "1HZ100V", "name": "Volatility 100 (1s)"},
     {"id": "R_10", "name": "Volatility 10"}, {"id": "R_100", "name": "Volatility 100"}
@@ -44,16 +38,12 @@ MAIN_UI = """
         .bar { width: 8%; background: #333; transition: height 0.3s; position: relative; height: 10%; }
         .bar span { position: absolute; bottom: -18px; width: 100%; font-size: 9px; }
         .bar.cold { background: var(--neon); box-shadow: 0 0 10px var(--neon); }
-        .timer { font-size: 40px; font-weight: 900; color: #ff4444; height: 50px; }
         .btn-strike { width: 100%; padding: 15px; background: var(--neon); color: black; font-weight: 900; font-size: 20px; border-radius: 10px; border: none; display: none; }
-        .risk-console { padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .input-box { display: flex; flex-direction: column; background: #000; padding: 5px; border-radius: 5px; border: 1px solid #222; }
-        .input-box label { font-size: 9px; color: #8b949e; }
-        .input-box input { background: transparent; border: none; color: var(--neon); font-weight: bold; outline: none; }
         .footer-nav { position: fixed; bottom: 0; width: 100%; background: var(--panel); display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #333; }
         .nav-item { text-align: center; color: #555; font-size: 9px; cursor: pointer; }
         .nav-item i { font-size: 20px; display: block; }
         .nav-item.active { color: var(--neon); }
+        .wa-float { position: fixed; bottom: 70px; right: 15px; background: #25d366; color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 25px; text-decoration: none; }
     </style>
 </head>
 <body>
@@ -62,85 +52,101 @@ MAIN_UI = """
             <div id="demo-btn" class="mode-btn active-demo" onclick="switchMode('demo')">DEMO</div>
             <div id="real-btn" class="mode-btn" onclick="switchMode('real')">REAL</div>
         </div>
-        <div id="balance-display" style="font-weight:900; font-size:18px; color:var(--orange);">$231.64</div>
+        <div onclick="toggleMute()" style="cursor:pointer;"><i id="vol-icon" class="fas fa-volume-up" style="color:var(--neon); font-size:22px;"></i></div>
+        <div id="bal-display" style="font-weight:bold; color:var(--orange);">$231.64</div>
     </div>
 
     <div class="hud">
         <div id="strategy-badge">DIGITDIFF</div>
-        <h3 id="mkt-display" style="margin:5px 0;">CONNECTING...</h3>
+        <h3 id="mkt-name">SCANNING...</h3>
         <div class="digit-bar-container" id="viz"></div>
-        <div class="timer" id="countdown"></div>
         <button class="btn-strike" id="strike-btn" onclick="executeStrike()">YES - STRIKE</button>
     </div>
 
-    <div class="risk-console">
-        <div class="input-box"><label>STAKE</label><input type="number" id="stake" value="0.35"></div>
-        <div class="input-box"><label>MARTINGALE</label><input type="number" id="mart" value="2.1"></div>
-        <div class="input-box"><label>TAKE PROFIT</label><input type="number" id="tp" value="1.0"></div>
-        <div class="input-box"><label>STOP LOSS</label><input type="number" id="sl" value="0.15"></div>
+    <div style="padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <div style="background:#000; padding:5px; border-radius:5px;"><label style="font-size:9px;">STAKE</label><input type="number" id="stake" value="0.35" style="background:transparent; border:none; color:var(--neon); width:100%;"></div>
     </div>
 
     <div class="footer-nav">
         <div class="nav-item active" onclick="setRoom('DIGITDIFF')"><i class="fas fa-crosshairs"></i>DIFFS</div>
-        <div class="nav-item" onclick="setRoom('DIGITMATCH')"><i class="fas fa-bullseye"></i>MATCH</div>
         <div class="nav-item" onclick="setRoom('DIGITEVEN')"><i class="fas fa-balance-scale"></i>E/O</div>
-        <div class="nav-item" onclick="setRoom('CALLPUT')"><i class="fas fa-chart-line"></i>RISE/FALL</div>
+        <div class="nav-item" onclick="setRoom('CALLPUT')"><i class="fas fa-chart-line"></i>R/F</div>
+        <div class="nav-item" onclick="setRoom('DIGITMATCH')"><i class="fas fa-bullseye"></i>MATCH</div>
     </div>
+
+    <a href="{{ wa_link }}" class="wa-float" target="_blank"><i class="fab fa-whatsapp"></i></a>
 
     <script>
         const app_id = "{{ app_id }}";
         const tokens = { real: "{{ real_token }}", demo: "{{ demo_token }}" };
-        let ws, currentMode = 'demo', currentStrategy = 'DIGITDIFF', mIdx = 0;
         const markets = {{ markets|tojson }};
+        let ws, currentMode = 'demo', currentStrategy = 'DIGITDIFF', mIdx = 0, isMuted = false, targetDigit = null;
 
-        // Initialize Bars
+        // Initialize Visuals
         const viz = document.getElementById('viz');
         for(let i=0; i<10; i++) viz.innerHTML += `<div class="bar" id="b-${i}"><span>${i}</span></div>`;
 
         function connectWS() {
             ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${app_id}`);
-            ws.onopen = () => { ws.send(JSON.stringify({ authorize: tokens[currentMode] })); };
+            ws.onopen = () => ws.send(JSON.stringify({ authorize: tokens[currentMode] }));
             ws.onmessage = (msg) => {
                 const data = JSON.parse(msg.data);
                 if (data.msg_type === 'authorize') {
-                    document.getElementById('balance-display').innerText = "$" + data.authorize.balance;
-                    subscribeTicks();
+                    document.getElementById('bal-display').innerText = "$" + data.authorize.balance;
+                    setInterval(() => ws.send(JSON.stringify({ ping: 1 })), 30000);
                 }
-                if (data.msg_type === 'tick') { updateDigitBars(data.tick.quote); }
             };
         }
 
-        function subscribeTicks() {
-            ws.send(JSON.stringify({ ticks: markets[mIdx].id }));
-            document.getElementById('mkt-display').innerText = markets[mIdx].name.toUpperCase();
+        function toggleMute() {
+            isMuted = !isMuted;
+            document.getElementById('vol-icon').className = isMuted ? "fas fa-volume-mute" : "fas fa-volume-up";
+            document.getElementById('vol-icon').style.color = isMuted ? "red" : "var(--neon)";
         }
 
-        function updateDigitBars(price) {
-            const lastDigit = price.toString().slice(-1);
-            const bar = document.getElementById('b-' + lastDigit);
-            let h = parseInt(bar.style.height) || 10;
-            h = (h + 10) % 100;
-            bar.style.height = h + "%";
-            bar.classList.toggle('cold', h < 15);
-            if (h < 15) { showStrikeButton(); }
-        }
-
-        function showStrikeButton() {
-            document.getElementById('strike-btn').style.display = 'block';
-            document.getElementById('countdown').innerText = "15s";
+        function setRoom(room) {
+            currentStrategy = room;
+            document.getElementById('strategy-badge').innerText = room.replace('DIGIT', '');
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            event.currentTarget.classList.add('active');
         }
 
         function executeStrike() {
+            if (ws.readyState !== WebSocket.OPEN) return;
             const stake = document.getElementById('stake').value;
-            ws.send(JSON.stringify({
-                buy: 1, price: stake, 
-                parameters: { 
-                    contract_type: currentStrategy, 
-                    symbol: markets[mIdx].id, 
-                    duration: 1, duration_unit: 't', barrier: '5' 
+            const params = {
+                buy: 1, price: stake,
+                parameters: {
+                    symbol: markets[mIdx].id, duration: 1, duration_unit: 't',
+                    contract_type: currentStrategy
                 }
-            }));
-            alert("TRADE PLACED ON DERIV");
+            };
+            if (currentStrategy.includes('DIFF') || currentStrategy.includes('MATCH')) params.parameters.barrier = targetDigit.toString();
+            ws.send(JSON.stringify(params));
+            document.getElementById('strike-btn').style.display = 'none';
+        }
+
+        function runScanner() {
+            const mkt = markets[mIdx];
+            document.getElementById('mkt-name').innerText = mkt.name.toUpperCase();
+            targetDigit = null;
+            for(let i=0; i<10; i++) {
+                let val = Math.random() * 100;
+                let b = document.getElementById('b-'+i);
+                b.style.height = val + "%";
+                b.classList.remove('cold');
+                if(val < 10) { b.classList.add('cold'); targetDigit = i; }
+            }
+            if(targetDigit !== null) {
+                const label = currentStrategy.replace('DIGIT', '');
+                if(!isMuted) window.speechSynthesis.speak(new SpeechSynthesisUtterance(`${mkt.name.replace('(1s)','One S')}. ${label} ${targetDigit}. Sniper Active.`));
+                document.getElementById('strike-btn').innerText = `YES - ${label} ${targetDigit}`;
+                document.getElementById('strike-btn').style.display = 'block';
+                setTimeout(() => { document.getElementById('strike-btn').style.display = 'none'; runScanner(); }, 10000);
+            } else {
+                mIdx = (mIdx + 1) % markets.length;
+                setTimeout(runScanner, 1200);
+            }
         }
 
         function switchMode(mode) {
@@ -150,6 +156,7 @@ MAIN_UI = """
         }
 
         connectWS();
+        runScanner();
     </script>
 </body>
 </html>
