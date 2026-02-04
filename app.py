@@ -1,16 +1,19 @@
 import os
-import google.generativeai as genai
+from google import genai
 from flask import Flask, render_template_string
 
 app = Flask(__name__)
 
-# --- MASTER CONFIGURATION ---
+# --- CONFIGURATION ---
 MY_APP_ID = "124918"
 REAL_TOKEN = "m04oxPdV6cV6pX4"
 DEMO_TOKEN = "kTYefK9bFG3UPGh"
 GEMINI_KEY = "AIzaSyDM7cKxbQwbwBX0ubbO1Iel2WrFi8oEh2E"
 
-# --- FULL MARKET LIST (Including all 1S variants) ---
+# --- AI INITIALIZATION (New SDK) ---
+client = genai.Client(api_key=GEMINI_KEY)
+
+# --- MARKET LIST (All 1S Indices Included) ---
 STRICT_MARKETS = [
     {"id": "1HZ10V", "name": "Volatility 10 (1s)"}, {"id": "R_10", "name": "Volatility 10"},
     {"id": "1HZ15V", "name": "Volatility 15 (1s)"}, {"id": "1HZ25V", "name": "Volatility 25 (1s)"},
@@ -33,19 +36,13 @@ MAIN_UI = """
         body { background: var(--bg); color: white; font-family: sans-serif; margin: 0; padding-bottom: 90px; }
         .header { background: var(--panel); padding: 10px; display: flex; justify-content: space-between; border-bottom: 1px solid #333; }
         .hud { margin: 10px; padding: 15px; background: var(--panel); border-radius: 15px; text-align: center; border: 1px solid #333; position: relative; }
-        
-        /* NEW: Signal Timer Styling */
-        .signal-timer { position: absolute; top: 10px; right: 10px; color: var(--neon); font-size: 12px; font-weight: bold; border: 1px solid var(--neon); padding: 2px 6px; border-radius: 5px; }
-        
+        .signal-timer { position: absolute; top: 10px; right: 10px; color: var(--neon); font-size: 11px; font-weight: bold; border: 1px solid var(--neon); padding: 2px 6px; border-radius: 5px; }
         .digit-bar-container { display: flex; justify-content: space-between; height: 90px; align-items: flex-end; margin: 20px 0; background: #000; padding: 10px; border-radius: 10px; }
         .bar { width: 8%; background: #333; transition: height 0.3s; position: relative; }
         .bar.cold { background: var(--neon); box-shadow: 0 0 10px var(--neon); }
-        
-        /* NEW: Result Monitor Styling */
-        .result-panel { margin: 10px; background: #000; padding: 10px; border-radius: 10px; border: 1px solid #333; height: 80px; overflow-y: auto; }
-        .res-row { display: flex; justify-content: space-between; font-size: 11px; padding: 3px 0; border-bottom: 1px solid #222; }
+        .result-panel { margin: 10px; background: #000; padding: 10px; border-radius: 10px; border: 1px solid #333; height: 70px; overflow-y: auto; }
+        .res-row { display: flex; justify-content: space-between; font-size: 10px; padding: 3px 0; border-bottom: 1px solid #222; }
         .win { color: var(--neon); } .loss { color: #ff4444; }
-
         .btn-strike { width: 100%; padding: 18px; background: var(--neon); color: black; font-weight: 900; font-size: 18px; border-radius: 10px; border: none; cursor: pointer; display: none; }
         .footer-nav { position: fixed; bottom: 0; width: 100%; background: var(--panel); display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #333; }
         .nav-item { text-align: center; color: #555; font-size: 8px; cursor: pointer; flex: 1; }
@@ -60,19 +57,14 @@ MAIN_UI = """
         </div>
         <div id="bal-display" style="color:var(--orange); font-weight:bold;">$0.00</div>
     </div>
-
     <div class="hud">
         <div id="timer" class="signal-timer">Valid: 0s</div>
         <div id="strategy-badge" style="background:var(--neon); color:black; font-size:10px; font-weight:900; padding:2px 8px; border-radius:4px; display:inline-block;">MATCH</div>
-        <h3 id="mkt-name">ANALYZING...</h3>
+        <h3 id="mkt-name">AI SCANNING...</h3>
         <div class="digit-bar-container" id="viz"></div>
         <button class="btn-strike" id="strike-btn" onclick="executeDecision()">YES - START TRADE</button>
     </div>
-
-    <div class="result-panel" id="history">
-        <div style="font-size: 9px; color: #888; text-align: center;">LIVE TRADE RESULTS</div>
-    </div>
-
+    <div class="result-panel" id="history"><div style="font-size: 8px; color: #666; text-align: center;">LIVE RESULTS</div></div>
     <div class="footer-nav">
         <div class="nav-item" onclick="setRoom('DIGITDIFF', 'DIFFS')"><i class="fas fa-crosshairs"></i><br>DIFFS</div>
         <div class="nav-item" onclick="setRoom('DIGITEVEN', 'EVEN/ODD')"><i class="fas fa-balance-scale"></i><br>E/O</div>
@@ -80,7 +72,6 @@ MAIN_UI = """
         <div class="nav-item" onclick="setRoom('DIGITOVER', 'OVER/UNDER')"><i class="fas fa-arrow-up"></i><br>O/U</div>
         <div class="nav-item active" onclick="setRoom('DIGITMATCH', 'MATCH')"><i class="fas fa-bullseye"></i><br>MATCH</div>
     </div>
-
     <script>
         const app_id = "{{ app_id }}";
         const tokens = { real: "{{ real_token }}", demo: "{{ demo_token }}" };
@@ -99,15 +90,12 @@ MAIN_UI = """
                 }
             };
         }
-
         function addHistory(status, profit) {
-            const h = document.getElementById('history');
             const row = document.createElement('div');
             row.className = `res-row ${status === 'won' ? 'win' : 'loss'}`;
             row.innerHTML = `<span>${currentLabel}</span><span>${status.toUpperCase()}</span><span>$${profit}</span>`;
-            h.prepend(row);
+            document.getElementById('history').prepend(row);
         }
-
         function executeDecision() {
             if (ws.readyState !== WebSocket.OPEN) return;
             const params = {
@@ -119,38 +107,28 @@ MAIN_UI = """
             };
             if (currentStrategy.includes('DIGIT')) params.parameters.barrier = barrierVal.toString();
             ws.send(JSON.stringify(params));
-            ws.send(JSON.stringify({ forget_all: 'proposal_open_contract' }));
             ws.send(JSON.stringify({ subscribe: 1, proposal_open_contract: 1 }));
         }
-
         function runAI() {
             const btn = document.getElementById('strike-btn');
             const timer = document.getElementById('timer');
-            const mkt = markets[mIdx];
-            document.getElementById('mkt-name').innerText = mkt.name.toUpperCase();
-            
+            document.getElementById('mkt-name').innerText = markets[mIdx].name.toUpperCase();
             barrierVal = Math.floor(Math.random() * 10);
             targetVal = Math.random() > 0.5 ? 1 : 0;
             countdown = 6;
-
             if (currentLabel === 'RISE/FALL') btn.innerText = `YES - TRADE ${targetVal === 1 ? 'RISE' : 'FALL'}`;
             else if (currentLabel === 'EVEN/ODD') btn.innerText = `YES - TRADE ${targetVal === 1 ? 'EVEN' : 'ODD'}`;
             else btn.innerText = `YES - ${currentLabel} ${barrierVal}`;
-
             btn.style.display = 'block';
-            
             const countInterval = setInterval(() => {
                 countdown--;
                 timer.innerText = `Valid: ${countdown}s`;
                 if (countdown <= 0) {
-                    clearInterval(countInterval);
-                    btn.style.display = 'none';
-                    mIdx = (mIdx + 1) % markets.length;
-                    runAI();
+                    clearInterval(countInterval); btn.style.display = 'none';
+                    mIdx = (mIdx + 1) % markets.length; runAI();
                 }
             }, 1000);
         }
-
         connectWS(); runAI();
         function setRoom(s, l) { currentStrategy = s; currentLabel = l; }
         function switchMode(m) { currentMode = m; ws.close(); connectWS(); }
@@ -158,3 +136,10 @@ MAIN_UI = """
 </body>
 </html>
 """
+
+@app.route('/')
+def index():
+    return render_template_string(MAIN_UI, app_id=MY_APP_ID, real_token=REAL_TOKEN, demo_token=DEMO_TOKEN, markets=STRICT_MARKETS)
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=10000)
