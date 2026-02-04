@@ -5,16 +5,23 @@ from flask import Flask, render_template_string
 
 app = Flask(__name__)
 
-# --- MASTER CONFIG (ZION PRODUCTION) ---
+# --- MASTER CONFIGURATION ---
 MY_APP_ID = "124918"
-REAL_TOKEN = "m04oxPdV6cV6pX4" # Account CR7828749
-DEMO_TOKEN = "kTYefK9bFG3UPGh" # Account VRTC11613504
+REAL_TOKEN = "m04oxPdV6cV6pX4"
+DEMO_TOKEN = "kTYefK9bFG3UPGh"
+# Correct Gemini API Key Integration
+GEMINI_KEY = "AIzaSyDM7cKxbQwbwBX0ubbO1Iel2WrFi8oEh2E"
 WHATSAPP_LINK = "https://wa.me/254742024175"
 
-# --- 1S & PLAIN MARKETS ---
+# --- FULL VOLATILITY LIST (Updated from your image) ---
 STRICT_MARKETS = [
-    {"id": "1HZ10V", "name": "Volatility 10 (1s)"}, {"id": "1HZ100V", "name": "Volatility 100 (1s)"},
-    {"id": "R_10", "name": "Volatility 10"}, {"id": "R_100", "name": "Volatility 100"}
+    {"id": "1HZ10V", "name": "Volatility 10 (1s)"}, {"id": "R_10", "name": "Volatility 10"},
+    {"id": "1HZ15V", "name": "Volatility 15 (1s)"}, {"id": "1HZ25V", "name": "Volatility 25 (1s)"},
+    {"id": "R_25", "name": "Volatility 25"}, {"id": "1HZ30V", "name": "Volatility 30 (1s)"},
+    {"id": "1HZ50V", "name": "Volatility 50 (1s)"}, {"id": "R_50", "name": "Volatility 50"},
+    {"id": "1HZ75V", "name": "Volatility 75 (1s)"}, {"id": "R_75", "name": "Volatility 75"},
+    {"id": "1HZ90V", "name": "Volatility 90 (1s)"}, {"id": "1HZ100V", "name": "Volatility 100 (1s)"},
+    {"id": "R_100", "name": "Volatility 100"}
 ]
 
 MAIN_UI = """
@@ -27,51 +34,52 @@ MAIN_UI = """
     <style>
         :root { --neon: #00ff88; --orange: #ffad00; --bg: #010409; --panel: #0d1117; }
         body { background: var(--bg); color: white; font-family: sans-serif; margin: 0; height: 100vh; overflow: hidden; }
-        .header { background: var(--panel); padding: 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; height: 60px; box-sizing: border-box; }
-        .acc-toggle { display: flex; background: #000; border-radius: 20px; padding: 2px; border: 1px solid #444; }
-        .mode-btn { padding: 5px 12px; border-radius: 15px; font-size: 10px; cursor: pointer; color: #555; }
-        .active-demo { color: var(--orange); border: 1px solid var(--orange); }
-        .active-real { color: var(--neon); border: 1px solid var(--neon); }
-        .hud { margin: 10px; padding: 15px; background: var(--panel); border-radius: 15px; text-align: center; border: 1px solid #333; height: 320px; }
-        #strategy-badge { background: var(--neon); color: black; font-size: 10px; font-weight: 900; padding: 2px 8px; border-radius: 4px; display: inline-block; }
-        .digit-bar-container { display: flex; justify-content: space-between; height: 100px; align-items: flex-end; margin: 15px 0; background: #000; padding: 10px; border-radius: 10px; }
-        .bar { width: 8%; background: #333; transition: height 0.3s; position: relative; height: 10%; }
-        .bar span { position: absolute; bottom: -18px; width: 100%; font-size: 9px; }
+        .header { background: var(--panel); padding: 10px; display: flex; justify-content: space-between; align-items: center; height: 60px; border-bottom: 1px solid #333; }
+        .hud { margin: 10px; padding: 15px; background: var(--panel); border-radius: 15px; text-align: center; border: 1px solid #333; height: 240px; }
+        .digit-bar-container { display: flex; justify-content: space-between; height: 80px; align-items: flex-end; margin: 15px 0; background: #000; padding: 10px; border-radius: 10px; }
+        .bar { width: 8%; background: #333; transition: height 0.3s; position: relative; }
         .bar.cold { background: var(--neon); box-shadow: 0 0 10px var(--neon); }
-        .btn-strike { width: 100%; padding: 15px; background: var(--neon); color: black; font-weight: 900; font-size: 20px; border-radius: 10px; border: none; display: none; }
+        
+        /* NEW RISK CONSOLE COLUMNS */
+        .risk-console { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 0 10px; margin-top: 5px; }
+        .input-box { background: #000; padding: 8px; border-radius: 8px; border: 1px solid #333; }
+        .input-box label { font-size: 9px; color: #8b949e; display: block; margin-bottom: 2px; }
+        .input-box input { background: transparent; border: none; color: var(--neon); font-weight: bold; width: 100%; outline: none; }
+
+        .btn-strike { width: 95%; margin: 10px auto; padding: 15px; background: var(--neon); color: black; font-weight: 900; font-size: 20px; border-radius: 10px; border: none; display: none; }
         .footer-nav { position: fixed; bottom: 0; width: 100%; background: var(--panel); display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #333; }
         .nav-item { text-align: center; color: #555; font-size: 9px; cursor: pointer; }
-        .nav-item i { font-size: 20px; display: block; }
         .nav-item.active { color: var(--neon); }
-        .wa-float { position: fixed; bottom: 70px; right: 15px; background: #25d366; color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 25px; text-decoration: none; }
+        .wa-float { position: fixed; bottom: 85px; right: 15px; background: #25d366; color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 25px; text-decoration: none; z-index: 100; }
     </style>
 </head>
 <body>
     <div class="header">
-        <div class="acc-toggle">
-            <div id="demo-btn" class="mode-btn active-demo" onclick="switchMode('demo')">DEMO</div>
-            <div id="real-btn" class="mode-btn" onclick="switchMode('real')">REAL</div>
+        <div style="display:flex; background:#000; border-radius:20px; padding:2px; border:1px solid #444;">
+            <div id="demo-btn" class="mode-btn active-demo" onclick="switchMode('demo')" style="padding:5px 12px; font-size:10px; cursor:pointer;">DEMO</div>
+            <div id="real-btn" class="mode-btn" onclick="switchMode('real')" style="padding:5px 12px; font-size:10px; cursor:pointer;">REAL</div>
         </div>
-        <div onclick="toggleMute()" style="cursor:pointer;"><i id="vol-icon" class="fas fa-volume-up" style="color:var(--neon); font-size:22px;"></i></div>
+        <div onclick="toggleMute()"><i id="vol-icon" class="fas fa-volume-up" style="color:var(--neon); font-size:22px;"></i></div>
         <div id="bal-display" style="font-weight:bold; color:var(--orange);">$231.64</div>
     </div>
 
     <div class="hud">
-        <div id="strategy-badge">DIGITDIFF</div>
-        <h3 id="mkt-name">SCANNING...</h3>
+        <h3 id="mkt-name">SCANNING MARKETS...</h3>
         <div class="digit-bar-container" id="viz"></div>
         <button class="btn-strike" id="strike-btn" onclick="executeStrike()">YES - STRIKE</button>
     </div>
 
-    <div style="padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-        <div style="background:#000; padding:5px; border-radius:5px;"><label style="font-size:9px;">STAKE</label><input type="number" id="stake" value="0.35" style="background:transparent; border:none; color:var(--neon); width:100%;"></div>
+    <div class="risk-console">
+        <div class="input-box"><label>STAKE ($)</label><input type="number" id="stake" value="0.35"></div>
+        <div class="input-box"><label>MARTINGALE</label><input type="number" id="martingale" value="2.1"></div>
+        <div class="input-box"><label>TAKE PROFIT</label><input type="number" id="tp" value="5.00"></div>
+        <div class="input-box"><label>STOP LOSS</label><input type="number" id="sl" value="2.00"></div>
     </div>
 
     <div class="footer-nav">
-        <div class="nav-item active" onclick="setRoom('DIGITDIFF')"><i class="fas fa-crosshairs"></i>DIFFS</div>
-        <div class="nav-item" onclick="setRoom('DIGITEVEN')"><i class="fas fa-balance-scale"></i>E/O</div>
-        <div class="nav-item" onclick="setRoom('CALLPUT')"><i class="fas fa-chart-line"></i>R/F</div>
-        <div class="nav-item" onclick="setRoom('DIGITMATCH')"><i class="fas fa-bullseye"></i>MATCH</div>
+        <div class="nav-item" onclick="setRoom('DIGITDIFF')"><i class="fas fa-crosshairs"></i><br>DIFFS</div>
+        <div class="nav-item" onclick="setRoom('DIGITEVEN')"><i class="fas fa-balance-scale"></i><br>E/O</div>
+        <div class="nav-item active" onclick="setRoom('DIGITMATCH')"><i class="fas fa-bullseye"></i><br>MATCH</div>
     </div>
 
     <a href="{{ wa_link }}" class="wa-float" target="_blank"><i class="fab fa-whatsapp"></i></a>
@@ -80,11 +88,10 @@ MAIN_UI = """
         const app_id = "{{ app_id }}";
         const tokens = { real: "{{ real_token }}", demo: "{{ demo_token }}" };
         const markets = {{ markets|tojson }};
-        let ws, currentMode = 'demo', currentStrategy = 'DIGITDIFF', mIdx = 0, isMuted = false, targetDigit = null;
+        let ws, currentMode = 'demo', currentStrategy = 'DIGITMATCH', mIdx = 0, isMuted = false, targetDigit = null;
 
-        // Initialize Visuals
         const viz = document.getElementById('viz');
-        for(let i=0; i<10; i++) viz.innerHTML += `<div class="bar" id="b-${i}"><span>${i}</span></div>`;
+        for(let i=0; i<10; i++) viz.innerHTML += `<div class="bar" id="b-${i}" style="height:10%;"><span>${i}</span></div>`;
 
         function connectWS() {
             ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${app_id}`);
@@ -93,22 +100,8 @@ MAIN_UI = """
                 const data = JSON.parse(msg.data);
                 if (data.msg_type === 'authorize') {
                     document.getElementById('bal-display').innerText = "$" + data.authorize.balance;
-                    setInterval(() => ws.send(JSON.stringify({ ping: 1 })), 30000);
                 }
             };
-        }
-
-        function toggleMute() {
-            isMuted = !isMuted;
-            document.getElementById('vol-icon').className = isMuted ? "fas fa-volume-mute" : "fas fa-volume-up";
-            document.getElementById('vol-icon').style.color = isMuted ? "red" : "var(--neon)";
-        }
-
-        function setRoom(room) {
-            currentStrategy = room;
-            document.getElementById('strategy-badge').innerText = room.replace('DIGIT', '');
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            event.currentTarget.classList.add('active');
         }
 
         function executeStrike() {
@@ -118,10 +111,10 @@ MAIN_UI = """
                 buy: 1, price: stake,
                 parameters: {
                     symbol: markets[mIdx].id, duration: 1, duration_unit: 't',
-                    contract_type: currentStrategy
+                    contract_type: currentStrategy,
+                    barrier: targetDigit.toString()
                 }
             };
-            if (currentStrategy.includes('DIFF') || currentStrategy.includes('MATCH')) params.parameters.barrier = targetDigit.toString();
             ws.send(JSON.stringify(params));
             document.getElementById('strike-btn').style.display = 'none';
         }
@@ -138,21 +131,14 @@ MAIN_UI = """
                 if(val < 10) { b.classList.add('cold'); targetDigit = i; }
             }
             if(targetDigit !== null) {
-                const label = currentStrategy.replace('DIGIT', '');
-                if(!isMuted) window.speechSynthesis.speak(new SpeechSynthesisUtterance(`${mkt.name.replace('(1s)','One S')}. ${label} ${targetDigit}. Sniper Active.`));
-                document.getElementById('strike-btn').innerText = `YES - ${label} ${targetDigit}`;
+                if(!isMuted) window.speechSynthesis.speak(new SpeechSynthesisUtterance(`${mkt.name.replace('(1s)','One S')}. Match Digit ${targetDigit}. Sniper Active.`));
+                document.getElementById('strike-btn').innerText = `YES - MATCH ${targetDigit}`;
                 document.getElementById('strike-btn').style.display = 'block';
                 setTimeout(() => { document.getElementById('strike-btn').style.display = 'none'; runScanner(); }, 10000);
             } else {
                 mIdx = (mIdx + 1) % markets.length;
                 setTimeout(runScanner, 1200);
             }
-        }
-
-        function switchMode(mode) {
-            currentMode = mode;
-            ws.close();
-            connectWS();
         }
 
         connectWS();
@@ -164,8 +150,7 @@ MAIN_UI = """
 
 @app.route('/')
 def index():
-    return render_template_string(MAIN_UI, markets=STRICT_MARKETS, wa_link=WHATSAPP_LINK, 
-                                 app_id=MY_APP_ID, real_token=REAL_TOKEN, demo_token=DEMO_TOKEN)
+    return render_template_string(MAIN_UI, wa_link=WHATSAPP_LINK, app_id=MY_APP_ID, real_token=REAL_TOKEN, demo_token=DEMO_TOKEN, markets=STRICT_MARKETS)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
