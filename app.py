@@ -8,15 +8,9 @@ app = Flask(__name__)
 MY_APP_ID = "124918"
 REAL_TOKEN = "m04oxPdV6cV6pX4"
 DEMO_TOKEN = "kTYefK9bFG3UPGh"
-# Google Gemini API Integration
 GEMINI_KEY = "AIzaSyDM7cKxbQwbwBX0ubbO1Iel2WrFi8oEh2E"
-WHATSAPP_LINK = "https://wa.me/254742024175"
 
-# --- AI INITIALIZATION ---
-genai.configure(api_key=GEMINI_KEY)
-ai_model = genai.GenerativeModel('gemini-1.5-flash')
-
-# --- FULL MARKET LIST (Including 15, 30, 90 1s) ---
+# --- FULL MARKET LIST (Including all 1S variants) ---
 STRICT_MARKETS = [
     {"id": "1HZ10V", "name": "Volatility 10 (1s)"}, {"id": "R_10", "name": "Volatility 10"},
     {"id": "1HZ15V", "name": "Volatility 15 (1s)"}, {"id": "1HZ25V", "name": "Volatility 25 (1s)"},
@@ -36,45 +30,47 @@ MAIN_UI = """
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root { --neon: #00ff88; --orange: #ffad00; --bg: #010409; --panel: #0d1117; }
-        body { background: var(--bg); color: white; font-family: sans-serif; margin: 0; padding-bottom: 80px; overflow-x: hidden; }
-        .header { background: var(--panel); padding: 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
-        .hud { margin: 10px; padding: 15px; background: var(--panel); border-radius: 15px; text-align: center; border: 1px solid #333; }
+        body { background: var(--bg); color: white; font-family: sans-serif; margin: 0; padding-bottom: 90px; }
+        .header { background: var(--panel); padding: 10px; display: flex; justify-content: space-between; border-bottom: 1px solid #333; }
+        .hud { margin: 10px; padding: 15px; background: var(--panel); border-radius: 15px; text-align: center; border: 1px solid #333; position: relative; }
+        
+        /* NEW: Signal Timer Styling */
+        .signal-timer { position: absolute; top: 10px; right: 10px; color: var(--neon); font-size: 12px; font-weight: bold; border: 1px solid var(--neon); padding: 2px 6px; border-radius: 5px; }
+        
         .digit-bar-container { display: flex; justify-content: space-between; height: 90px; align-items: flex-end; margin: 20px 0; background: #000; padding: 10px; border-radius: 10px; }
         .bar { width: 8%; background: #333; transition: height 0.3s; position: relative; }
         .bar.cold { background: var(--neon); box-shadow: 0 0 10px var(--neon); }
-        .risk-console { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px; }
-        .input-box { background: #000; padding: 8px; border-radius: 8px; border: 1px solid #333; }
-        .input-box label { font-size: 9px; color: #8b949e; display: block; margin-bottom: 2px; }
-        .input-box input { background: transparent; border: none; color: var(--neon); font-weight: bold; width: 100%; outline: none; }
-        .btn-strike { width: 100%; padding: 18px; background: var(--neon); color: black; font-weight: 900; font-size: 20px; border-radius: 10px; border: none; cursor: pointer; display: none; margin-top: 10px; }
-        .footer-nav { position: fixed; bottom: 0; width: 100%; background: var(--panel); display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #333; }
+        
+        /* NEW: Result Monitor Styling */
+        .result-panel { margin: 10px; background: #000; padding: 10px; border-radius: 10px; border: 1px solid #333; height: 80px; overflow-y: auto; }
+        .res-row { display: flex; justify-content: space-between; font-size: 11px; padding: 3px 0; border-bottom: 1px solid #222; }
+        .win { color: var(--neon); } .loss { color: #ff4444; }
+
+        .btn-strike { width: 100%; padding: 18px; background: var(--neon); color: black; font-weight: 900; font-size: 18px; border-radius: 10px; border: none; cursor: pointer; display: none; }
+        .footer-nav { position: fixed; bottom: 0; width: 100%; background: var(--panel); display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #333; }
         .nav-item { text-align: center; color: #555; font-size: 8px; cursor: pointer; flex: 1; }
         .nav-item.active { color: var(--neon); }
-        .wa-float { position: fixed; bottom: 90px; right: 15px; background: #25d366; color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 25px; text-decoration: none; }
     </style>
 </head>
 <body>
     <div class="header">
-        <div style="display:flex; background:#000; border-radius:20px; padding:2px; border:1px solid #444;">
-            <div id="demo-btn" onclick="switchMode('demo')" style="padding:5px 12px; cursor:pointer; color:var(--orange); font-size:10px;">DEMO</div>
-            <div id="real-btn" onclick="switchMode('real')" style="padding:5px 12px; cursor:pointer; color:#444; font-size:10px;">REAL</div>
+        <div style="display:flex; background:#000; padding:2px; border-radius:20px;">
+            <div id="demo-btn" onclick="switchMode('demo')" style="padding:5px 12px; cursor:pointer; color:var(--orange);">DEMO</div>
+            <div id="real-btn" onclick="switchMode('real')" style="padding:5px 12px; cursor:pointer; color:#444;">REAL</div>
         </div>
-        <div onclick="toggleMute()"><i id="vol-icon" class="fas fa-volume-up" style="color:var(--neon); font-size:22px;"></i></div>
         <div id="bal-display" style="color:var(--orange); font-weight:bold;">$0.00</div>
     </div>
 
     <div class="hud">
+        <div id="timer" class="signal-timer">Valid: 0s</div>
         <div id="strategy-badge" style="background:var(--neon); color:black; font-size:10px; font-weight:900; padding:2px 8px; border-radius:4px; display:inline-block;">MATCH</div>
-        <h3 id="mkt-name">AI LOADING...</h3>
+        <h3 id="mkt-name">ANALYZING...</h3>
         <div class="digit-bar-container" id="viz"></div>
-        <button class="btn-strike" id="strike-btn" onclick="executeAutomatedTrade()">YES - PLACE TRADE</button>
+        <button class="btn-strike" id="strike-btn" onclick="executeDecision()">YES - START TRADE</button>
     </div>
 
-    <div class="risk-console">
-        <div class="input-box"><label>STAKE ($)</label><input type="number" id="stake" value="0.35"></div>
-        <div class="input-box"><label>MARTINGALE</label><input type="number" id="martingale" value="2.1"></div>
-        <div class="input-box"><label>TAKE PROFIT</label><input type="number" id="tp" value="5.00"></div>
-        <div class="input-box"><label>STOP LOSS</label><input type="number" id="sl" value="2.00"></div>
+    <div class="result-panel" id="history">
+        <div style="font-size: 9px; color: #888; text-align: center;">LIVE TRADE RESULTS</div>
     </div>
 
     <div class="footer-nav">
@@ -85,16 +81,12 @@ MAIN_UI = """
         <div class="nav-item active" onclick="setRoom('DIGITMATCH', 'MATCH')"><i class="fas fa-bullseye"></i><br>MATCH</div>
     </div>
 
-    <a href="{{ wa_link }}" class="wa-float" target="_blank"><i class="fab fa-whatsapp"></i></a>
-
     <script>
         const app_id = "{{ app_id }}";
         const tokens = { real: "{{ real_token }}", demo: "{{ demo_token }}" };
         const markets = {{ markets|tojson }};
-        let ws, currentMode = 'demo', currentStrategy = 'DIGITMATCH', currentLabel = 'MATCH', mIdx = 0, isMuted = false, targetDigit = null;
-
-        const viz = document.getElementById('viz');
-        for(let i=0; i<10; i++) viz.innerHTML += `<div class="bar" id="b-${i}" style="height:10%;"></div>`;
+        let ws, currentMode = 'demo', currentStrategy = 'DIGITMATCH', currentLabel = 'MATCH', mIdx = 0, countdown = 6;
+        let targetVal = null, barrierVal = 5;
 
         function connectWS() {
             ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${app_id}`);
@@ -102,83 +94,67 @@ MAIN_UI = """
             ws.onmessage = (msg) => {
                 const data = JSON.parse(msg.data);
                 if (data.msg_type === 'authorize') document.getElementById('bal-display').innerText = "$" + data.authorize.balance;
-            };
-        }
-
-        function setRoom(strat, label) {
-            currentStrategy = strat;
-            currentLabel = label;
-            document.getElementById('strategy-badge').innerText = label;
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            event.currentTarget.classList.add('active');
-        }
-
-        function executeAutomatedTrade() {
-            if (ws.readyState !== WebSocket.OPEN) return;
-            const stake = document.getElementById('stake').value;
-            let contract = currentStrategy;
-            if (currentStrategy === 'CALLPUT') contract = 'CALL'; 
-
-            const params = {
-                buy: 1, price: parseFloat(stake),
-                parameters: {
-                    symbol: markets[mIdx].id, duration: 1, duration_unit: 't',
-                    contract_type: contract
+                if (data.msg_type === 'proposal_open_contract' && data.proposal_open_contract.is_sold) {
+                    addHistory(data.proposal_open_contract.status, data.proposal_open_contract.profit);
                 }
             };
-            if (currentStrategy.includes('DIGIT')) params.parameters.barrier = targetDigit.toString();
-            ws.send(JSON.stringify(params));
-            document.getElementById('strike-btn').style.display = 'none';
         }
 
-        function runScanner() {
+        function addHistory(status, profit) {
+            const h = document.getElementById('history');
+            const row = document.createElement('div');
+            row.className = `res-row ${status === 'won' ? 'win' : 'loss'}`;
+            row.innerHTML = `<span>${currentLabel}</span><span>${status.toUpperCase()}</span><span>$${profit}</span>`;
+            h.prepend(row);
+        }
+
+        function executeDecision() {
+            if (ws.readyState !== WebSocket.OPEN) return;
+            const params = {
+                buy: 1, price: 0.35,
+                parameters: {
+                    symbol: markets[mIdx].id, duration: 1, duration_unit: 't',
+                    contract_type: currentStrategy === 'CALLPUT' ? (targetVal === 1 ? 'CALL' : 'PUT') : currentStrategy
+                }
+            };
+            if (currentStrategy.includes('DIGIT')) params.parameters.barrier = barrierVal.toString();
+            ws.send(JSON.stringify(params));
+            ws.send(JSON.stringify({ forget_all: 'proposal_open_contract' }));
+            ws.send(JSON.stringify({ subscribe: 1, proposal_open_contract: 1 }));
+        }
+
+        function runAI() {
+            const btn = document.getElementById('strike-btn');
+            const timer = document.getElementById('timer');
             const mkt = markets[mIdx];
             document.getElementById('mkt-name').innerText = mkt.name.toUpperCase();
-            targetDigit = Math.floor(Math.random() * 10);
             
-            document.querySelectorAll('.bar').forEach((b, i) => {
-                b.style.height = (Math.random() * 90) + "%";
-                b.classList.toggle('cold', i === targetDigit);
-            });
+            barrierVal = Math.floor(Math.random() * 10);
+            targetVal = Math.random() > 0.5 ? 1 : 0;
+            countdown = 6;
 
-            if(!isMuted) {
-                window.speechSynthesis.cancel();
-                window.speechSynthesis.speak(new SpeechSynthesisUtterance(`${mkt.name.replace('(1s)','One S')}. ${currentLabel} Sniper Ready.`));
-            }
+            if (currentLabel === 'RISE/FALL') btn.innerText = `YES - TRADE ${targetVal === 1 ? 'RISE' : 'FALL'}`;
+            else if (currentLabel === 'EVEN/ODD') btn.innerText = `YES - TRADE ${targetVal === 1 ? 'EVEN' : 'ODD'}`;
+            else btn.innerText = `YES - ${currentLabel} ${barrierVal}`;
+
+            btn.style.display = 'block';
             
-            document.getElementById('strike-btn').innerText = `YES - START ${currentLabel}`;
-            document.getElementById('strike-btn').style.display = 'block';
-            
-            setTimeout(() => {
-                document.getElementById('strike-btn').style.display = 'none';
-                mIdx = (mIdx + 1) % markets.length;
-                runScanner();
-            }, 6000);
+            const countInterval = setInterval(() => {
+                countdown--;
+                timer.innerText = `Valid: ${countdown}s`;
+                if (countdown <= 0) {
+                    clearInterval(countInterval);
+                    btn.style.display = 'none';
+                    mIdx = (mIdx + 1) % markets.length;
+                    runAI();
+                }
+            }, 1000);
         }
 
-        function toggleMute() {
-            isMuted = !isMuted;
-            document.getElementById('vol-icon').className = isMuted ? "fas fa-volume-mute" : "fas fa-volume-up";
-            document.getElementById('vol-icon').style.color = isMuted ? "red" : "var(--neon)";
-        }
-
-        function switchMode(m) {
-            currentMode = m;
-            document.getElementById('demo-btn').style.color = m === 'demo' ? 'var(--orange)' : '#444';
-            document.getElementById('real-btn').style.color = m === 'real' ? 'var(--neon)' : '#444';
-            ws.close(); connectWS();
-        }
-
-        connectWS();
-        runScanner();
+        connectWS(); runAI();
+        function setRoom(s, l) { currentStrategy = s; currentLabel = l; }
+        function switchMode(m) { currentMode = m; ws.close(); connectWS(); }
     </script>
 </body>
 </html>
 """
-
-@app.route('/')
-def index():
-    return render_template_string(MAIN_UI, wa_link=WHATSAPP_LINK, app_id=MY_APP_ID, real_token=REAL_TOKEN, demo_token=DEMO_TOKEN, markets=STRICT_MARKETS)
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
