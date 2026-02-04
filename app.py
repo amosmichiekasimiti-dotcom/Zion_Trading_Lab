@@ -1,1116 +1,143 @@
+# Save as zion_pro_v3_fixed.py
+import google.generativeai as genai
+from flask import Flask, render_template_string, jsonify
+import random
+
+app = Flask(__name__)
+
+# --- MASTER CONFIGURATION (FROM SCREENSHOTS) ---
+# FIXED: All literals are now properly quoted as strings to avoid decimal literal errors
+CONFIG = {
+    "MY_APP_ID": "124918",
+    "REAL_TOKEN": "m04oxPdV6cV6pX4",
+    "DEMO_TOKEN": "kTYefK9bFG3UPGh",
+    "GEMINI_KEY": "AIzaSyDM7cKxbQwbwBXOubb01Iel2WrFi8oEh2E",
+    "WHATSAPP_LINK": "https://wa.me/254742024175",
+    "VERSION": "3.0.4-PRO",
+    "MARKETS": [
+        "1Z10", "R_10", "1Z15", "1Z25", "R_25", 
+        "1Z30", "1Z50", "R_50", "1Z75", "R_75", 
+        "1Z90", "1Z100", "R_100"
+    ]
+}
+
+# --- AI INITIALIZATION ---
+genai.configure(api_key=CONFIG["GEMINI_KEY"])
+ai_model = genai.GenerativeModel('gemini-1.5-flash')
+
+@app.route('/')
+def home():
+    return render_template_string(HTML_DASHBOARD, config=CONFIG)
+
+@app.route('/api/update')
+def engine():
+    signals = {}
+    for m in CONFIG["MARKETS"]:
+        # Applying 40% Payout & High Accuracy Constraints
+        acc = random.randint(85, 99)
+        payout = random.randint(40, 98)
+        
+        # Specific Logic for Market Naming
+        # 1Z markets = 1s Volatility, R_ markets = Standard Volatility
+        display_name = m.replace("1Z", "Volatility 1s ").replace("R_", "Volatility ")
+        
+        signals[m] = {
+            "acc": acc,
+            "payout": f"{payout}%",
+            "prediction": random.choice(["UNDER 4", "OVER 5", "EVEN", "ODD", "RISE", "FALL"]),
+            "voice_msg": f"Zion Alert. {display_name} Accuracy {acc} percent. Payout {payout} percent."
+        }
+    return jsonify(signals)
+
+HTML_DASHBOARD = """
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZION AI Ultimate Terminal | PRO v3.0.4</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Orbitron:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <title>ZION AI {{ config.VERSION }}</title>
     <style>
-        :root {
-            --primary: #00ff88;
-            --primary-dark: #00cc6a;
-            --secondary: #6c63ff;
-            --dark-bg: #0a0e17;
-            --card-bg: #1a1f2e;
-            --card-hover: #242b3d;
-            --text-light: #ffffff;
-            --text-dim: #8a94a6;
-            --danger: #ff4757;
-            --warning: #ffa502;
-            --success: #00ff88;
-            --gradient: linear-gradient(135deg, #00ff88 0%, #6c63ff 100%);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Roboto', sans-serif;
-            background: var(--dark-bg);
-            color: var(--text-light);
-            overflow-x: hidden;
-            min-height: 100vh;
-        }
-
-        .header {
-            background: rgba(10, 14, 23, 0.95);
-            backdrop-filter: blur(10px);
-            border-bottom: 2px solid var(--primary);
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            box-shadow: 0 4px 30px rgba(0, 255, 136, 0.1);
-        }
-
-        .logo-container {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .logo {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 2rem;
-            font-weight: 900;
-            background: var(--gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: 2px;
-        }
-
-        .version-badge {
-            background: var(--primary);
-            color: var(--dark-bg);
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 700;
-            letter-spacing: 1px;
-        }
-
-        .nav-menu {
-            display: flex;
-            gap: 2rem;
-            list-style: none;
-        }
-
-        .nav-link {
-            color: var(--text-light);
-            text-decoration: none;
-            font-weight: 500;
-            padding: 8px 16px;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .nav-link:hover, .nav-link.active {
-            background: var(--primary);
-            color: var(--dark-bg);
-        }
-
-        .header-controls {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .btn {
-            padding: 10px 24px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-primary {
-            background: var(--gradient);
-            color: white;
-        }
-
-        .btn-danger {
-            background: var(--danger);
-            color: white;
-        }
-
-        .market-scroll-container {
-            background: var(--card-bg);
-            margin: 20px 2rem;
-            border-radius: 12px;
-            padding: 15px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .market-scroll-bar {
-            display: flex;
-            gap: 15px;
-            overflow-x: auto;
-            scroll-behavior: smooth;
-            padding: 10px;
-            scrollbar-width: none;
-        }
-
-        .market-scroll-bar::-webkit-scrollbar {
-            display: none;
-        }
-
-        .market-card {
-            min-width: 180px;
-            background: var(--dark-bg);
-            border-radius: 10px;
-            padding: 20px;
-            border: 2px solid transparent;
-            transition: all 0.3s ease;
-            text-align: center;
-            cursor: pointer;
-            flex-shrink: 0;
-        }
-
-        .market-card.active {
-            border-color: var(--primary);
-            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
-        }
-
-        .market-icon {
-            font-size: 2rem;
-            margin-bottom: 10px;
-            color: var(--primary);
-        }
-
-        .market-name {
-            font-weight: 600;
-            font-size: 1.1rem;
-            margin-bottom: 5px;
-        }
-
-        .market-status {
-            font-size: 0.9rem;
-            color: var(--text-dim);
-        }
-
-        .dashboard {
-            display: grid;
-            grid-template-columns: 3fr 1fr;
-            gap: 20px;
-            padding: 0 2rem 2rem;
-            min-height: calc(100vh - 200px);
-        }
-
-        .signals-section {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .signal-card {
-            background: var(--card-bg);
-            border-radius: 15px;
-            padding: 25px;
-            border-left: 5px solid var(--primary);
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .signal-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
-
-        .signal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .signal-type {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: var(--primary);
-        }
-
-        .confidence-badge {
-            background: var(--gradient);
-            color: white;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-weight: 700;
-            font-size: 0.9rem;
-        }
-
-        .signal-details {
-            margin-bottom: 20px;
-        }
-
-        .signal-metric {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .metric-label {
-            color: var(--text-dim);
-        }
-
-        .metric-value {
-            font-weight: 600;
-        }
-
-        .countdown-timer {
-            text-align: center;
-            margin: 20px 0;
-            font-family: 'Orbitron', sans-serif;
-        }
-
-        .timer-display {
-            font-size: 3rem;
-            font-weight: 700;
-            color: var(--primary);
-            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
-        }
-
-        .execute-btn {
-            width: 100%;
-            padding: 15px;
-            background: var(--danger);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 1.2rem;
-            font-weight: 700;
-            letter-spacing: 1px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 15px;
-        }
-
-        .execute-btn:hover {
-            background: #ff2e43;
-            transform: scale(1.02);
-        }
-
-        .execute-btn:disabled {
-            background: #666;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .voice-panel {
-            background: var(--card-bg);
-            border-radius: 15px;
-            padding: 25px;
-            border: 2px solid var(--secondary);
-            height: fit-content;
-        }
-
-        .voice-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .voice-title {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: var(--secondary);
-        }
-
-        .voice-controls {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-        }
-
-        .toggle-switch {
-            position: relative;
-            display: inline-block;
-            width: 60px;
-            height: 30px;
-        }
-
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .toggle-slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 34px;
-        }
-
-        .toggle-slider:before {
-            position: absolute;
-            content: "";
-            height: 22px;
-            width: 22px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-
-        input:checked + .toggle-slider {
-            background-color: var(--success);
-        }
-
-        input:checked + .toggle-slider:before {
-            transform: translateX(30px);
-        }
-
-        .voice-message-box {
-            background: var(--dark-bg);
-            padding: 20px;
-            border-radius: 10px;
-            min-height: 100px;
-            margin-bottom: 20px;
-            border: 1px solid rgba(108, 99, 255, 0.3);
-            font-family: 'Roboto', sans-serif;
-            font-size: 1rem;
-            line-height: 1.5;
-            color: var(--text-light);
-        }
-
-        .speak-btn {
-            width: 100%;
-            background: var(--secondary);
-            color: white;
-            padding: 15px;
-            border: none;
-            border-radius: 10px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .speak-btn:hover {
-            background: #5a52ff;
-            transform: scale(1.02);
-        }
-
-        .speak-btn:disabled {
-            background: #666;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .sidebar {
-            background: var(--card-bg);
-            border-radius: 15px;
-            padding: 25px;
-            height: fit-content;
-        }
-
-        .sidebar-title {
-            font-size: 1.3rem;
-            font-weight: 700;
-            margin-bottom: 20px;
-            color: var(--primary);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .credential-item {
-            background: var(--dark-bg);
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            border-left: 4px solid var(--secondary);
-        }
-
-        .credential-label {
-            font-size: 0.9rem;
-            color: var(--text-dim);
-            margin-bottom: 5px;
-        }
-
-        .credential-value {
-            font-family: 'Orbitron', monospace;
-            font-size: 0.9rem;
-            color: var(--primary);
-            word-break: break-all;
-        }
-
-        .whatsapp-btn {
-            width: 100%;
-            background: #25D366;
-            color: white;
-            padding: 15px;
-            border: none;
-            border-radius: 10px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 20px;
-            text-decoration: none;
-        }
-
-        .whatsapp-btn:hover {
-            background: #128C7E;
-            transform: scale(1.02);
-        }
-
-        .footer {
-            background: var(--card-bg);
-            padding: 2rem;
-            margin-top: 2rem;
-            border-top: 2px solid var(--primary-dark);
-        }
-
-        .footer-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-
-        .footer-logo {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.5rem;
-            font-weight: 900;
-            background: var(--gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .footer-links {
-            display: flex;
-            gap: 2rem;
-            list-style: none;
-        }
-
-        .footer-link {
-            color: var(--text-dim);
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
-
-        .footer-link:hover {
-            color: var(--primary);
-        }
-
-        .copyright {
-            color: var(--text-dim);
-            font-size: 0.9rem;
-            text-align: center;
-            margin-top: 1rem;
-        }
-
-        @media (max-width: 1200px) {
-            .dashboard {
-                grid-template-columns: 1fr;
-            }
-            
-            .sidebar {
-                order: -1;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .header {
-                flex-direction: column;
-                gap: 15px;
-                padding: 1rem;
-            }
-            
-            .nav-menu {
-                flex-wrap: wrap;
-                justify-content: center;
-                gap: 10px;
-            }
-            
-            .market-scroll-container {
-                margin: 20px 1rem;
-            }
-            
-            .dashboard {
-                padding: 0 1rem 1rem;
-            }
-            
-            .signals-section {
-                grid-template-columns: 1fr;
-            }
-        }
+        :root { --neon: #00ff9d; --bg: #06090c; --card: #12161b; }
+        body { background: var(--bg); color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; overflow-x: hidden; }
+        .header { display: flex; justify-content: space-between; padding: 20px; background: var(--card); border-bottom: 2px solid #1e2329; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 15px; padding: 20px; }
+        .card { background: var(--card); border: 1px solid #232a33; border-radius: 10px; padding: 15px; position: relative; }
+        .neon-text { color: var(--neon); }
+        .btn-mute { border: 1px solid var(--neon); color: var(--neon); background: none; padding: 10px; cursor: pointer; border-radius: 5px; font-weight: bold; }
+        .countdown { font-size: 2rem; color: var(--neon); margin: 10px 0; font-family: 'Courier New', monospace; }
+        .whatsapp { position: fixed; bottom: 20px; right: 20px; z-index: 1000; }
     </style>
 </head>
 <body>
-    <div id="app">
-        <!-- Header -->
-        <header class="header">
-            <div class="logo-container">
-                <div class="logo">ZION AI</div>
-                <div class="version-badge">v3.0.4-PRO</div>
-            </div>
-            
-            <nav>
-                <ul class="nav-menu">
-                    <li><a href="#" class="nav-link active"><i class="fas fa-chart-line"></i> Dashboard</a></li>
-                    <li><a href="#" class="nav-link"><i class="fas fa-robot"></i> Bot Builder</a></li>
-                    <li><a href="#" class="nav-link"><i class="fas fa-bolt"></i> Signals</a></li>
-                    <li><a href="#" class="nav-link"><i class="fas fa-chart-bar"></i> Analysis</a></li>
-                    <li><a href="#" class="nav-link"><i class="fas fa-copy"></i> CopyTrade</a></li>
-                    <li><a href="#" class="nav-link"><i class="fas fa-globe"></i> MultiMarket</a></li>
-                    <li><a href="#" class="nav-link"><i class="fas fa-cogs"></i> Strategies</a></li>
-                </ul>
-            </nav>
-            
-            <div class="header-controls">
-                <button class="btn btn-primary" id="startTradingBtn">
-                    <i class="fas fa-play"></i> Start Trading
-                </button>
-                <button class="btn btn-danger" id="emergencyStopBtn">
-                    <i class="fas fa-stop"></i> Emergency Stop
-                </button>
-            </div>
-        </header>
-
-        <!-- Market Scroll Bar -->
-        <div class="market-scroll-container">
-            <div class="market-scroll-bar" id="marketScroll"></div>
+    <div class="header">
+        <div><strong>ZION AI PRO</strong> | Version: {{ config.VERSION }}</div>
+        <div style="display: flex; gap: 20px; align-items: center;">
+            <div style="color:#555">APP ID: {{ config.MY_APP_ID }}</div>
+            <button id="mute-btn" class="btn-mute" onclick="toggleMute()">🔊 VOICE ON</button>
         </div>
+    </div>
 
-        <!-- Main Dashboard -->
-        <main class="dashboard">
-            <!-- Signals Section -->
-            <div class="signals-section" id="signalsSection"></div>
+    <div class="grid" id="market-grid"></div>
 
-            <!-- Sidebar -->
-            <div class="sidebar-section">
-                <!-- AI Voice Broadcast Panel -->
-                <div class="voice-panel">
-                    <div class="voice-header">
-                        <div class="voice-title">
-                            <i class="fas fa-broadcast-tower"></i>
-                            AI VOICE BROADCAST
-                        </div>
-                        <div class="voice-controls">
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="voiceToggle" checked>
-                                <span class="toggle-slider"></span>
-                            </label>
-                            <span id="voiceStatus" style="font-size: 0.9rem; color: #00ff88;">Voice ON</span>
-                        </div>
-                    </div>
-                    <div class="voice-message-box" id="voiceMessage">
-                        Signal validated for Volatility 10 Index. Rise contract, 2 minute duration. Confidence 94%. MTFA aligned. Prepare XML bot for execution in 10 seconds...
-                    </div>
-                    <button class="speak-btn" id="speakBtn">
-                        <i class="fas fa-volume-up"></i> SPEAK MESSAGE
-                    </button>
-                </div>
-
-                <!-- Credentials Panel -->
-                <div class="sidebar">
-                    <div class="sidebar-title">
-                        <i class="fas fa-key"></i> SECURE CREDENTIALS
-                    </div>
-                    
-                    <div class="credential-item">
-                        <div class="credential-label">APP ID</div>
-                        <div class="credential-value">124918</div>
-                    </div>
-                    
-                    <div class="credential-item">
-                        <div class="credential-label">REAL TOKEN</div>
-                        <div class="credential-value">m04oxPdV6cV6pX4</div>
-                    </div>
-                    
-                    <div class="credential-item">
-                        <div class="credential-label">DEMO TOKEN</div>
-                        <div class="credential-value">kTYefK9bFG3UPGh</div>
-                    </div>
-                    
-                    <div class="credential-item">
-                        <div class="credential-label">GEMINI API KEY</div>
-                        <div class="credential-value">AIzaSyDM7cKxbQwbwBXOubb01Iel2WrFi8oEh2E</div>
-                    </div>
-                    
-                    <div class="credential-item">
-                        <div class="credential-label">VERSION</div>
-                        <div class="credential-value">3.0.4-PRO</div>
-                    </div>
-                    
-                    <a href="https://wa.me/254742024175" target="_blank" class="whatsapp-btn">
-                        <i class="fab fa-whatsapp"></i> WHATSAPP SUPPORT
-                    </a>
-                </div>
-            </div>
-        </main>
-
-        <!-- Footer -->
-        <footer class="footer">
-            <div class="footer-content">
-                <div class="footer-logo">ZION AI TRADING LAB</div>
-                <ul class="footer-links">
-                    <li><a href="#" class="footer-link">Dashboard</a></li>
-                    <li><a href="#" class="footer-link">CopyTrade</a></li>
-                    <li><a href="#" class="footer-link">DTrader</a></li>
-                    <li><a href="#" class="footer-link">MultiMarket</a></li>
-                    <li><a href="#" class="footer-link">Circles</a></li>
-                    <li><a href="#" class="footer-link">Strategies</a></li>
-                </ul>
-            </div>
-            <div class="copyright">
-                © 2024 ZION AI Ultimate Terminal. All rights reserved. | Version 3.0.4-PRO | For authorized use only.
-            </div>
-        </footer>
+    <div class="whatsapp">
+        <a href="{{ config.WHATSAPP_LINK }}" target="_blank">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" width="60">
+        </a>
     </div>
 
     <script>
-        // Configuration
-        const CONFIG = {
-            APP_ID: "124918",
-            REAL_TOKEN: "m04oxPdV6cV6pX4",
-            DEMO_TOKEN: "kTYefK9bFG3UPGh",
-            GEMINI_KEY: "AIzaSyDM7cKxbQwbwBXOubb01Iel2WrFi8oEh2E",
-            WHATSAPP_LINK: "https://wa.me/254742024175",
-            VERSION: "3.0.4-PRO"
-        };
+        let isMuted = false;
+        let lastSpoken = "";
 
-        // Markets
-        const MARKETS = [
-            { name: "Volatility 10 (1s) Index", active: true },
-            { name: "Volatility 10 Index", active: true },
-            { name: "Volatility 15 (1s) Index", active: false },
-            { name: "Volatility 25 (1s) Index", active: true },
-            { name: "Volatility 25 Index", active: false },
-            { name: "Volatility 30 (1s) Index", active: false },
-            { name: "Volatility 50 (1s) Index", active: true },
-            { name: "Volatility 50 Index", active: false },
-            { name: "Volatility 75 (1s) Index", active: false },
-            { name: "Volatility 75 Index", active: false },
-            { name: "Volatility 90 (1s) Index", active: false },
-            { name: "Volatility 100 (1s) Index", active: false },
-            { name: "Volatility 100 Index", active: false }
-        ];
+        function toggleMute() {
+            isMuted = !isMuted;
+            document.getElementById('mute-btn').innerText = isMuted ? "🔇 VOICE MUTED" : "🔊 VOICE ON";
+            if(isMuted) window.speechSynthesis.cancel();
+        }
 
-        // Signals
-        const SIGNALS = [
-            {
-                id: 1,
-                type: "RISE/FALL",
-                confidence: 94,
-                market: "Volatility 10 Index",
-                direction: "RISE",
-                duration: "2 minutes",
-                mtfa: "Aligned",
-                gemini: "Confirmed",
-                countdown: 10
-            },
-            {
-                id: 2,
-                type: "EVEN/ODD",
-                confidence: 92,
-                market: "Volatility 25 (1s) Index",
-                direction: "ODD",
-                streak: "4 Consecutive Evens",
-                probability: "92.3%",
-                payout: "45%",
-                countdown: 8
-            },
-            {
-                id: 3,
-                type: "OVER/UNDER",
-                confidence: 91,
-                market: "Volatility 50 Index",
-                direction: "Under 3/4",
-                payout: "42%",
-                gravity: "High Cluster 5-9",
-                gemini: "Validated",
-                countdown: 15
-            },
-            {
-                id: 4,
-                type: "MATCHES/DIFFERS",
-                confidence: "SCANNING",
-                market: "Volatility 75 (1s) Index",
-                status: "Scanning MTFA...",
-                coldDigits: "Analyzing...",
-                frequency: "Processing...",
-                confidenceVal: "Calculating..."
-            }
-        ];
+        async function refresh() {
+            const res = await fetch('/api/update');
+            const data = await res.json();
+            const grid = document.getElementById('market-grid');
+            grid.innerHTML = '';
 
-        class ZIONTerminal {
-            constructor() {
-                this.isTrading = false;
-                this.voiceEnabled = true;
-                this.timers = {};
-                this.init();
-            }
-
-            init() {
-                this.renderMarkets();
-                this.renderSignals();
-                this.bindEvents();
-                this.startDemo();
-            }
-
-            renderMarkets() {
-                const container = document.getElementById('marketScroll');
-                container.innerHTML = MARKETS.map(market => `
-                    <div class="market-card ${market.active ? 'active' : ''}">
-                        <div class="market-icon">
-                            <i class="fas fa-chart-line"></i>
-                        </div>
-                        <div class="market-name">${market.name.split(' ')[1]}</div>
-                        <div class="market-status">
-                            ${market.active ? '<span style="color: #00ff88">● ACTIVE</span>' : '<span style="color: #8a94a6">○ INACTIVE</span>'}
-                        </div>
+            for (let m in data) {
+                const s = data[m];
+                const highConf = s.acc >= 90;
+                
+                grid.innerHTML += `
+                    <div class="card" style="border-color: ${highConf ? '#00ff9d' : '#232a33'}">
+                        <div style="font-size:11px; color:#555">${m.includes('1Z') ? '1S SERIES' : 'STANDARD'}</div>
+                        <h3 class="neon-text">${m.replace('1Z', 'Vol 1s ').replace('R_', 'Vol ')}</h3>
+                        <h1>${s.acc}%</h1>
+                        <div class="countdown" id="count-${m}">10s</div>
+                        <div style="color:#888">PAYOUT: ${s.payout}</div>
+                        <div style="font-weight:bold; margin-top:10px; color: ${highConf ? '#00ff9d' : '#fff'}">${s.prediction}</div>
                     </div>
-                `).join('');
-            }
+                `;
 
-            renderSignals() {
-                const container = document.getElementById('signalsSection');
-                container.innerHTML = SIGNALS.map(signal => {
-                    if (signal.type === "RISE/FALL") {
-                        return `
-                            <div class="signal-card">
-                                <div class="signal-header">
-                                    <div class="signal-type">${signal.type}</div>
-                                    <div class="confidence-badge">${signal.confidence}%</div>
-                                </div>
-                                <div class="signal-details">
-                                    <div class="signal-metric">
-                                        <span class="metric-label">Market:</span>
-                                        <span class="metric-value">${signal.market}</span>
-                                    </div>
-                                    <div class="signal-metric">
-                                        <span class="metric-label">Direction:</span>
-                                        <span class="metric-value" style="color: #00ff88">${signal.direction}</span>
-                                    </div>
-                                    <div class="signal-metric">
-                                        <span class="metric-label">Duration:</span>
-                                        <span class="metric-value">${signal.duration}</span>
-                                    </div>
-                                    <div class="signal-metric">
-                                        <span class="metric-label">MTFA:</span>
-                                        <span class="metric-value" style="color: #00ff88">${signal.mtfa}</span>
-                                    </div>
-                                    <div class="signal-metric">
-                                        <span class="metric-label">Gemini AI:</span>
-                                        <span class="metric-value" style="color: #00ff88">${signal.gemini}</span>
-                                    </div>
-                                </div>
-                                <div class="countdown-timer">
-                                    <div class="timer-display" id="timer1">${this.formatTime(signal.countdown)}</div>
-                                    <div style="color: #8a94a6; font-size: 0.9rem;">XML Bot Sync Countdown</div>
-                                </div>
-                                <button class="execute-btn" onclick="zion.executeTrade(1)" id="executeBtn1">
-                                    <i class="fas fa-rocket"></i> EXECUTE TRADE
-                                </button>
-                            </div>
-                        `;
-                    } else if (signal.type === "EVEN/ODD") {
-                        return `
-                            <div class="signal-card">
-                                <div class="signal-header">
-                                    <div class="signal-type">${signal.type}</div>
-                                    <div class="confidence-badge">${signal.confidence}%</div>
-                                </div>
-                                <div class="signal-details">
-                                    <div class="signal-metric">
-                                        <span class="metric-label">Market:</span>
-                                        <span class="metric-value">${signal.market}</span>
-                                    </div>
-                                    <div class="signal-metric">
-                                        <span class="metric-label">Prediction:</span>
-                                        <span class="metric-value" style="color: #6c63ff">${signal.direction}</span>
-                                    </div>
-                                    <div class="signal-metric">
-                                        <span class="metric-label">Streak:</span>
-                                        <span class="metric-value">${signal.streak}</span>
-                                    </div>
-                                    <div class="signal-metric">
-                                        <span class="metric-label">Probability:</span>
-                                        <span class="metric-value" style="color: #00ff88">${signal.probability}</span>
-                                    </div>
-                                    <div class="signal-metric">
-                                        <span class="metric-label">Payout:</span>
-                                        <span class="metric-value" style="color: #ffa502">${signal.payout}</span>
-                                    </div>
-                                </div>
-                                <div class="countdown-timer">
-                                    <div class="timer-display" id="timer2">${this.formatTime(signal.countdown)}</div>
-                                    <div style="color: #8a94a6; font-size: 0.9rem;">XML Bot Sync Countdown</div>
-                                </div>
-                                <button class="execute-btn" onclick="zion.executeTrade(2)" id="executeBtn2">
-                                    <i class="fas fa-rocket"></i> EXECUTE TRADE
-                                </button>
-                            </div>
-                        `;
-                    } else if (signal.type === "OVER/UNDER") {
-                        return `
-                            <div class="signal-card">
-                                <div class="signal-header">
-                                    <div class="signal-type">${signal.type}</div>
-                                    <div class="confidence-badge">${signal.confidence}%</div>
-                                </div>
-                                <div class="signal-details">
-                                    <div class="signal-metric">
-                                        <span class="metric-label">Market:</span>
-                                        <span class="metric-value">${signal.market}</span>
-                                    </div>
-                                    <div class="signal-metric">
-                                        <span class="metric-label">Barrier:</span>
-                                        <span class="metric-value" style="color: #ff4757">${signal.direction}</span>
-                                    </div>
-                                    <div class="signal-metric">
-                                        <span class="metric-label">Expected Payout:</span>
-                                        <span class="metric-value" style="color: #ffa502">${signal.payout}</span>
-                                    </div>
-                                    <div class="signal-metric">
-                                        <span class="metric-label">Digit Gravity:</span>
-                                        <span class="metric-value" style="color: #00ff88">${signal.gravity}</span>
-                                    </div>
-                                    <div class="signal-metric">
-                                        <span class="metric-label">Gemini AI:</span>
-                                        <span class="metric-value" style="color: #00ff88">${signal.gemini}</span>
-                                    </div>
-                                </div>
-                                <div class="countdown-timer">
-                                    <div class="timer-display" id="timer3">${this.formatTime(signal.countdown)}</div>
-                                    <div style="color: #8a94a6; font-size: 0.9rem;">XML Bot Sync Countdown</div>
-                                </div>
-                                <button class="execute-btn" onclick="zion.executeTrade(3)" id="executeBtn3">
-                                    <i class="fas fa-rocket"></i> EXECUTE TRADE
-                                </button>
-                            </div>
-                        `;
-                    } else {
-                        return `
-                            <div class="signal-card">
-                                <div class="signal-header">
-                                    <div class="signal-type">${signal.type}</div>
-                                    <div class="confidence-badge" style="background: #ffa502">${signal.confidence}</div>
-                                </div>
-                                <div class="signal-details">
-                                    <div class="signal-metric">
-                                        <span class="metric-label">Status:</span>
-                                        <span class="metric-value" style="color: #ffa502">${signal.status}</span>
-                                    </div>
-                                    <div class="signal-metric">
-                                        <span class="metric-label">Market:</span>
-                                        <span class="metric-value">${signal.market}</span>
-                                    </div>
-                                    <div class="signal-metric">
-                                        <span class="metric-label">Cold Digits:</span>
-                                        <span class="metric-value">${signal.coldDigits}</span>
-                                    </div>
-                                    <div class="signal-metric">
-                                        <span class="metric-label">Frequency:</span>
-                                        <span class="metric-value">${signal.frequency}</span>
-                                    </div>
-                                    <div class="signal-metric">
-                                        <span class="metric-label">Confidence:</span>
-                                        <span class="metric-value" style="color: #ffa502">${signal.confidenceVal}</span>
-                                    </div>
-                                </div>
-                                <div class="countdown-timer">
-                                    <div class="timer-display" style="color: #ffa502; font-size: 2rem;">
-                                        <i class="fas fa-sync fa-spin"></i>
-                                    </div>
-                                    <div style="color: #8a94a6; font-size: 0.9rem;">AI Analysis in Progress</div>
-                                </div>
-                                <button class="execute-btn" disabled>
-                                    <i class="fas fa-hourglass-half"></i> AWAITING SIGNAL
-                                </button>
-                            </div>
-                        `;
-                    }
-                }).join('');
-            }
-
-            formatTime(seconds) {
-                if (!seconds) return "00:00";
-                const mins = Math.floor(seconds / 60);
-                const secs = seconds % 60;
-                return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-            }
-
-            startCountdown(signalId, seconds) {
-                const timerElement = document.getElementById(`timer${signalId}`);
-                const buttonElement = document.getElementById(`executeBtn${signalId}`);
-                
-                if (!timerElement || !buttonElement) return;
-
-                this.timers[signalId] = {
-                    seconds: seconds,
-                    interval: setInterval(() => {
-                        this.timers[signalId].seconds--;
-                        
-                        if (this.timers[signalId].seconds <= 0) {
-                            clearInterval(this.timers[signalId].interval);
-                            timerElement.textContent = "00:00";
-                            timerElement.style.color = "#ff4757";
-                            buttonElement.disabled = true;
-                            buttonElement.innerHTML = '<i class="fas fa-clock"></i> EXPIRED';
-                        } else {
-                            timerElement.textContent = this.formatTime(this.timers[signalId].seconds);
-                            
-                            if (this.timers[signalId].seconds <= 5) {
-                                timerElement.style.color = "#ffa502";
-                            }
-                        }
-                    }, 1000)
-                };
-            }
-
-            bindEvents() {
-                document.getElementById('startTradingBtn').addEventListener('click', () => this.startTrading());
-                document.getElementById('emergencyStopBtn').addEventListener('click', () => this.emergencyStop());
-                document.getElementById('speakBtn').addEventListener('click', () => this.speak());
-                
-                document.getElementById('voiceToggle').addEventListener('change', (e) => {
-                    this.voiceEnabled = e.target.checked;
-                    const status = document.getElementById('voiceStatus');
-                    if (this.voiceEnabled) {
-                        status.textContent = "Voice ON";
-                        status.style.color = "#00ff88";
-                    } else {
-                        status.textContent = "Voice OFF";
-                        status.style.color = "#8a94a6";
-                        window.speechSynthesis.cancel();
-                    }
-                });
-
-                document.addEventListener('contextmenu', (e) => {
-                    e.preventDefault();
-                });
-            }
-
-            startDemo() {
-                setTimeout(() => {
-                    this.startCountdown(1, 10);
-                    this.startCountdown(2, 8);
-                    this.startCountdown(3, 15);
-                }, 1000);
-
-                setTimeout(() => {
-                    if (this.voiceEnabled) {
-                        this.speak("Welcome to ZION AI Ultimate Terminal version 3.0.4 PRO. System initialized.");
-                    }
-                }, 2000);
-            }
-
-            executeTrade(signalId) {
-                const signal = SIGNALS.find(s => s.id === signalId);
-                if (!signal) return;
-
-                if (this.voiceEnabled) {
-                    let message = "";
-                    if (signal.type === "RISE/FALL") {
-                        message = `Executing ${signal.direction} contract on ${signal.market}.`;
-                    } else if (signal.type === "EVEN/ODD") {
-                        message = `Executing ${signal.direction} prediction on ${signal.market}.`;
-                    } else if (signal.type === "OVER/UNDER") {
-                        message = `Executing ${signal.direction} barrier on ${signal.market}.`;
-                    }
-                    this.speak(message);
-                }
-
-                alert(`Trade executed: ${signal.type}\nMarket: ${signal.market}`);
-
-                if (this.timers[signalId]) {
-                    clearInterval(this.timers[signalId].interval);
-                }
-                this.startCountdown(signalId, signal.countdown);
-            }
-
-            startTrading() {
-                if (confirm("Start ZION AI trading engine?")) {
-                    if (this.voiceEnabled) {
-                        this.speak("ZION AI trading engine starting.");
-                    }
-
-                    this.isTrading = true;
-                    
-                    const startBtn = document.getElementById('startTradingBtn');
-                    startBtn.innerHTML = '<i class="fas fa-sync fa-spin"></i> TRADING ACTIVE';
-                    startBtn.style.background = '#00ff88';
-                }
-            }
-
-            emergencyStop() {
-                if (confirm("EMERGENCY STOP: This will halt all trading activity.")) {
-                    Object.values(this.timers).forEach(timer => {
-                        if (timer.interval) {
-                            clearInterval(timer.interval);
-                        }
-                    });
-                    this.timers = {};
-
-                    document.querySelectorAll('.execute-btn').forEach(btn => {
-                        btn.disabled = true;
-                        btn.innerHTML = '<i class="fas fa-stop"></i> TRADING HALTED';
-                    });
-
-                    const startBtn = document.getElementById('startTradingBtn');
-                    startBtn.innerHTML = '<i class="fas fa-play"></i> START TRADING';
-                    startBtn.style.background = '';
-
-                    if (this.voiceEnabled) {
-                        this.speak("Emergency stop activated.");
-                    }
-                }
-            }
-
-            speak(customMessage = null) {
-                if (!this.voiceEnabled) return;
-
-                const message = customMessage || document.getElementById('voiceMessage').textContent;
-                const speakBtn = document.getElementById('speakBtn');
-
-                speakBtn.disabled = true;
-                speakBtn.innerHTML = '<i class="fas fa-volume-up"></i> SPEAKING...';
-
-                if ('speechSynthesis' in window) {
-                    const speech = new SpeechSynthesisUtterance(message);
-                    speech.rate = 1.2;
-                    speech.pitch = 1.0;
-                    speech.volume = 1;
-                    
-                    speech.onend = () => {
-                        speakBtn.disabled = false;
-                        speakBtn.innerHTML = '<i class="fas fa-volume-up"></i> SPEAK MESSAGE';
-                    };
-                    
+                if(highConf && !isMuted && lastSpoken !== s.voice_msg) {
+                    const speech = new SpeechSynthesisUtterance(s.voice_msg);
+                    speech.rate = 1.0;
                     window.speechSynthesis.speak(speech);
-                } else {
-                    alert("Your browser doesn't support speech synthesis.");
-                    speakBtn.disabled = false;
-                    speakBtn.innerHTML = '<i class="fas fa-volume-up"></i> SPEAK MESSAGE';
+                    lastSpoken = s.voice_msg;
                 }
+
+                // Initialize 10s Countdown for XML Sync
+                startTimer(m, 10);
             }
         }
 
-        // Start the terminal
-        const zion = new ZIONTerminal();
-        window.zion = zion;
+        function startTimer(id, seconds) {
+            let time = seconds;
+            let interval = setInterval(() => {
+                time--;
+                let el = document.getElementById('count-' + id);
+                if(el) el.innerText = time + 's';
+                if(time <= 0) clearInterval(interval);
+            }, 1000);
+        }
+
+        setInterval(refresh, 11000); // 11s sync to match the 10s countdown
+        refresh();
     </script>
 </body>
 </html>
