@@ -8,7 +8,7 @@ app = Flask(__name__)
 MY_APP_ID = "124918"
 REAL_TOKEN = "m04oxPdV6cV6pX4"
 DEMO_TOKEN = "kTYefK9bFG3UPGh"
-# FIXED: Google Gemini API Integration
+# Google Gemini API Integration
 GEMINI_KEY = "AIzaSyDM7cKxbQwbwBX0ubbO1Iel2WrFi8oEh2E"
 WHATSAPP_LINK = "https://wa.me/254742024175"
 
@@ -102,7 +102,6 @@ MAIN_UI = """
             ws.onmessage = (msg) => {
                 const data = JSON.parse(msg.data);
                 if (data.msg_type === 'authorize') document.getElementById('bal-display').innerText = "$" + data.authorize.balance;
-                if (data.msg_type === 'buy') console.log("Trade Success!");
             };
         }
 
@@ -117,7 +116,6 @@ MAIN_UI = """
         function executeAutomatedTrade() {
             if (ws.readyState !== WebSocket.OPEN) return;
             const stake = document.getElementById('stake').value;
-            
             let contract = currentStrategy;
             if (currentStrategy === 'CALLPUT') contract = 'CALL'; 
 
@@ -129,7 +127,6 @@ MAIN_UI = """
                 }
             };
             if (currentStrategy.includes('DIGIT')) params.parameters.barrier = targetDigit.toString();
-
             ws.send(JSON.stringify(params));
             document.getElementById('strike-btn').style.display = 'none';
         }
@@ -177,3 +174,11 @@ MAIN_UI = """
     </script>
 </body>
 </html>
+"""
+
+@app.route('/')
+def index():
+    return render_template_string(MAIN_UI, wa_link=WHATSAPP_LINK, app_id=MY_APP_ID, real_token=REAL_TOKEN, demo_token=DEMO_TOKEN, markets=STRICT_MARKETS)
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=10000)
