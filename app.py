@@ -1,3 +1,17 @@
+from flask import Flask, render_template_string
+import os
+
+app = Flask(__name__)
+
+# ZION AI Configuration
+MY_APP_ID = "124918"
+REAL_TOKEN = "m04oxPdV6cV6pX4"
+DEMO_TOKEN = "kTYefK9bFG3UPGh"
+GEMINI_KEY = "AIzaSyDM7cKxbQwbbWX0ubb01Iel2wrFi8oEh2E"
+WHATSAPP_LINK = "https://wa.me/254742024175"
+
+# HTML Template with CSS and JavaScript
+HTML_TEMPLATE = '''
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,7 +21,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Orbitron:wght@400;500;700;900&display=swap" rel="stylesheet">
     <style>
-        /* CSS Variables */
         :root {
             --primary: #00ff88;
             --primary-dark: #00cc6a;
@@ -58,7 +71,7 @@
             font-family: 'Orbitron', sans-serif;
             font-size: 2rem;
             font-weight: 900;
-            background: linear-gradient(135deg, #00ff88 0%, #6c63ff 100%);
+            background: linear-gradient(135deg, #00ff88 0%%, #6c63ff 100%%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -114,7 +127,7 @@
         }
         
         .btn-primary {
-            background: linear-gradient(135deg, #00ff88 0%, #6c63ff 100%);
+            background: linear-gradient(135deg, #00ff88 0%%, #6c63ff 100%%);
             color: white;
         }
         
@@ -209,7 +222,7 @@
         }
         
         .confidence-badge {
-            background: linear-gradient(135deg, #00ff88 0%, #6c63ff 100%);
+            background: linear-gradient(135deg, #00ff88 0%%, #6c63ff 100%%);
             color: white;
             padding: 6px 12px;
             border-radius: 20px;
@@ -249,7 +262,7 @@
         }
         
         .execute-btn {
-            width: 100%;
+            width: 100%%;
             padding: 15px;
             background: var(--danger);
             color: white;
@@ -329,7 +342,7 @@
             bottom: 4px;
             background-color: white;
             transition: .4s;
-            border-radius: 50%;
+            border-radius: 50%%;
         }
         
         input:checked + .toggle-slider {
@@ -350,7 +363,7 @@
         }
         
         .speak-btn {
-            width: 100%;
+            width: 100%%;
             background: var(--secondary);
             color: white;
             padding: 15px;
@@ -403,7 +416,7 @@
         }
         
         .whatsapp-btn {
-            width: 100%;
+            width: 100%%;
             background: #25D366;
             color: white;
             padding: 15px;
@@ -439,7 +452,7 @@
             font-family: 'Orbitron', sans-serif;
             font-size: 1.5rem;
             font-weight: 900;
-            background: linear-gradient(135deg, #00ff88 0%, #6c63ff 100%);
+            background: linear-gradient(135deg, #00ff88 0%%, #6c63ff 100%%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -547,7 +560,7 @@
                     </div>
                 </div>
                 <div class="voice-message-box" id="voiceMessage">
-                    Signal validated for Volatility 10 Index. Rise contract, 2 minute duration. Confidence 94%. MTFA aligned. Prepare XML bot for execution in 10 seconds...
+                    Signal validated for Volatility 10 Index. Rise contract, 2 minute duration. Confidence 94%%. MTFA aligned. Prepare XML bot for execution in 10 seconds...
                 </div>
                 <button class="speak-btn" id="speakBtn">
                     <i class="fas fa-volume-up"></i> SPEAK MESSAGE
@@ -561,22 +574,22 @@
                 
                 <div class="credential-item">
                     <div class="credential-label">APP ID</div>
-                    <div class="credential-value">124918</div>
+                    <div class="credential-value">''' + MY_APP_ID + '''</div>
                 </div>
                 
                 <div class="credential-item">
                     <div class="credential-label">REAL TOKEN</div>
-                    <div class="credential-value">m04oxPdV6cV6pX4</div>
+                    <div class="credential-value">''' + REAL_TOKEN + '''</div>
                 </div>
                 
                 <div class="credential-item">
                     <div class="credential-label">DEMO TOKEN</div>
-                    <div class="credential-value">kTYefK9bFG3UPGh</div>
+                    <div class="credential-value">''' + DEMO_TOKEN + '''</div>
                 </div>
                 
                 <div class="credential-item">
                     <div class="credential-label">GEMINI API KEY</div>
-                    <div class="credential-value">AIzaSyDM7cKxbQwbwBXOubb01Iel2WrFi8oEh2E</div>
+                    <div class="credential-value">''' + GEMINI_KEY + '''</div>
                 </div>
                 
                 <div class="credential-item">
@@ -584,7 +597,7 @@
                     <div class="credential-value">3.0.4-PRO</div>
                 </div>
                 
-                <a href="https://wa.me/254742024175" target="_blank" class="whatsapp-btn">
+                <a href="''' + WHATSAPP_LINK + '''" target="_blank" class="whatsapp-btn">
                     <i class="fab fa-whatsapp"></i> WHATSAPP SUPPORT
                 </a>
             </div>
@@ -644,8 +657,8 @@
                 market: "Volatility 25 (1s) Index",
                 direction: "ODD",
                 streak: "4 Consecutive Evens",
-                probability: "92.3%",
-                payout: "45%",
+                probability: "92.3%%",
+                payout: "45%%",
                 countdown: 8
             },
             {
@@ -654,7 +667,7 @@
                 confidence: 91,
                 market: "Volatility 50 Index",
                 direction: "Under 3/4",
-                payout: "42%",
+                payout: "42%%",
                 gravity: "High Cluster 5-9",
                 gemini: "Validated",
                 countdown: 15
@@ -712,7 +725,7 @@
                             <div class="signal-card">
                                 <div class="signal-header">
                                     <div class="signal-type">${signal.type}</div>
-                                    <div class="confidence-badge">${signal.confidence}%</div>
+                                    <div class="confidence-badge">${signal.confidence}%%</div>
                                 </div>
                                 <div class="signal-details">
                                     <div class="signal-metric">
@@ -750,7 +763,7 @@
                             <div class="signal-card">
                                 <div class="signal-header">
                                     <div class="signal-type">${signal.type}</div>
-                                    <div class="confidence-badge">${signal.confidence}%</div>
+                                    <div class="confidence-badge">${signal.confidence}%%</div>
                                 </div>
                                 <div class="signal-details">
                                     <div class="signal-metric">
@@ -788,7 +801,7 @@
                             <div class="signal-card">
                                 <div class="signal-header">
                                     <div class="signal-type">${signal.type}</div>
-                                    <div class="confidence-badge">${signal.confidence}%</div>
+                                    <div class="confidence-badge">${signal.confidence}%%</div>
                                 </div>
                                 <div class="signal-details">
                                     <div class="signal-metric">
@@ -949,7 +962,7 @@
                     this.speak(message);
                 }
 
-                alert("Trade executed: " + signal.type + "\nMarket: " + signal.market);
+                alert("Trade executed: " + signal.type + "\\nMarket: " + signal.market);
 
                 if (this.timers[signalId]) {
                     clearInterval(this.timers[signalId].interval);
@@ -1029,3 +1042,16 @@
     </script>
 </body>
 </html>
+'''
+
+@app.route('/')
+def index():
+    return HTML_TEMPLATE
+
+@app.route('/health')
+def health():
+    return "ZION AI Ultimate Terminal v3.0.4-PRO - Running"
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
