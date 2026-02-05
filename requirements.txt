@@ -1,8 +1,0 @@
-flask
-google.generativeai
-python-dotenv
-gunicorn
-numpy
-pandas
-scipy
-websocket-client
