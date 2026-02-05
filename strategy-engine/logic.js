@@ -12,7 +12,8 @@ const ZION_DEEP = {
     WS_LINK: "wss://ws.binaryws.com/websockets/v3?app_id=124918",
     GEMINI_KEY: "AIzaSyDM7cKxbQwbwBXOubb01Iel2WrFi80Eh2E",
     WHATSAPP: "https://wa.me/254742024175",
-    
+        GENAI_LINK: "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent",
+
     // II. DEEP PHYSICS CONSTANTS
     LAMINAR_THRESHOLD: 3.0,   // Max Delta for 99% Accuracy
     KINEMATIC_MIN: 0.2,       // Minimum velocity for Rise/Fall
