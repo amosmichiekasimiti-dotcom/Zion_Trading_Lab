@@ -13,6 +13,8 @@ const ZION_DEEP = {
     GEMINI_KEY: "AIzaSyDM7cKxbQwbwBXOubb01Iel2WrFi80Eh2E",
     WHATSAPP: "https://wa.me/254742024175",
         GENAI_LINK: "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent",
+    ADAM_VOICE_ID: "pNInz6obpgqEmeYh67jN", // The ID for Adam
+    ELEVENLABS_KEY: "AIzaSyDM7cKxbQwbwBXOtub01Iel2WrFi80Eh2E", 
 
     // II. DEEP PHYSICS CONSTANTS
     LAMINAR_THRESHOLD: 3.0,   // Max Delta for 99% Accuracy
@@ -125,5 +127,5 @@ ws.onmessage = async (msg) => {
 
 // VII. CUSTOM SPEECH INPUT (Announce manual messages)
 function triggerManualVoice(text) {
-    ZionVoice.speak(`System Manual Message: ${text}`);
-}
+  ZionVoice.speak(text, { pitch: 1.6, rate: 1.1, volume: 1.0 });
+ }
