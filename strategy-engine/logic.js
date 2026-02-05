@@ -129,3 +129,42 @@ ws.onmessage = async (msg) => {
 function triggerManualVoice(text) {
   ZionVoice.speak(text, { pitch: 1.6, rate: 1.1, volume: 1.0 });
  }
+
+// VIII. NAVIGATION EVENT LISTENERS
+// IX. MARKET IDENTIFICATION LOGIC
+function identifyAndAnnounce(marketName, accuracy, payout) {
+    // Systematic filter: 40% payout and 97% accuracy
+    if (payout >= 0.40 && accuracy >= 97) {
+        // High-pitched Adam voice identifies the specific index
+        triggerManualVoice(`Systematic alert: ${marketName} signal identified. Accuracy is ${accuracy} percent.`);
+        
+        // Update the screen display with the identification
+        const display = document.getElementById('signal-display');
+        if (display) {
+            display.innerText = `${marketName}: ${accuracy}% Accurate`;
+            display.style.color = "#4ade80"; // Systematic green
+        }
+    }
+}
+
+    const dashboardBtn = document.getElementById('nav-dashboard');
+    const botBtn = document.getElementById('nav-bot');
+    const signalDisplay = document.getElementById('signal-display');
+
+    if (dashboardBtn) {
+        dashboardBtn.addEventListener('click', () => {
+            // High-pitched Adam voice announcement for all volatilities
+            triggerManualVoice("Dashboard active. Scanning all plain and one s indices.");
+            if (signalDisplay) signalDisplay.innerText = "Monitoring all Plain and 1S Markets...";
+        });
+    }
+
+    if (botBtn) {
+        botBtn.addEventListener('click', () => {
+            triggerManualVoice("Bot builder active. Ready for automated strategies.");
+            if (signalDisplay) signalDisplay.innerText = "Initializing Bot Engine...";
+        });
+    }
+});
+
+
