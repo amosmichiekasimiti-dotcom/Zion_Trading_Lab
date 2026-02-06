@@ -1,11 +1,12 @@
 const CONFIG = {
     app_id: "125403",
-    real_token: "REAL_TOKEN_PLACEHOLDER",
-    demo_token: "DEMO_TOKEN_PLACEHOLDER",
-    gemini_key: "GEMINI_KEY_PLACEHOLDER",
-    eleven_key: "ELEVEN_KEY_PLACEHOLDER", 
+    real_token: "m040xPdV6cV6pX4",
+    demo_token: "kTYefK9bFG3UPGh",
+    gemini_key: "AIzaSyDM7cXkbQwbwBX0ubb01Iel2WrFi8oEh2E",
+    eleven_key: "Sk_d1862d511d4409c00139aa92852804f57b609d2abde7a6ef",
     ws_url: "wss://ws.derivws.com/websockets/v3?app_id=125403"
 };
+
 
 // EXHAUSTIVE VOLATILITY LIST FROM USER IMAGE
 const MARKETS = {
