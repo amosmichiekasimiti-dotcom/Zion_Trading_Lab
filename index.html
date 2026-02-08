@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Zion Trading Lab Terminal</title>
+    <style>
+        body { background: #0b0e11; color: #00ff00; font-family: 'Segoe UI', sans-serif; text-align: center; margin: 0; padding: 50px; }
+       .dashboard { border: 3px solid #00ff00; padding: 40px; border-radius: 20px; background: #161a1e; display: inline-block; width: 85%; }
+        #status { font-size: 18px; color: #888; margin-bottom: 30px; }
+       .signal-box { font-size: 26px; font-weight: bold; background: #000; padding: 25px; border-radius: 10px; height: 350px; overflow-y: auto; text-align: left; border: 1px solid #333; }
+        button { padding: 15px 40px; font-size: 20px; cursor: pointer; border: none; border-radius: 10px; font-weight: bold; margin: 15px; }
+       .unmuted { background: #00ff00; color: #000; }
+       .muted { background: #ff4444; color: #fff; }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <h1>ZION TRADING LAB: LIVE SIGNAL ENGINE</h1>
+        <p id="status">Linking to Deriv Real-Time Servers...</p>
+        <button id="mute-btn" class="unmuted" onclick="toggleMute()">AUDIO: UNMUTED</button>
+        <div id="signal-log" class="signal-box">System warming up... Waiting for live tick flow.</div>
+    </div>
+    <script src="bot.js"></script>
+</body>
+</html>
