@@ -1,0 +1,7 @@
+​deriv-api
+google-generativeai
+pyttsx3
+pandas
+numpy
+websockets
+scipy
