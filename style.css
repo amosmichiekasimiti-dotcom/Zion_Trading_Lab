@@ -1,13 +1,39 @@
-#sig-panel h1 {
-    font-size: 2.5rem;
-    line-height: 1.5;
-    animation: fade-in 1s ease-in-out; /* Smooth transition for signals */
+:root { --neon: #00ffad; --bg: #0a0b10; }
+body { background: var(--bg); color: white; font-family: 'Inter', sans-serif; margin: 0; }
+
+.strategy-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    padding: 20px;
 }
 
-.market-matrix button {
-    padding: 15px; /* Bigger buttons for mobile */
+.box {
+    background: transparent;
+    border: 2px solid var(--neon);
+    color: var(--neon);
+    padding: 30px;
+    font-size: 1.1rem;
     font-weight: bold;
-    border-radius: 10px;
-    background: #1a1e24;
-    color: #00ffad;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: 0.3s;
 }
+
+.box:active { background: var(--neon); color: black; }
+
+.display-panel {
+    margin: 20px;
+    padding: 40px;
+    border: 1px solid #333;
+    border-radius: 20px;
+    text-align: center;
+}
+
+.signal-card h1 {
+    font-size: 4rem;
+    color: var(--neon);
+    text-shadow: 0 0 20px var(--neon);
+}
+
+.status-bar { padding: 10px; background: #161b22; text-align: center; font-size: 0.8rem; color: #888; }
