@@ -1,7 +1,21 @@
-{
-  "version": 2,
-  "name": "zion-trading-lab",
-  "cleanUrls": true,
-  "framework": null,
-  "regions": ["arn1"]
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
+  "env": {
+    "DERIV_APP_ID": "126973",
+    "DERIV_API_TOKEN": "rbQgwOkbsfDoKw2"
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; font-src 'self' https://cdnjs.cloudflare.com; connect-src 'self' wss://ws.derivws.com;"
+        }
+      ]
+    }
+  ]
 }
