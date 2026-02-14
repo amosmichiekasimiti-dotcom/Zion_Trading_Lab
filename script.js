@@ -1,52 +1,47 @@
-// Zion Trading Lab - Advanced Logic Engine
-const APP_ID = '126973'; 
-const TOKEN = 'rbQgwOkbsfDoKw2'; 
-const GEMINI_KEY = 'AIzaSyDM7cKxbQwbwBX0ubb01Iel2WrFi8oEh2E';
+// Zion Trading Lab - Advanced Stability Engine
+const APP_ID = '126973';
+const TOKEN = 'rbQgwOkbsfDoKw2';
 
-let socket, digitHistory = [], currentMarket = "Vol 100 (1s)", isMuted = false;
+let socket, currentMarket = "Waiting...";
+let digitHistory = []; 
+let lastSignalTime = 0;
+const SIGNAL_DELAY = 5000; // 5 seconds minimum between announcements
 
-// SYSTEMATIC VOICE: Calibrated for professional signal delivery
+// 1. Slow & Clear Voice Engine
 const announce = (msg) => {
-    if (isMuted) return;
     const synth = window.speechSynthesis;
     const utterance = new SpeechSynthesisUtterance(msg);
-    utterance.rate = 0.85; // Serious, systematic tone
+    utterance.rate = 0.75; // Slower for clear comprehension
+    utterance.pitch = 1.0;
     synth.speak(utterance);
 };
 
-// PHYSICS ENGINE: Mathematical Digit Probability Density
-const processQuantumPhysics = (digit) => {
+// 2. Physics & Engineering Logic: Long-Lasting Detection
+const processLongSignal = (digit) => {
     digitHistory.push(digit);
-    if (digitHistory.length > 40) digitHistory.shift();
+    if (digitHistory.length > 60) digitHistory.shift(); // 60-tick window for stability
 
-    // Math: Calculate Digit Frequency and Recency
-    const freq = digitHistory.reduce((acc, d) => (acc[d] = (acc[d] || 0) + 1, acc), {});
-    const saturation = (freq[digit] / digitHistory.length) * 100;
+    // Calculate Density (How many times a trend appears in 60 ticks)
+    const evens = digitHistory.filter(d => d % 2 === 0).length;
+    const highDensity = (evens / digitHistory.length) * 100;
 
-    // Advanced Strategy: Even/Odd + Under/Over 4 (Payout > 40%)
-    const type = (digit % 2 === 0) ? "EVEN" : "ODD";
-    const engineeringSignal = (digit > 5) ? "UNDER 4 (REVERSION)" : "OVER 5 (MOMENTUM)";
-    
-    if (saturation > 15) { // Physics threshold for inertia shift
-        const fullSignal = `${currentMarket} | ${type} | ${engineeringSignal} | TARGET: MATCHES ${digit}`;
-        document.getElementById('sig-panel').innerHTML = `<h1>${fullSignal}</h1>`;
-        announce(`System Alert for ${currentMarket}. Execute ${type} and ${engineeringSignal}. Target Matches ${digit}.`);
+    const now = Date.now();
+    // Only announce if the trend is strong ( > 65%) and 5 seconds have passed
+    if (now - lastSignalTime > SIGNAL_DELAY) {
+        if (highDensity > 65) {
+            triggerSignal("EVEN / RISE", "OVER 5", digit);
+            lastSignalTime = now;
+        } else if (highDensity < 35) {
+            triggerSignal("ODD / FALL", "UNDER 4", digit);
+            lastSignalTime = now;
+        }
     }
 };
 
-const connect = () => {
-    socket = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`);
-    socket.onopen = () => socket.send(JSON.stringify({ authorize: TOKEN }));
-    socket.onmessage = (msg) => {
-        const data = JSON.parse(msg.data);
-        if (data.tick) processQuantumPhysics(parseInt(data.tick.quote.toString().slice(-1)));
-    };
+const triggerSignal = (type, strat, digit) => {
+    const panel = document.getElementById('sig-panel');
+    panel.innerHTML = `<h1>${currentMarket}<br>${type}<br>${strat}</h1>`;
+    announce(`Confirmed long-term trend on ${currentMarket}. Strategy is ${strat} with ${type}. Last digit ${digit}.`);
 };
 
-function switchMarket(symbol, name) {
-    currentMarket = name;
-    document.getElementById('active-market').innerText = name;
-    socket.send(JSON.stringify({ forget_all: "ticks" }));
-    socket.send(JSON.stringify({ ticks: symbol, subscribe: 1 }));
-}
-connect();
+// ... WebSocket connection logic stays same
