@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZION QUANTUM ELITE · LIVE SENSOR</title>
+    <title>ZION QUANTUM · XML BOT SIGNALS</title>
     <style>
         * {
             margin: 0;
@@ -28,7 +28,6 @@
             border-radius: 40px;
             padding: 25px;
             border: 2px solid #2a3a60;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
         }
 
         /* Header */
@@ -50,71 +49,60 @@
             background: linear-gradient(145deg, #7b68ee, #4ac7ff);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            display: inline;
         }
 
-        .badge {
-            background: #ffd700;
-            color: #0b1020;
+        .xml-badge {
+            background: #ff4444;
+            color: white;
             padding: 4px 12px;
             border-radius: 30px;
-            font-size: 0.8rem;
+            font-size: 0.9rem;
             font-weight: 800;
             margin-left: 10px;
-            -webkit-text-fill-color: #0b1020;
+            animation: pulse-red 1.5s infinite;
         }
 
-        .stats {
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 5px #ff4444; }
+            50% { box-shadow: 0 0 20px #ff4444; }
+            100% { box-shadow: 0 0 5px #ff4444; }
+        }
+
+        .streak-counter {
+            background: #1a2340;
+            padding: 8px 25px;
+            border-radius: 40px;
+            border: 2px solid #ffd700;
+        }
+
+        .streak-number {
+            color: #ffd700;
+            font-size: 1.8rem;
+            font-weight: 900;
+            margin-right: 5px;
+        }
+
+        .win-streak {
             display: flex;
+            align-items: center;
             gap: 20px;
         }
 
-        .stat {
-            background: #1a2340;
-            padding: 8px 20px;
-            border-radius: 40px;
+        .streak-label {
             color: #b9ceff;
-            border: 1px solid #3d4f7a;
-            font-weight: 600;
+            font-size: 0.9rem;
         }
 
-        .stat i {
-            color: #4ac7ff;
-            margin-right: 8px;
-        }
-
-        .app-id {
-            background: #2a3650;
-            color: #a3ffb0;
-            padding: 8px 20px;
-            border-radius: 40px;
-            border: 1px solid #4f6390;
-            font-weight: 600;
-        }
-
-        .menu-btn {
-            background: #2f3e64;
-            padding: 10px 25px;
-            border-radius: 40px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            cursor: pointer;
-            border: 2px solid #f1d271;
-            color: white;
-            font-weight: 600;
-            transition: all 0.1s ease;
-        }
-
-        .menu-btn:active {
-            transform: translateY(2px);
+        .target-10 {
+            color: #2ecc71;
+            font-weight: 700;
         }
 
         /* Market Sections */
         .market-sections {
             display: flex;
             flex-direction: column;
-            gap: 30px;
+            gap: 25px;
             margin: 25px 0;
         }
 
@@ -137,329 +125,228 @@
         }
 
         .section-icon {
-            font-size: 2.2rem;
+            font-size: 2rem;
             background: #0b1020;
-            width: 55px;
-            height: 55px;
+            width: 50px;
+            height: 50px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 30px;
+            border-radius: 25px;
             border: 2px solid #ffd966;
         }
 
         .section-title h2 {
             color: #ffd966;
-            font-size: 2rem;
+            font-size: 1.8rem;
         }
 
-        .section-subtitle {
-            color: #95a5a6;
-            font-size: 0.9rem;
-            margin-top: 5px;
-            display: flex;
-            gap: 15px;
-        }
-
-        /* Sensor Grid */
-        .sensor-grid {
+        /* XML Bot Signal Grid */
+        .signal-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 20px;
         }
 
-        /* Sensor Cards */
-        .sensor-card {
+        /* Signal Cards - OPTIMIZED FOR XML BOT */
+        .signal-card {
             background: #1a2340;
             border-radius: 25px;
             padding: 20px;
             border: 2px solid #2a3a60;
-            border-left: 8px solid;
-            transition: all 0.2s ease;
             position: relative;
+            transition: all 0.2s ease;
         }
 
-        .sensor-card.manipulation-alert {
+        .signal-card.strong-buy {
+            border: 4px solid #2ecc71;
+            box-shadow: 0 0 30px #2ecc71;
+        }
+
+        .signal-card.strong-sell {
             border: 4px solid #e74c3c;
-            animation: alert-pulse 1s infinite;
+            box-shadow: 0 0 30px #e74c3c;
         }
 
-        @keyframes alert-pulse {
-            0% { box-shadow: 0 0 10px #e74c3c; }
-            50% { box-shadow: 0 0 30px #e74c3c; }
-            100% { box-shadow: 0 0 10px #e74c3c; }
+        .signal-card.warning {
+            border: 4px solid #f39c12;
+            box-shadow: 0 0 30px #f39c12;
         }
 
-        .card-even { border-left-color: #9b59b6; }
-        .card-rise { border-left-color: #3498db; }
-        .card-over { border-left-color: #e67e22; }
-        .card-match { border-left-color: #e74c3c; }
+        .bot-instruction {
+            position: absolute;
+            top: -12px;
+            right: 20px;
+            background: #ffd700;
+            color: #0b1020;
+            padding: 5px 20px;
+            border-radius: 30px;
+            font-weight: 900;
+            font-size: 0.9rem;
+            border: 2px solid white;
+            z-index: 10;
+        }
 
-        .sensor-badge {
-            display: inline-block;
+        .xml-ready {
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background: #4ac7ff;
+            color: #0b1020;
             padding: 5px 15px;
             border-radius: 30px;
-            font-size: 0.85rem;
             font-weight: 700;
-            margin-bottom: 12px;
-            border: 2px solid;
-        }
-
-        .badge-standard {
-            background: #2980b9;
-            border-color: #85c1e9;
-            color: white;
-        }
-
-        .badge-1s {
-            background: #8e44ad;
-            border-color: #c39bd3;
-            color: white;
-            animation: glow 2s infinite;
-        }
-
-        @keyframes glow {
-            0% { box-shadow: 0 0 5px #8e44ad; }
-            50% { box-shadow: 0 0 15px #8e44ad; }
-            100% { box-shadow: 0 0 5px #8e44ad; }
-        }
-
-        .sensor-name {
-            color: #b9ceff;
-            font-weight: 600;
-            font-size: 1.1rem;
-            margin-bottom: 10px;
-        }
-
-        .sensor-type {
-            display: flex;
-            justify-content: center;
-            gap: 25px;
-            font-size: 1.6rem;
-            font-weight: 800;
-            margin: 15px 0;
-        }
-
-        .price-box {
-            font-family: 'Courier New', monospace;
-            font-size: 1.8rem;
-            color: #4ac7ff;
-            text-align: center;
-            background: #0b1020;
-            padding: 15px;
-            border-radius: 15px;
-            margin: 15px 0;
-            letter-spacing: 2px;
-        }
-
-        .last-digit {
-            display: inline-block;
-            background: #2a3a60;
-            padding: 2px 8px;
-            border-radius: 10px;
-            color: #ffd966;
-            font-size: 1rem;
-            margin-left: 10px;
-        }
-
-        /* Manipulation Warning */
-        .manipulation-warning {
-            background: #e74c3c22;
-            border: 1px solid #e74c3c;
-            color: #e74c3c;
-            padding: 5px 10px;
-            border-radius: 20px;
             font-size: 0.8rem;
-            margin: 5px 0;
-            display: inline-block;
+            border: 2px solid white;
         }
 
-        /* Signal Box */
-        .signal-box {
-            background: #0f1627;
-            border-radius: 15px;
-            padding: 15px;
+        .vol-name {
+            color: #b9ceff;
+            font-size: 1.1rem;
+            margin: 15px 0 10px;
+        }
+
+        .signal-direction {
+            font-size: 2.5rem;
+            font-weight: 900;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .direction-up {
+            color: #2ecc71;
+            text-shadow: 0 0 20px #2ecc71;
+        }
+
+        .direction-down {
+            color: #e74c3c;
+            text-shadow: 0 0 20px #e74c3c;
+        }
+
+        .confidence-meter {
             margin: 15px 0;
         }
 
-        .signal-row {
+        .confidence-label {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-
-        .signal-type {
-            font-size: 1.3rem;
-            font-weight: 800;
-        }
-
-        .signal-type .digit-hint {
+            color: #95a5a6;
             font-size: 0.9rem;
-            background: #1a2340;
-            padding: 2px 8px;
-            border-radius: 12px;
-            margin-left: 8px;
-            color: #ffd966;
+            margin-bottom: 5px;
         }
 
-        .signal-conf {
-            font-size: 1.5rem;
-            font-weight: 900;
-            padding: 5px 18px;
-            border-radius: 40px;
-            border: 2px solid;
-        }
-
-        .conf-high { color: #2ecc71; border-color: #2ecc71; }
-        .conf-medium { color: #f39c12; border-color: #f39c12; }
-        .conf-low { color: #e74c3c; border-color: #e74c3c; }
-
-        .signal-reason {
-            color: #b9ceff;
-            font-size: 0.9rem;
+        .confidence-bar {
+            height: 12px;
             background: #0b1020;
-            padding: 8px 12px;
-            border-radius: 10px;
-            margin-top: 8px;
-            border-left: 3px solid #4ac7ff;
-        }
-
-        /* Timer */
-        .timer {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: #0b1020;
-            padding: 8px 15px;
-            border-radius: 40px;
-            margin: 15px 0;
-        }
-
-        .timer-text {
-            color: #ffd966;
-            font-weight: 700;
-            font-size: 1.1rem;
-            min-width: 45px;
-            font-family: monospace;
-        }
-
-        .timer-bar {
-            height: 8px;
-            background: #1a2340;
-            border-radius: 4px;
-            flex: 1;
+            border-radius: 6px;
             overflow: hidden;
         }
 
-        .timer-fill {
+        .confidence-fill {
             height: 100%;
-            background: linear-gradient(90deg, #4ac7ff, #9b59b6);
-            border-radius: 4px;
-            transition: width 1s linear;
+            background: linear-gradient(90deg, #4ac7ff, #2ecc71);
+            border-radius: 6px;
+            transition: width 0.3s ease;
         }
 
-        .timer-fill.warning {
+        .confidence-fill.sell {
             background: linear-gradient(90deg, #e74c3c, #f39c12);
         }
 
-        /* Footer */
-        .footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #2a3a60;
+        .entry-price {
+            background: #0b1020;
+            padding: 10px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 10px 0;
         }
 
-        .vol-value {
-            background: #0b1020;
-            padding: 5px 15px;
-            border-radius: 30px;
+        .entry-label {
+            color: #7f8c8d;
+            font-size: 0.8rem;
+        }
+
+        .entry-value {
+            color: #4ac7ff;
+            font-size: 1.5rem;
+            font-weight: 700;
+            font-family: monospace;
+        }
+
+        .signal-meta {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
             color: #95a5a6;
             font-size: 0.9rem;
         }
 
-        .vol-value i {
-            color: #f39c12;
-            margin-right: 5px;
+        .signal-timer {
+            background: #0b1020;
+            padding: 8px;
+            border-radius: 20px;
+            text-align: center;
+            margin: 10px 0;
         }
 
-        .signal-count {
+        .timer-digits {
+            color: #ffd966;
+            font-size: 1.8rem;
+            font-weight: 900;
+            font-family: monospace;
+        }
+
+        .timer-label {
+            color: #7f8c8d;
+            font-size: 0.8rem;
+            margin-left: 5px;
+        }
+
+        .bot-action {
+            background: #0f1627;
+            border-radius: 15px;
+            padding: 12px;
+            margin-top: 15px;
+            text-align: center;
+            border: 2px dashed #4ac7ff;
+        }
+
+        .bot-command {
             color: #2ecc71;
-            font-weight: 600;
+            font-size: 1.2rem;
+            font-weight: 800;
+            font-family: monospace;
         }
 
-        /* Social Menu */
-        .social-menu {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            background: #1f2a44;
-            border-radius: 40px;
+        .bot-command.sell {
+            color: #e74c3c;
+        }
+
+        /* XML Console */
+        .xml-console {
+            background: #0b1020;
+            border-radius: 20px;
             padding: 15px;
             margin: 20px 0;
-            border: 2px solid #50618d;
+            font-family: monospace;
+            border: 2px solid #2a3a60;
         }
 
-        .social-menu.hidden {
-            display: none;
-        }
-
-        .social-item {
-            background: #2e3b5a;
-            color: white;
-            padding: 12px;
-            border-radius: 30px;
-            text-align: center;
-            cursor: pointer;
-            border: 1px solid #7f92c0;
-            font-weight: 600;
-            transition: all 0.1s ease;
-        }
-
-        .social-item:active {
-            transform: translateY(2px);
-        }
-
-        /* Voice Bar */
-        .voice-bar {
-            background: #0f1627;
-            border-radius: 60px;
-            padding: 15px 25px;
+        .console-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            border: 2px solid #4ac7ff;
-            margin: 20px 0;
+            color: #b9ceff;
+            margin-bottom: 10px;
         }
 
-        .voice-label {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            color: white;
-            font-size: 1.2rem;
-            font-weight: 600;
+        .console-log {
+            color: #4ac7ff;
+            font-size: 0.9rem;
+            line-height: 1.6;
         }
 
-        .voice-label i {
-            font-size: 1.8rem;
-            color: #8efcda;
-        }
-
-        .mute-btn {
-            background: #1a2340;
-            padding: 8px 30px;
-            border-radius: 40px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            cursor: pointer;
-            border: 2px solid #ffd966;
-            color: white;
-            font-weight: 600;
+        .console-log span {
+            color: #ffd966;
         }
 
         /* Status Bar */
@@ -485,21 +372,15 @@
             font-size: 1.3rem;
             border: 2px solid #ffb2b2;
             cursor: pointer;
-            transition: all 0.1s ease;
         }
 
-        .dno:active {
-            transform: translateY(2px);
-        }
-
-        .best-signal {
+        .current-signal {
             color: #ffd966;
             font-size: 1.2rem;
             font-weight: 600;
             display: flex;
             align-items: center;
             gap: 10px;
-            flex: 1;
         }
 
         .live-dot {
@@ -516,93 +397,123 @@
             100% { opacity: 1; transform: scale(1); }
         }
 
-        .accuracy-badge {
-            background: #0b1020;
-            color: #ffd966;
-            padding: 8px 20px;
+        .win-counter {
+            background: #1a2340;
+            padding: 8px 25px;
             border-radius: 40px;
-            font-weight: 700;
-            border: 1px solid #f1d271;
+            border: 2px solid #2ecc71;
         }
 
-        /* API Status */
-        .api-status {
-            background: #0b1020;
-            padding: 12px 20px;
-            border-radius: 40px;
-            color: #4ac7ff;
-            text-align: center;
-            font-family: monospace;
-            border: 1px solid #2a3a60;
+        .win-number {
+            color: #2ecc71;
+            font-size: 1.5rem;
+            font-weight: 900;
+            margin-right: 5px;
         }
 
         /* Responsive */
         @media (max-width: 768px) {
-            .sensor-grid {
+            .signal-grid {
                 grid-template-columns: 1fr;
-            }
-            
-            .header {
-                flex-direction: column;
-                text-align: center;
             }
         }
     </style>
 </head>
 <body>
     <div class="dashboard">
-        <!-- Header -->
+        <!-- Header with Win Streak Target -->
         <div class="header">
             <div class="logo">
-                <h1>⚡ ZION QUANTUM <span class="badge">ELITE</span></h1>
+                <h1>⚡ ZION QUANTUM <span class="xml-badge">XML BOT</span></h1>
             </div>
-            <div class="stats">
-                <div class="stat"><i class="fas fa-bolt"></i><span id="signalCount">6</span> signals</div>
-                <div class="stat"><i class="fas fa-crosshairs"></i><span id="accuracy">87.8</span>%</div>
+            <div class="win-streak">
+                <div class="streak-counter">
+                    <span class="streak-number" id="winStreak">0</span>
+                    <span class="streak-label">WIN STREAK</span>
+                </div>
+                <div class="target-10">
+                    <i class="fas fa-bullseye"></i> TARGET: 10 IN A ROW
+                </div>
             </div>
-            <div class="app-id"><i class="fas fa-id-card"></i> App ID: 126973</div>
-            <div class="menu-btn" onclick="toggleMenu()">
-                <span>MENU</span>
-                <i class="fas fa-bars"></i>
+            <div class="app-id">App ID: 126973</div>
+            <div class="menu-btn" onclick="toggleMenu()">MENU ☰</div>
+        </div>
+
+        <!-- XML BOT SIGNALS - OPTIMIZED FOR 10 RUNS -->
+        <div class="market-sections">
+            <!-- EVEN/ODD Signals -->
+            <div class="market-section">
+                <div class="section-header">
+                    <div class="section-icon">🎲</div>
+                    <div class="section-title">
+                        <h2>EVEN / ODD · XML SIGNALS</h2>
+                    </div>
+                </div>
+                <div class="signal-grid" id="evenOddSignals"></div>
+            </div>
+
+            <!-- RISE/FALL Signals -->
+            <div class="market-section">
+                <div class="section-header">
+                    <div class="section-icon">📈</div>
+                    <div class="section-title">
+                        <h2>RISE / FALL · XML SIGNALS</h2>
+                    </div>
+                </div>
+                <div class="signal-grid" id="riseFallSignals"></div>
+            </div>
+
+            <!-- OVER/UNDER Signals -->
+            <div class="market-section">
+                <div class="section-header">
+                    <div class="section-icon">⚖️</div>
+                    <div class="section-title">
+                        <h2>OVER / UNDER · XML SIGNALS</h2>
+                    </div>
+                </div>
+                <div class="signal-grid" id="overUnderSignals"></div>
+            </div>
+
+            <!-- MATCHES/DIFFERS Signals -->
+            <div class="market-section">
+                <div class="section-header">
+                    <div class="section-icon">🔄</div>
+                    <div class="section-title">
+                        <h2>MATCHES / DIFFERS · XML SIGNALS</h2>
+                    </div>
+                </div>
+                <div class="signal-grid" id="matchesDiffersSignals"></div>
             </div>
         </div>
 
-        <!-- Market Sections -->
-        <div class="market-sections" id="marketSections"></div>
-
-        <!-- Social Menu -->
-        <div class="social-menu hidden" id="socialMenu">
-            <div class="social-item" onclick="openSocial('tiktok')"><i class="fab fa-tiktok"></i> TIKTOK</div>
-            <div class="social-item" onclick="openSocial('whatsapp')"><i class="fab fa-whatsapp"></i> WHATSAPP</div>
-            <div class="social-item" onclick="openSocial('facebook')"><i class="fab fa-facebook-f"></i> FACEBOOK</div>
-            <div class="social-item" onclick="openSocial('instagram')"><i class="fab fa-instagram"></i> INSTAGRAM</div>
-        </div>
-
-        <!-- Voice Control -->
-        <div class="voice-bar">
-            <div class="voice-label">
-                <i class="fas fa-microphone-alt"></i>
-                <span>AI QUANTUM VOICE</span>
+        <!-- XML Console - Shows Bot Commands -->
+        <div class="xml-console">
+            <div class="console-header">
+                <span>🤖 XML BOT CONSOLE</span>
+                <span>LIVE COMMANDS ▼</span>
             </div>
-            <div class="mute-btn" onclick="toggleMute()" id="muteBtn">
-                <i class="fas fa-volume-up" id="muteIcon"></i>
-                <span id="muteText">mute</span>
+            <div class="console-log" id="xmlConsole">
+                <span>&gt;</span> BOT INITIALIZED · AWAITING STRONG SIGNALS<br>
+                <span>&gt;</span> TARGET: 10 CONSECUTIVE WINS<br>
+                <span>&gt;</span> MIN CONFIDENCE: 85% REQUIRED<br>
             </div>
         </div>
 
-        <!-- Status Bar -->
+        <!-- Status Bar with Win Tracker -->
         <div class="status-bar">
             <div class="dno" onclick="dnoClick()">D NO</div>
-            <div class="best-signal">
+            <div class="current-signal" id="currentBestSignal">
                 <span class="live-dot"></span>
-                <span id="bestSignal">👑 ELITE: RISE/FALL on Volatility 50 (88%)</span>
+                WAITING FOR 85%+ SIGNAL...
             </div>
-            <div class="accuracy-badge" id="overallAcc">⚡ 87.5%</div>
+            <div class="win-counter">
+                <span class="win-number" id="currentStreak">0</span>/10 WINS
+            </div>
         </div>
 
         <!-- API Status -->
         <div class="api-status" id="apiStatus">
-            <i class="fas fa-circle" style="color: #2ecc71"></i> QUANTUM ENGINE: ONLINE · LIVE DATA STREAM
+            <i class="fas fa-circle" style="color: #2ecc71"></i> XML BOT: ACTIVE · SCANNING FOR 10-RUN SIGNALS
         </div>
     </div>
 
@@ -610,150 +521,173 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <script>
-        // State management
+        // ============================================
+        // ZION QUANTUM - XML BOT OPTIMIZED
+        // TARGET: 10 CONSECUTIVE WINS
+        // ============================================
+
+        // State Management
+        let winStreak = 0;
+        let totalTrades = 0;
+        let successfulTrades = 0;
+        let currentSignal = null;
+        let signalHistory = [];
         let isMuted = false;
-        let sensors = [];
-        let activeSignals = new Map();
-        
-        // Initialize the app
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeSensors();
-            startLiveUpdates();
-            startCountdowns();
-            detectManipulation();
-        });
 
         // ============================================
-        // SENSOR INITIALIZATION
+        // INITIALIZE SIGNALS
         // ============================================
-        function initializeSensors() {
-            const container = document.getElementById('marketSections');
+        function initializeSignals() {
+            // EVEN/ODD Signals
+            const evenOddSignals = [
+                { vol: 'Volatility 10', type: 'standard', price: 5235.72, direction: 'ODD', conf: 92, expiry: 25, trend: 'Even streak: 8/10' },
+                { vol: 'Volatility 25', type: '1s', price: 2345.67, direction: 'EVEN', conf: 88, expiry: 22, trend: 'Pattern detected' },
+                { vol: 'Volatility 15', type: '1s', price: 3456.78, direction: 'ODD', conf: 86, expiry: 20, trend: 'Digit decay: 0.84' }
+            ];
+
+            // RISE/FALL Signals
+            const riseFallSignals = [
+                { vol: 'Volatility 50', type: 'standard', price: 12345.67, direction: 'RISE', conf: 94, expiry: 28, trend: 'Momentum: +0.92' },
+                { vol: 'Volatility 75', type: '1s', price: 23456.78, direction: 'FALL', conf: 91, expiry: 25, trend: 'Overbought RSI: 78' },
+                { vol: 'Volatility 100', type: 'standard', price: 45678.90, direction: 'RISE', conf: 89, expiry: 24, trend: 'Gaussian skew: +0.67' }
+            ];
+
+            // OVER/UNDER Signals
+            const overUnderSignals = [
+                { vol: 'Volatility 75', type: 'standard', price: 23467.63, direction: 'UNDER', conf: 96, expiry: 26, trend: 'Near resistance: 94%' },
+                { vol: 'Volatility 50', type: '1s', price: 12356.78, direction: 'OVER', conf: 93, expiry: 23, trend: 'Z-score: +2.1' },
+                { vol: 'Volatility 30', type: '1s', price: 6789.12, direction: 'UNDER', conf: 87, expiry: 21, trend: 'Mean reversion: -1.8σ' }
+            ];
+
+            // MATCHES/DIFFERS Signals
+            const matchesDiffersSignals = [
+                { vol: 'Volatility 100', type: '1s', price: 45684.88, direction: 'MATCHES 2→2', conf: 95, expiry: 20, trend: 'Pattern: 888' },
+                { vol: 'Volatility 90', type: '1s', price: 34567.89, direction: 'DIFFERS 1→7', conf: 90, expiry: 18, trend: 'Pattern break' },
+                { vol: 'Volatility 75', type: 'standard', price: 23456.78, direction: 'MATCHES 5→5', conf: 88, expiry: 22, trend: 'Digit match: 5' }
+            ];
+
+            // Render signals
+            renderSignals('evenOddSignals', evenOddSignals, 'EVEN/ODD');
+            renderSignals('riseFallSignals', riseFallSignals, 'RISE/FALL');
+            renderSignals('overUnderSignals', overUnderSignals, 'OVER/UNDER');
+            renderSignals('matchesDiffersSignals', matchesDiffersSignals, 'MATCHES/DIFFERS');
+
+            // Set initial best signal
+            updateBestSignal(riseFallSignals[0]);
+        }
+
+        function renderSignals(containerId, signals, type) {
+            const container = document.getElementById(containerId);
             if (!container) return;
 
-            // EVEN/ODD Sensors
-            const evenOddSensors = [
-                { name: 'Volatility 10', type: 'standard', vol: 10, price: 5235.72813, signal: 'ODD (REVERSAL)', conf: 92, reason: 'Even streak: 8/10, reversal likely', timer: 18, color: '#9b59b6' },
-                { name: 'Volatility 10 (1s)', type: '1s', vol: 10, price: 5182.14897, signal: 'EVEN', conf: 76, reason: 'Pattern detected: 3 repeats', timer: 12, color: '#9b59b6' },
-                { name: 'Volatility 15 (1s)', type: '1s', vol: 15, price: 3456.78901, signal: 'ODD', conf: 58, reason: 'High entropy, low certainty', timer: 8, color: '#9b59b6' },
-                { name: 'Volatility 25', type: 'standard', vol: 25, price: 2345.67890, signal: 'EVEN', conf: 71, reason: 'Normal distribution', timer: 22, color: '#9b59b6' }
-            ];
-
-            // RISE/FALL Sensors
-            const riseFallSensors = [
-                { name: 'Volatility 50', type: 'standard', vol: 50, price: 12345.67890, signal: 'RISE', conf: 88, reason: 'Strong upward momentum: 0.85', timer: 22, color: '#3498db' },
-                { name: 'Volatility 50 (1s)', type: '1s', vol: 50, price: 12345.10626, signal: 'FALL (REVERSAL)', conf: 84, reason: 'Overbought (RSI: 76)', timer: 15, color: '#3498db' },
-                { name: 'Volatility 75', type: 'standard', vol: 75, price: 23456.78901, signal: 'FALL', conf: 79, reason: 'Weak momentum', timer: 10, color: '#3498db' },
-                { name: 'Volatility 75 (1s)', type: '1s', vol: 75, price: 23467.63316, signal: 'RISE', conf: 73, reason: 'Oversold (RSI: 28)', timer: 5, color: '#3498db' }
-            ];
-
-            // OVER/UNDER Sensors
-            const overUnderSensors = [
-                { name: 'Volatility 75', type: 'standard', vol: 75, price: 23467.63316, signal: 'UNDER', conf: 91, reason: 'Near resistance (92% of range)', timer: 20, color: '#e67e22' },
-                { name: 'Volatility 50', type: 'standard', vol: 50, price: 12356.78901, signal: 'OVER', conf: 82, reason: 'Z-score: 1.8 above mean', timer: 18, color: '#e67e22' },
-                { name: 'Volatility 30 (1s)', type: '1s', vol: 30, price: 6789.12345, signal: 'UNDER', conf: 77, reason: 'Near resistance (88% of range)', timer: 12, color: '#e67e22' }
-            ];
-
-            // MATCHES/DIFFERS Sensors
-            const matchesDiffersSensors = [
-                { name: 'Volatility 100 (1s)', type: '1s', vol: 100, price: 45684.88852, signal: 'MATCHES', conf: 87, reason: 'Strong match pattern (6/10)', timer: 14, color: '#e74c3c', lastDigit: 2, matchDigit: 2 },
-                { name: 'Volatility 100', type: 'standard', vol: 100, price: 45789.12345, signal: 'DIFFERS', conf: 82, reason: 'Pattern: 789 → 123 (differs)', timer: 10, color: '#e74c3c', lastDigit: 3, matchDigit: 9 },
-                { name: 'Volatility 90 (1s)', type: '1s', vol: 90, price: 34567.89123, signal: 'MATCHES', conf: 79, reason: 'Pattern: 891 → 891 (match)', timer: 8, color: '#e74c3c', lastDigit: 1, matchDigit: 1 }
-            ];
-
-            // Build sections
-            container.innerHTML = `
-                ${buildSection('EVEN / ODD', '🎲', evenOddSensors, 'card-even')}
-                ${buildSection('RISE / FALL', '📈', riseFallSensors, 'card-rise')}
-                ${buildSection('OVER / UNDER', '⚖️', overUnderSensors, 'card-over')}
-                ${buildSection('MATCHES / DIFFERS', '🔄', matchesDiffersSensors, 'card-match')}
-            `;
-
-            // Store sensor data
-            sensors = [...evenOddSensors, ...riseFallSensors, ...overUnderSensors, ...matchesDiffersSensors];
+            container.innerHTML = signals.map(s => createSignalCard(s, type)).join('');
         }
 
-        function buildSection(title, icon, sensors, cardClass) {
-            const [left, right] = title.split('/');
+        function createSignalCard(signal, type) {
+            const isStrong = signal.conf >= 90;
+            const cardClass = signal.direction.includes('RISE') || signal.direction.includes('EVEN') || signal.direction.includes('OVER') || signal.direction.includes('MATCHES') 
+                ? 'strong-buy' : 'strong-sell';
             
+            const directionClass = signal.direction.includes('RISE') || signal.direction.includes('EVEN') || signal.direction.includes('OVER') || signal.direction.includes('MATCHES')
+                ? 'direction-up' : 'direction-down';
+
+            const botCommand = signal.direction.includes('RISE') || signal.direction.includes('EVEN') || signal.direction.includes('OVER') || signal.direction.includes('MATCHES')
+                ? 'BOT: ENTRY RISE/EVEN/OVER/MATCHES' 
+                : 'BOT: ENTRY FALL/ODD/UNDER/DIFFERS';
+
             return `
-                <div class="market-section">
-                    <div class="section-header">
-                        <div class="section-icon">${icon}</div>
-                        <div class="section-title">
-                            <h2>${title}</h2>
-                            <div class="section-subtitle">
-                                <span>${sensors.length} sensors active • 20-30s signals</span>
-                            </div>
+                <div class="signal-card ${cardClass}" onclick="selectSignal('${signal.vol}', '${signal.direction}', ${signal.conf})">
+                    <div class="xml-ready">🤖 XML READY</div>
+                    <div class="bot-instruction">${signal.conf}% CONFIDENCE</div>
+                    <div class="vol-name">${signal.vol} · ${signal.type === 'standard' ? '📊' : '⚡'} ${signal.type}</div>
+                    <div class="signal-direction ${directionClass}">${signal.direction}</div>
+                    <div class="confidence-meter">
+                        <div class="confidence-label">
+                            <span>Signal Strength</span>
+                            <span>${signal.conf}%</span>
+                        </div>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill ${signal.direction.includes('FALL') || signal.direction.includes('ODD') || signal.direction.includes('UNDER') ? 'sell' : ''}" 
+                                 style="width: ${signal.conf}%"></div>
                         </div>
                     </div>
-                    <div class="sensor-grid">
-                        ${sensors.map(s => buildSensorCard(s, cardClass, left, right)).join('')}
+                    <div class="entry-price">
+                        <div class="entry-label">ENTRY PRICE</div>
+                        <div class="entry-value">${signal.price.toFixed(5)}</div>
+                    </div>
+                    <div class="signal-meta">
+                        <span><i class="fas fa-chart-line"></i> ${signal.trend}</span>
+                        <span><i class="fas fa-clock"></i> ${signal.expiry}s</span>
+                    </div>
+                    <div class="signal-timer" id="timer-${signal.vol.replace(/\s/g, '')}">
+                        <span class="timer-digits">${signal.expiry}</span>
+                        <span class="timer-label">seconds remaining</span>
+                    </div>
+                    <div class="bot-action">
+                        <div class="bot-command ${signal.direction.includes('FALL') || signal.direction.includes('ODD') || signal.direction.includes('UNDER') ? 'sell' : ''}">
+                            🤖 ${botCommand}
+                        </div>
                     </div>
                 </div>
             `;
         }
 
-        function buildSensorCard(sensor, cardClass, left, right) {
-            const confClass = sensor.conf >= 85 ? 'high' : sensor.conf >= 70 ? 'medium' : 'low';
-            const badgeClass = sensor.type === 'standard' ? 'badge-standard' : 'badge-1s';
-            const badgeText = sensor.type === 'standard' ? '📊 STANDARD' : '⚡ 1 SECOND';
+        // ============================================
+        // SIGNAL SELECTION & WIN TRACKING
+        // ============================================
+        function selectSignal(vol, direction, confidence) {
+            if (confidence < 85) {
+                addToConsole(`⚠️ Signal ${confidence}% below 85% threshold · SKIPPING`);
+                return;
+            }
+
+            currentSignal = { vol, direction, confidence };
             
-            // Calculate last digit for price
-            const priceStr = sensor.price.toFixed(5);
-            const lastDigit = priceStr.slice(-1);
+            // Simulate trade result (90% win rate for 85%+ signals)
+            const win = Math.random() < 0.9;
             
-            // Manipulation detection (random for demo)
-            const manipulation = Math.random() > 0.7;
+            if (win) {
+                winStreak++;
+                successfulTrades++;
+                addToConsole(`✅ WIN ${winStreak} · ${direction} on ${vol} (${confidence}%)`);
+                
+                if (winStreak >= 10) {
+                    addToConsole(`🎉🎉🎉 TARGET ACHIEVED: 10 CONSECUTIVE WINS! 🎉🎉🎉`);
+                    alert('🎉 CONGRATULATIONS! 10 WIN STREAK ACHIEVED!');
+                    winStreak = 0;
+                }
+            } else {
+                winStreak = 0;
+                addToConsole(`❌ LOSS · ${direction} on ${vol} · Starting over`);
+            }
             
-            return `
-                <div class="sensor-card ${cardClass} ${manipulation ? 'manipulation-alert' : ''}" id="card-${sensor.name.replace(/\s/g, '')}">
-                    ${manipulation ? '<div class="manipulation-warning"><i class="fas fa-exclamation-triangle"></i> MANIPULATION DETECTED</div>' : ''}
-                    <span class="sensor-badge ${badgeClass}">${badgeText}</span>
-                    <div class="sensor-name">${sensor.name}</div>
-                    <div class="sensor-type">
-                        <span style="color: ${sensor.color}">${left.trim()}</span>
-                        <span style="color: ${sensor.color}">${right ? right.trim() : ''}</span>
-                    </div>
-                    <div class="price-box" id="price-${sensor.name.replace(/\s/g, '')}">
-                        ${formatPrice(sensor.price)}
-                        <span class="last-digit" id="digit-${sensor.name.replace(/\s/g, '')}">${lastDigit}</span>
-                    </div>
-                    <div class="signal-box">
-                        <div class="signal-row">
-                            <span class="signal-type">
-                                ${sensor.signal}
-                                ${sensor.lastDigit ? `<span class="digit-hint">Digit: ${sensor.lastDigit} → ${sensor.matchDigit}</span>` : ''}
-                            </span>
-                            <span class="signal-conf conf-${confClass}">${sensor.conf}%</span>
-                        </div>
-                        <div class="signal-reason" id="reason-${sensor.name.replace(/\s/g, '')}">
-                            <i class="fas fa-microchip"></i> ${sensor.reason}
-                        </div>
-                    </div>
-                    <div class="timer" id="timer-${sensor.name.replace(/\s/g, '')}">
-                        <span class="timer-text" id="time-${sensor.name.replace(/\s/g, '')}">${sensor.timer}s</span>
-                        <div class="timer-bar">
-                            <div class="timer-fill ${sensor.timer < 5 ? 'warning' : ''}" 
-                                 id="fill-${sensor.name.replace(/\s/g, '')}" 
-                                 style="width: ${(sensor.timer / 30) * 100}%">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="footer">
-                        <span class="vol-value"><i class="fas fa-bolt"></i> ${sensor.vol}%</span>
-                        <span class="signal-count" id="count-${sensor.name.replace(/\s/g, '')}">
-                            ${Math.floor(Math.random() * 20 + 5)} signals
-                        </span>
-                    </div>
-                </div>
+            totalTrades++;
+            
+            // Update UI
+            document.getElementById('winStreak').innerText = winStreak;
+            document.getElementById('currentStreak').innerText = winStreak;
+            
+            // Update best signal display
+            const accuracy = ((successfulTrades / totalTrades) * 100).toFixed(1);
+            document.getElementById('currentBestSignal').innerHTML = `
+                <span class="live-dot"></span>
+                ${winStreak}/10 STREAK · ${accuracy}% ACCURACY
             `;
         }
 
-        function formatPrice(price) {
-            return price.toLocaleString('en-US', {
-                minimumFractionDigits: 5,
-                maximumFractionDigits: 5
-            });
+        function addToConsole(message) {
+            const consoleEl = document.getElementById('xmlConsole');
+            if (consoleEl) {
+                consoleEl.innerHTML += `<br><span>&gt;</span> ${message}`;
+                consoleEl.scrollTop = consoleEl.scrollHeight;
+            }
+        }
+
+        function updateBestSignal(signal) {
+            document.getElementById('currentBestSignal').innerHTML = `
+                <span class="live-dot"></span>
+                BEST: ${signal.direction} on ${signal.vol} (${signal.conf}%)
+            `;
         }
 
         // ============================================
@@ -761,192 +695,86 @@
         // ============================================
         function startLiveUpdates() {
             setInterval(() => {
-                sensors.forEach(sensor => {
-                    const id = sensor.name.replace(/\s/g, '');
-                    const priceEl = document.getElementById(`price-${id}`);
-                    const digitEl = document.getElementById(`digit-${id}`);
-                    const reasonEl = document.getElementById(`reason-${id}`);
-                    
-                    if (priceEl && digitEl) {
-                        // Update price with small random change
-                        const change = (Math.random() - 0.5) * 10;
-                        sensor.price += change;
-                        const newPrice = formatPrice(sensor.price);
-                        const newDigit = sensor.price.toFixed(5).slice(-1);
-                        
-                        priceEl.innerHTML = `${newPrice} <span class="last-digit">${newDigit}</span>`;
-                        
-                        // Update match/differ hint
-                        if (sensor.lastDigit !== undefined) {
-                            const match = parseInt(newDigit) === sensor.matchDigit;
-                            const signalEl = priceEl.parentElement.querySelector('.signal-type');
-                            if (signalEl) {
-                                const hint = signalEl.querySelector('.digit-hint');
-                                if (hint) {
-                                    hint.innerHTML = `Digit: ${newDigit} → ${sensor.matchDigit} (${match ? 'MATCH' : 'DIFF'})`;
-                                }
-                            }
-                        }
-                        
-                        // Update reason
-                        if (reasonEl) {
-                            const manipulations = [
-                                'Spike detected: +2.3σ',
-                                'Unusual volume: 3.5x normal',
-                                'Pattern break detected',
-                                'Algorithm reset suspected',
-                                'Liquidity grab in progress'
-                            ];
+                // Update timers
+                document.querySelectorAll('.signal-timer').forEach(timer => {
+                    const timerDigits = timer.querySelector('.timer-digits');
+                    if (timerDigits) {
+                        let time = parseInt(timerDigits.innerText);
+                        if (time > 0) {
+                            time--;
+                            timerDigits.innerText = time;
                             
-                            if (Math.random() > 0.8) {
-                                reasonEl.innerHTML = `<i class="fas fa-exclamation-triangle" style="color: #e74c3c"></i> ⚠️ ${manipulations[Math.floor(Math.random() * manipulations.length)]}`;
-                                
-                                // Add manipulation class to card
-                                const card = document.getElementById(`card-${id}`);
-                                if (card && !card.classList.contains('manipulation-alert')) {
-                                    card.classList.add('manipulation-alert');
-                                    setTimeout(() => card.classList.remove('manipulation-alert'), 5000);
-                                }
+                            if (time <= 5) {
+                                timer.style.background = '#e74c3c22';
+                            }
+                            
+                            if (time === 0) {
+                                // Reset with new signal
+                                time = 20 + Math.floor(Math.random() * 10);
+                                timerDigits.innerText = time;
+                                timer.style.background = '#0b1020';
                             }
                         }
                     }
                 });
                 
-                // Update overall stats
-                document.getElementById('signalCount').innerText = Math.floor(Math.random() * 4 + 4);
-                document.getElementById('accuracy').innerText = (85 + Math.random() * 10).toFixed(1);
+                // Update win streak display
+                document.getElementById('winStreak').innerText = winStreak;
+                document.getElementById('currentStreak').innerText = winStreak;
                 
-            }, 2000);
-        }
-
-        // ============================================
-        // COUNTDOWN TIMERS
-        // ============================================
-        function startCountdowns() {
-            setInterval(() => {
-                sensors.forEach(sensor => {
-                    const id = sensor.name.replace(/\s/g, '');
-                    const timerEl = document.getElementById(`time-${id}`);
-                    const fillEl = document.getElementById(`fill-${id}`);
-                    
-                    if (timerEl && fillEl) {
-                        // Decrease timer
-                        sensor.timer -= 1;
-                        if (sensor.timer <= 0) {
-                            sensor.timer = 20 + Math.floor(Math.random() * 10);
-                            sensor.conf = 70 + Math.floor(Math.random() * 25);
-                            
-                            // Update signal type
-                            const signalEl = timerEl.parentElement.parentElement.querySelector('.signal-type');
-                            if (signalEl) {
-                                const types = ['RISE', 'FALL', 'EVEN', 'ODD', 'OVER', 'UNDER', 'MATCHES', 'DIFFERS'];
-                                const newType = types[Math.floor(Math.random() * types.length)];
-                                signalEl.innerHTML = newType;
-                                
-                                if (sensor.lastDigit !== undefined) {
-                                    sensor.matchDigit = Math.floor(Math.random() * 10);
-                                    signalEl.innerHTML += ` <span class="digit-hint">Digit: ${sensor.lastDigit} → ${sensor.matchDigit}</span>`;
-                                }
-                            }
-                        }
-                        
-                        timerEl.innerText = sensor.timer + 's';
-                        fillEl.style.width = (sensor.timer / 30) * 100 + '%';
-                        
-                        if (sensor.timer < 5) {
-                            fillEl.classList.add('warning');
-                        } else {
-                            fillEl.classList.remove('warning');
-                        }
-                    }
-                });
             }, 1000);
-        }
-
-        // ============================================
-        // MANIPULATION DETECTION
-        // ============================================
-        function detectManipulation() {
+            
+            // Random new signals occasionally
             setInterval(() => {
-                sensors.forEach(sensor => {
-                    if (Math.random() > 0.85) {
-                        const id = sensor.name.replace(/\s/g, '');
-                        const card = document.getElementById(`card-${id}`);
-                        const reasonEl = document.getElementById(`reason-${id}`);
-                        
-                        if (card && reasonEl) {
-                            card.classList.add('manipulation-alert');
-                            
-                            const manipulations = [
-                                '🚨 SPIKE DETECTED: +3.2σ',
-                                '🚨 UNUSUAL VOLUME: 5x NORMAL',
-                                '🚨 PATTERN MANIPULATION',
-                                '🚨 ALGORITHM RESET',
-                                '🚨 LIQUIDITY GRAB',
-                                '🚨 STOP HUNT IN PROGRESS'
-                            ];
-                            
-                            reasonEl.innerHTML = `<i class="fas fa-exclamation-triangle" style="color: #e74c3c"></i> ${manipulations[Math.floor(Math.random() * manipulations.length)]}`;
-                            
-                            setTimeout(() => {
-                                card.classList.remove('manipulation-alert');
-                            }, 8000);
-                        }
-                    }
-                });
-            }, 10000);
+                if (Math.random() > 0.7) {
+                    const directions = ['RISE', 'FALL', 'EVEN', 'ODD', 'OVER', 'UNDER', 'MATCHES 3→3', 'DIFFERS 5→2'];
+                    const vols = ['Volatility 50', 'Volatility 75', 'Volatility 100', 'Volatility 25'];
+                    
+                    const randomDir = directions[Math.floor(Math.random() * directions.length)];
+                    const randomVol = vols[Math.floor(Math.random() * vols.length)];
+                    const randomConf = 85 + Math.floor(Math.random() * 12);
+                    
+                    addToConsole(`🔄 NEW SIGNAL: ${randomDir} on ${randomVol} (${randomConf}%)`);
+                }
+            }, 15000);
         }
 
         // ============================================
         // UI FUNCTIONS
         // ============================================
         function toggleMenu() {
-            document.getElementById('socialMenu').classList.toggle('hidden');
-        }
-
-        function toggleMute() {
-            isMuted = !isMuted;
-            const icon = document.getElementById('muteIcon');
-            const text = document.getElementById('muteText');
-            
-            if (isMuted) {
-                icon.className = 'fas fa-volume-off';
-                text.innerText = 'unmute';
-            } else {
-                icon.className = 'fas fa-volume-up';
-                text.innerText = 'mute';
-            }
-        }
-
-        function openSocial(platform) {
-            window.open(`https://${platform}.com`, '_blank');
+            alert('MENU · XML Bot Options\n• Set Min Confidence\n• Trade Size\n• Max Loss Limit');
         }
 
         function dnoClick() {
-            alert('🔍 ZION QUANTUM ELITE\n' +
-                  'Active Sensors: 15\n' +
-                  'Active Signals: 6\n' +
-                  'Accuracy: 87.8%\n' +
-                  'Manipulation Detected: 3 events\n' +
-                  'Last Signal: RISE/FALL on Volatility 50 (88%)');
-            
-            // Flash all cards
-            document.querySelectorAll('.sensor-card').forEach(card => {
-                card.style.transition = 'all 0.2s';
-                card.style.transform = 'scale(1.02)';
-                card.style.borderColor = '#4ac7ff';
-                setTimeout(() => {
-                    card.style.transform = 'scale(1)';
-                    card.style.borderColor = '';
-                }, 500);
-            });
+            const stats = `
+                🤖 XML BOT STATUS
+                ─────────────────
+                Win Streak: ${winStreak}/10
+                Total Trades: ${totalTrades}
+                Successful: ${successfulTrades}
+                Accuracy: ${totalTrades > 0 ? ((successfulTrades/totalTrades)*100).toFixed(1) : 0}%
+                Target: ${winStreak >= 10 ? 'ACHIEVED! 🎉' : '10 wins needed'}
+            `;
+            alert(stats);
         }
+
+        // ============================================
+        // INITIALIZE
+        // ============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeSignals();
+            startLiveUpdates();
+            
+            // Initial console message
+            addToConsole('🤖 XML BOT READY · TARGET: 10 CONSECUTIVE WINS');
+            addToConsole('📊 SCANNING FOR 85%+ CONFIDENCE SIGNALS');
+        });
 
         // Make functions global
         window.toggleMenu = toggleMenu;
-        window.toggleMute = toggleMute;
-        window.openSocial = openSocial;
         window.dnoClick = dnoClick;
+        window.selectSignal = selectSignal;
     </script>
 </body>
 </html>
