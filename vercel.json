@@ -1,5 +1,5 @@
 {
-  "name": "zion-quantum-sensor",
+  "name": "zion-quantum-elite",
   "version": 2,
   "builds": [
     {
@@ -12,9 +12,5 @@
       "src": "/(.*)",
       "dest": "/index.html"
     }
-  ],
-  "env": {
-    "DERIV_APP_ID": "126973",
-    "DERIV_API_TOKEN": "rbQgwOkbsfDoKw2"
-  }
+  ]
 }
