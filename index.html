@@ -1,22 +1,74 @@
-<div class="lab-container">
-    <header class="status-bar">AI: Gemini-1.5-Flash | TOKEN: Authorized</header>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZION TRADING LAB · Professional Scanner</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Header with App ID -->
+        <div class="app-header">
+            <div class="logo-section">
+                <h1>⚡ ZION SCANNER</h1>
+                <div class="app-badge">App ID: 126973</div>
+            </div>
+            <div class="menu-btn" id="menuButton">
+                <span>MENU</span>
+                <i class="fas fa-bars"></i>
+            </div>
+        </div>
 
-    <div class="strategy-grid">
-        <button class="strat-box" onclick="selectStrategy('RISE_FALL', this)">RISE & FALL</button>
-        <button class="strat-box" onclick="selectStrategy('EVEN_ODD', this)">EVEN ODD</button>
-        <button class="strat-box" onclick="selectStrategy('OVER_UNDER', this)">OVER UNDER</button>
-        <button class="strat-box" onclick="selectStrategy('MATCHES_DIFFERS', this)">MATCHES & DIFFERS</button>
+        <!-- Market Grid Container - Dynamically populated by JS -->
+        <div class="market-grid" id="marketGrid"></div>
+
+        <!-- Social Container (MENU dropdown) -->
+        <div class="social-container hidden" id="socialContainer">
+            <div class="social-item" data-social="tiktok">
+                <i class="fab fa-tiktok"></i>
+                <span>TIKTOK</span>
+            </div>
+            <div class="social-item" data-social="whatsapp">
+                <i class="fab fa-whatsapp"></i>
+                <span>WHATSAPP</span>
+            </div>
+            <div class="social-item" data-social="facebook">
+                <i class="fab fa-facebook-f"></i>
+                <span>FACEBOOK</span>
+            </div>
+            <div class="social-item" data-social="instagram">
+                <i class="fab fa-instagram"></i>
+                <span>INSTAGRAM</span>
+            </div>
+        </div>
+
+        <!-- AI Voice Control -->
+        <div class="voice-section">
+            <div class="voice-label">
+                <i class="fas fa-microphone"></i>
+                <span>AI Voice</span>
+            </div>
+            <div class="mute-toggle" id="muteToggle">
+                <i class="fas fa-volume-up" id="voiceIcon"></i>
+                <span id="muteLabel">mute</span>
+            </div>
+        </div>
+
+        <!-- Signal Status -->
+        <div class="signal-feedback">
+            <div class="d-no">D NO</div>
+            <div class="best-market" id="bestMarket">Ready</div>
+            <div class="accuracy-badge" id="accuracyDisplay">🎯 Accuracy: 0%</div>
+        </div>
+
+        <!-- API Status -->
+        <div class="api-status" id="apiStatus">
+            <i class="fas fa-circle"></i> Initializing...
+        </div>
     </div>
 
-    <div id="main-display" class="monitor-screen">
-        <div class="idle">READY TO SCAN ALL MARKETS...</div>
-    </div>
-
-    <nav class="social-menu">
-        <h4>SOCIAL CHANNELS</h4>
-        <a href="https://wa.me/254742024175">WHATSAPP</a>
-        <a href="#">TIKTOK</a>
-        <a href="#">FACEBOOK</a>
-        <a href="#">INSTAGRAM</a>
-    </nav>
-</div>
+    <script src="script.js"></script>
+</body>
+</html>
