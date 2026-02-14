@@ -3,17 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZION TRADING LAB · Professional Scanner</title>
+    <title>ZION QUANTUM LAB · ELITE SCANNER</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <div class="dashboard">
-        <!-- Header with App ID -->
+        <!-- Header with Live Stats -->
         <div class="app-header">
             <div class="logo-section">
-                <h1>⚡ ZION SCANNER</h1>
-                <div class="app-badge">App ID: 126973</div>
+                <h1>⚡ ZION QUANTUM <span class="elite-badge">ELITE</span></h1>
+                <div class="live-stats">
+                    <div class="stat-item">
+                        <i class="fas fa-bolt"></i>
+                        <span id="signalCount">0</span> signals
+                    </div>
+                    <div class="stat-item">
+                        <i class="fas fa-crosshairs"></i>
+                        <span id="accuracyDisplay">0.0%</span>
+                    </div>
+                </div>
+            </div>
+            <div class="app-badge">
+                <i class="fas fa-id-card"></i> App ID: 126973
             </div>
             <div class="menu-btn" id="menuButton">
                 <span>MENU</span>
@@ -21,34 +33,22 @@
             </div>
         </div>
 
-        <!-- Market Grid Container - Dynamically populated by JS -->
+        <!-- Market Grid - Dynamically populated -->
         <div class="market-grid" id="marketGrid"></div>
 
-        <!-- Social Container (MENU dropdown) -->
+        <!-- Social Container -->
         <div class="social-container hidden" id="socialContainer">
-            <div class="social-item" data-social="tiktok">
-                <i class="fab fa-tiktok"></i>
-                <span>TIKTOK</span>
-            </div>
-            <div class="social-item" data-social="whatsapp">
-                <i class="fab fa-whatsapp"></i>
-                <span>WHATSAPP</span>
-            </div>
-            <div class="social-item" data-social="facebook">
-                <i class="fab fa-facebook-f"></i>
-                <span>FACEBOOK</span>
-            </div>
-            <div class="social-item" data-social="instagram">
-                <i class="fab fa-instagram"></i>
-                <span>INSTAGRAM</span>
-            </div>
+            <div class="social-item" data-social="tiktok"><i class="fab fa-tiktok"></i>TIKTOK</div>
+            <div class="social-item" data-social="whatsapp"><i class="fab fa-whatsapp"></i>WHATSAPP</div>
+            <div class="social-item" data-social="facebook"><i class="fab fa-facebook-f"></i>FACEBOOK</div>
+            <div class="social-item" data-social="instagram"><i class="fab fa-instagram"></i>INSTAGRAM</div>
         </div>
 
         <!-- AI Voice Control -->
         <div class="voice-section">
             <div class="voice-label">
-                <i class="fas fa-microphone"></i>
-                <span>AI Voice</span>
+                <i class="fas fa-microphone-alt"></i>
+                <span>AI QUANTUM VOICE</span>
             </div>
             <div class="mute-toggle" id="muteToggle">
                 <i class="fas fa-volume-up" id="voiceIcon"></i>
@@ -59,13 +59,16 @@
         <!-- Signal Status -->
         <div class="signal-feedback">
             <div class="d-no">D NO</div>
-            <div class="best-market" id="bestMarket">Ready</div>
-            <div class="accuracy-badge" id="accuracyDisplay">🎯 Accuracy: 0%</div>
+            <div class="best-market" id="bestMarket">
+                <span class="quantum-indicator"></span>
+                QUANTUM SCANNING...
+            </div>
+            <div class="accuracy-badge" id="overallAccuracy">⚛️ 0.0%</div>
         </div>
 
         <!-- API Status -->
         <div class="api-status" id="apiStatus">
-            <i class="fas fa-circle"></i> Initializing...
+            <i class="fas fa-circle"></i> QUANTUM ENGINE INITIALIZING...
         </div>
     </div>
 
