@@ -250,15 +250,6 @@
             font-size: 0.8rem;
         }
 
-        /* Confidence Circle */
-        .confidence-circle {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: conic-gradient(#2ecc71 0deg, #f39c12 180deg, #e74c3c 360deg);
-            margin: 0 auto 10px;
-        }
-
         /* Entry Button */
         .entry-button {
             background: linear-gradient(145deg, #2ecc71, #27ae60);
@@ -291,6 +282,8 @@
             margin: 25px 0;
             border: 2px solid #4ac7ff;
             font-family: monospace;
+            max-height: 200px;
+            overflow-y: auto;
         }
 
         .console-header {
@@ -298,6 +291,11 @@
             justify-content: space-between;
             color: #4ac7ff;
             margin-bottom: 15px;
+            position: sticky;
+            top: 0;
+            background: #0b1020;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #2a3a60;
         }
 
         .console-log {
@@ -312,6 +310,31 @@
 
         .console-log .success { color: #2ecc71; }
         .console-log .warning { color: #e74c3c; }
+
+        /* D NO Button */
+        .dno-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .dno-button {
+            background: #e74c3c;
+            color: white;
+            padding: 15px 40px;
+            border-radius: 60px;
+            font-weight: 900;
+            font-size: 1.5rem;
+            border: 3px solid #ffb2b2;
+            cursor: pointer;
+            display: inline-block;
+            box-shadow: 0 8px 0 #711f1f;
+            transition: all 0.1s ease;
+        }
+
+        .dno-button:active {
+            transform: translateY(4px);
+            box-shadow: 0 4px 0 #711f1f;
+        }
 
         /* Responsive */
         @media (max-width: 1200px) {
@@ -356,9 +379,9 @@
         </div>
 
         <!-- D NO Button -->
-        <div style="text-align: center; margin-top: 20px;">
-            <div class="entry-button" onclick="runUltimateAnalysis()" style="width: 200px; margin: 0 auto;">
-                D NO · ANALYZE
+        <div class="dno-container">
+            <div class="dno-button" onclick="runUltimateAnalysis()">
+                D NO · ANALYZE ALL
             </div>
         </div>
     </div>
@@ -984,7 +1007,7 @@
                 </div>
                 
                 <!-- ADAPTIVE COUNTDOWN -->
-                <div class="adaptive-timer" id="${timerId}">
+                <div class="adaptive-timer" id="${timerId}" data-total="${signal.duration}">
                     <div class="timer-header">
                         <span>⏳ ADAPTIVE COUNTDOWN</span>
                         <span id="${timerId}-status">✅ ACTIVE</span>
@@ -1014,8 +1037,6 @@
         // ADAPTIVE TIMER MANAGEMENT
         // ============================================
         function startAdaptiveTimers() {
-            const timers = new Map();
-            
             setInterval(() => {
                 document.querySelectorAll('.adaptive-timer').forEach(timer => {
                     const id = timer.id;
@@ -1026,14 +1047,11 @@
                     if (!display || !bar) return;
                     
                     let time = parseInt(display.innerText);
+                    const total = parseInt(timer.dataset.total);
                     
                     if (time > 0) {
                         time -= 1;
                         display.innerText = time;
-                        
-                        // Get total from initial value stored in dataset
-                        const total = timer.dataset.total || parseInt(display.innerText) + 1;
-                        timer.dataset.total = total;
                         
                         // Calculate percentage
                         const percentage = (time / total) * 100;
@@ -1050,9 +1068,6 @@
                             bar.style.background = 'linear-gradient(90deg, #e74c3c, #c0392b)';
                             status.innerText = '⚠️ EXPIRING SOON';
                         }
-                        
-                        // Store in map
-                        timers.set(id, time);
                         
                         if (time === 0) {
                             // Signal expired - generate new
@@ -1126,8 +1141,9 @@
             }, 60000);
         });
 
+        // Make functions globally available
         window.takeSignal = takeSignal;
         window.runUltimateAnalysis = runUltimateAnalysis;
     </script>
 </body>
-</html>
+    </html>
