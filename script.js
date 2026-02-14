@@ -11,9 +11,7 @@ class ZionQuantumScanner {
         this.appId = '126973';
         this.websocket = null;
         
-        // ============================================
-        // STANDARD vs 1s VOLATILITIES - COMPLETE LIST
-        // ============================================
+        // Standard and 1s Volatilities
         this.volatilities = {
             standard: [
                 { name: 'Volatility 10', symbol: 'R_10', baseVol: 10, type: 'standard' },
@@ -34,43 +32,39 @@ class ZionQuantumScanner {
             ]
         };
         
-        // Market Type Configuration - Each scans ALL relevant volatilities
+        // Market Types Configuration
         this.marketTypes = [
             {
                 name: 'EVEN/ODD',
                 icon: '🎲',
-                symbols: ['R_10', 'R_15', 'R_25', 'R_30'], // Low-med + 1s
-                strategy: 'quantum-digit',
+                symbols: ['R_10', 'R_15', 'R_25', 'R_30'],
                 minConfidence: 80,
                 colors: ['#9b59b6', '#8e44ad']
             },
             {
                 name: 'RISE/FALL',
                 icon: '📈',
-                symbols: ['R_50', 'R_75', 'R_90', 'R_100'], // High volatilities
-                strategy: 'quantum-momentum',
+                symbols: ['R_50', 'R_75', 'R_90', 'R_100'],
                 minConfidence: 85,
                 colors: ['#3498db', '#2980b9']
             },
             {
                 name: 'OVER/UNDER',
                 icon: '⚖️',
-                symbols: ['R_25', 'R_30', 'R_50', 'R_75'], // Medium-high
-                strategy: 'quantum-zscore',
+                symbols: ['R_25', 'R_30', 'R_50', 'R_75'],
                 minConfidence: 82,
                 colors: ['#e67e22', '#d35400']
             },
             {
                 name: 'MATCHES/DIFFERS',
                 icon: '🔄',
-                symbols: ['R_75', 'R_90', 'R_100'], // Very high only
-                strategy: 'quantum-pattern',
+                symbols: ['R_75', 'R_90', 'R_100'],
                 minConfidence: 78,
                 colors: ['#e74c3c', '#c0392b']
             }
         ];
         
-        // Quantum Data Storage
+        // Data Storage
         this.priceHistory = {};
         this.quantumStates = {};
         this.activeSignals = new Map();
@@ -80,16 +74,15 @@ class ZionQuantumScanner {
         this.isMuted = false;
         
         // Quantum Constants
-        this.QUANTUM_THRESHOLD = 0.84; // 84% confidence minimum for elite signals
-        this.HYSTERESIS_LOOP = 0.15; // Prevents signal flickering
+        this.QUANTUM_THRESHOLD = 0.84;
         
         this.init();
     }
     
-    async init() {
+    init() {
         this.createQuantumGrid();
         this.setupEventListeners();
-        await this.connectDerivWebSocket();
+        this.connectDerivWebSocket();
         this.startQuantumEngine();
         this.initQuantumVoice();
     }
@@ -100,8 +93,7 @@ class ZionQuantumScanner {
         
         grid.innerHTML = '';
         
-        // Create sections for each market type
-        this.marketTypes.forEach((market, index) => {
+        this.marketTypes.forEach((market) => {
             // Section Header
             const section = document.createElement('div');
             section.className = 'market-section';
@@ -122,13 +114,11 @@ class ZionQuantumScanner {
             `;
             grid.appendChild(section);
             
-            // Grid for volatilities (2 cards per row)
+            // Grid for volatilities
             const volGrid = document.createElement('div');
             volGrid.className = 'vol-grid';
             
-            // Add cards for each symbol in this market type
             market.symbols.forEach(symbol => {
-                // Find both standard and 1s versions
                 const standard = this.volatilities.standard.find(v => v.symbol === symbol);
                 const oneSec = this.volatilities.oneSecond.find(v => v.symbol === symbol);
                 
@@ -146,7 +136,7 @@ class ZionQuantumScanner {
     
     createVolatilityCard(volInfo, marketType) {
         const card = document.createElement('div');
-        card.className = `market-card`;
+        card.className = 'market-card';
         card.dataset.symbol = volInfo.symbol;
         card.dataset.volatility = volInfo.baseVol;
         card.dataset.marketType = marketType.name;
@@ -190,7 +180,7 @@ class ZionQuantumScanner {
         return card;
     }
     
-    async connectDerivWebSocket() {
+    connectDerivWebSocket() {
         const statusEl = document.getElementById('apiStatus');
         
         try {
@@ -213,8 +203,20 @@ class ZionQuantumScanner {
                 setTimeout(() => this.connectDerivWebSocket(), 5000);
             };
             
+            this.websocket.onerror = () => {
+                statusEl.innerHTML = '<i class="fas fa-circle" style="color:#e74c3c"></i> QUANTUM ENGINE: ERROR';
+            };
+            
         } catch (error) {
             statusEl.innerHTML = '<i class="fas fa-circle" style="color:#e74c3c"></i> QUANTUM ENGINE: OFFLINE';
+        }
+    }
+    
+    sendAuthorize() {
+        if (this.websocket?.readyState === WebSocket.OPEN) {
+            this.websocket.send(JSON.stringify({
+                "authorize": this.apiToken
+            }));
         }
     }
     
@@ -230,7 +232,6 @@ class ZionQuantumScanner {
                 "subscribe": 1
             }));
             
-            // Initialize quantum state for this symbol
             this.quantumStates[symbol] = {
                 standard: { ticks: [], quantumField: [], coherence: 1.0 },
                 '1s': { ticks: [], quantumField: [], coherence: 1.0 }
@@ -242,8 +243,6 @@ class ZionQuantumScanner {
         if (data.tick) {
             const { symbol, quote } = data.tick;
             
-            // Determine if this is standard or 1s (we need to track both separately)
-            // For simplicity, we'll store in both but they'll be differentiated in UI
             if (!this.quantumStates[symbol]) {
                 this.quantumStates[symbol] = {
                     standard: { ticks: [], quantumField: [], coherence: 1.0 },
@@ -251,7 +250,6 @@ class ZionQuantumScanner {
                 };
             }
             
-            // Store in both - UI will handle separation
             this.quantumStates[symbol].standard.ticks.push({
                 price: quote,
                 timestamp: Date.now()
@@ -262,7 +260,6 @@ class ZionQuantumScanner {
                 timestamp: Date.now()
             });
             
-            // Keep last 200 ticks
             if (this.quantumStates[symbol].standard.ticks.length > 200) {
                 this.quantumStates[symbol].standard.ticks.shift();
             }
@@ -270,7 +267,6 @@ class ZionQuantumScanner {
                 this.quantumStates[symbol]['1s'].ticks.shift();
             }
             
-            // Update price displays for both versions
             this.updatePriceDisplay(symbol, quote, 'standard');
             this.updatePriceDisplay(symbol, quote, '1s');
         }
@@ -280,38 +276,29 @@ class ZionQuantumScanner {
         const priceEl = document.getElementById(`price-${symbol}-${type}`);
         if (priceEl) {
             priceEl.textContent = price.toFixed(5);
-            priceEl.style.color = '#4ac7ff';
-            setTimeout(() => {
-                priceEl.style.color = '#4ac7ff';
-            }, 100);
         }
     }
     
     startQuantumEngine() {
-        // Run quantum analysis every 500ms (faster than human possible)
         setInterval(() => {
             this.runQuantumAnalysis();
         }, 500);
         
-        // Update timers every 100ms for smooth countdown
         setInterval(() => {
             this.updateQuantumTimers();
         }, 100);
         
-        // Clean up expired signals
         setInterval(() => {
             this.cleanExpiredQuantumSignals();
         }, 1000);
     }
     
     runQuantumAnalysis() {
-        // Analyze each market type separately
         this.marketTypes.forEach(market => {
             let bestForMarket = null;
             let highestConfidence = 0;
             
             market.symbols.forEach(symbol => {
-                // Check both standard and 1s versions
                 ['standard', '1s'].forEach(type => {
                     const state = this.quantumStates[symbol]?.[type];
                     if (!state || state.ticks.length < 50) return;
@@ -319,13 +306,11 @@ class ZionQuantumScanner {
                     const signal = this.generateQuantumSignal(market, symbol, type, state);
                     
                     if (signal && signal.confidence > market.minConfidence) {
-                        // Check if this is better than current best for this market
                         if (signal.confidence > highestConfidence) {
                             highestConfidence = signal.confidence;
                             bestForMarket = { symbol, type, signal };
                         }
                         
-                        // Only emit if confidence is very high and not already active
                         if (signal.confidence >= this.QUANTUM_THRESHOLD * 100) {
                             this.emitQuantumSignal(symbol, type, market, signal);
                         }
@@ -333,13 +318,11 @@ class ZionQuantumScanner {
                 });
             });
             
-            // Update best for this market type
             if (bestForMarket) {
                 this.updateMarketBestDisplay(market, bestForMarket);
             }
         });
         
-        // Update overall best
         this.updateOverallBest();
     }
     
@@ -347,66 +330,48 @@ class ZionQuantumScanner {
         const ticks = state.ticks;
         const prices = ticks.slice(-50).map(t => t.price);
         
-        // QUANTUM ALGORITHMS - Complex beyond human comprehension
-        
         switch(market.name) {
             case 'EVEN/ODD':
-                return this.quantumDigitAnalysis(prices, ticks, symbol, type);
+                return this.quantumDigitAnalysis(prices, ticks);
             case 'RISE/FALL':
-                return this.quantumMomentumAnalysis(prices, ticks, symbol, type);
+                return this.quantumMomentumAnalysis(prices, ticks);
             case 'OVER/UNDER':
-                return this.quantumZScoreAnalysis(prices, ticks, symbol, type);
+                return this.quantumZScoreAnalysis(prices, ticks);
             case 'MATCHES/DIFFERS':
-                return this.quantumPatternAnalysis(prices, ticks, symbol, type);
+                return this.quantumPatternAnalysis(prices, ticks);
             default:
                 return null;
         }
     }
     
-    // ============================================
-    // QUANTUM DIGIT ANALYSIS (EVEN/ODD)
-    // ============================================
-    quantumDigitAnalysis(prices, ticks, symbol, type) {
-        // Extract last digits
+    quantumDigitAnalysis(prices, ticks) {
         const digits = ticks.slice(-30).map(t => Math.floor(t.price * 100000) % 10);
         
-        // QUANTUM ENTROPY CALCULATION
         const digitFrequency = Array(10).fill(0);
         digits.forEach(d => digitFrequency[d]++);
         
-        // Shannon Entropy (measures randomness)
         let entropy = 0;
         digitFrequency.forEach(count => {
             const p = count / digits.length;
             if (p > 0) entropy -= p * Math.log2(p);
         });
-        
-        // Max entropy is log2(10) ≈ 3.32
         const normalizedEntropy = entropy / 3.32;
         
-        // QUANTUM PHASE (digit cycle detection)
         let phase = 0;
         for (let i = 1; i < digits.length; i++) {
             if (digits[i] === digits[i-1]) phase += 1;
-            else if (Math.abs(digits[i] - digits[i-1]) === 1) phase += 0.5;
-            else if (Math.abs(digits[i] - digits[i-1]) === 9) phase += 0.3;
         }
         phase = (phase / digits.length) * 360;
         
-        // DIGIT DECAY MATRIX (quantum tunneling effect)
         const decayMatrix = [];
         for (let i = 0; i < 10; i++) {
-            decayMatrix[i] = [];
-            for (let j = 0; j < 10; j++) {
-                decayMatrix[i][j] = 0;
-            }
+            decayMatrix[i] = Array(10).fill(0);
         }
         
         for (let i = 1; i < digits.length; i++) {
             decayMatrix[digits[i-1]][digits[i]]++;
         }
         
-        // Normalize decay matrix
         for (let i = 0; i < 10; i++) {
             const sum = decayMatrix[i].reduce((a, b) => a + b, 0);
             if (sum > 0) {
@@ -416,11 +381,9 @@ class ZionQuantumScanner {
             }
         }
         
-        // Predict next digit using quantum tunneling
         const lastDigit = digits[digits.length - 1];
         const predictionProb = decayMatrix[lastDigit];
         
-        // Find most probable next digit
         let maxProb = 0;
         let predictedDigit = lastDigit;
         for (let i = 0; i < 10; i++) {
@@ -430,54 +393,24 @@ class ZionQuantumScanner {
             }
         }
         
-        // Calculate even/odd confidence
         const evenProb = predictionProb.filter((_, i) => i % 2 === 0).reduce((a, b) => a + b, 0);
-        const oddProb = 1 - evenProb;
-        
         const isEven = predictedDigit % 2 === 0;
-        let confidence = (isEven ? evenProb : oddProb) * 100;
+        let confidence = (isEven ? evenProb : 1 - evenProb) * 100;
         
-        // Apply quantum corrections
-        confidence *= (1 - normalizedEntropy * 0.2); // Lower entropy = higher confidence
-        confidence *= (0.8 + 0.2 * Math.sin(phase * Math.PI / 180)); // Phase modulation
+        confidence *= (1 - normalizedEntropy * 0.2);
+        confidence *= (0.8 + 0.2 * Math.sin(phase * Math.PI / 180));
         
-        // Cross-volatility validation (check other symbols)
-        const market = this.marketTypes.find(m => m.name === 'EVEN/ODD');
-        let crossValidation = 1.0;
-        
-        market.symbols.forEach(otherSymbol => {
-            if (otherSymbol !== symbol) {
-                ['standard', '1s'].forEach(otherType => {
-                    const otherState = this.quantumStates[otherSymbol]?.[otherType];
-                    if (otherState?.ticks.length > 30) {
-                        const otherDigits = otherState.ticks.slice(-20).map(t => 
-                            Math.floor(t.price * 100000) % 10
-                        );
-                        const otherEven = otherDigits.filter(d => d % 2 === 0).length / otherDigits.length;
-                        crossValidation *= (1 - Math.abs(0.5 - otherEven));
-                    }
-                });
-            }
-        });
-        
-        confidence *= (0.7 + 0.3 * crossValidation);
-        
-        // Determine signal type
-        let signalType;
-        if (isEven) {
-            signalType = evenProb > 0.6 ? 'EVEN (STRONG)' : evenProb > 0.55 ? 'EVEN' : 'EVEN (WEAK)';
-        } else {
-            signalType = oddProb > 0.6 ? 'ODD (STRONG)' : oddProb > 0.55 ? 'ODD' : 'ODD (WEAK)';
-        }
-        
-        // Add reversal detection
         const recentEven = digits.slice(-10).filter(d => d % 2 === 0).length;
+        let signalType;
+        
         if (recentEven > 8 && !isEven) {
             signalType = 'ODD (REVERSAL)';
             confidence *= 1.2;
         } else if (recentEven < 2 && isEven) {
             signalType = 'EVEN (REVERSAL)';
             confidence *= 1.2;
+        } else {
+            signalType = isEven ? 'EVEN' : 'ODD';
         }
         
         return {
@@ -486,84 +419,39 @@ class ZionQuantumScanner {
             details: {
                 entropy: normalizedEntropy.toFixed(3),
                 phase: phase.toFixed(0) + '°',
-                decay: maxProb.toFixed(3),
-                crossVal: crossValidation.toFixed(3)
+                decay: maxProb.toFixed(3)
             },
-            reason: `Q-ENTROPY: ${normalizedEntropy.toFixed(3)} | PHASE: ${phase.toFixed(0)}° | DECAY: ${(maxProb*100).toFixed(1)}%`
+            reason: `ENTROPY: ${normalizedEntropy.toFixed(3)} | PHASE: ${phase.toFixed(0)}°`
         };
     }
     
-    // ============================================
-    // QUANTUM MOMENTUM ANALYSIS (RISE/FALL)
-    // ============================================
-    quantumMomentumAnalysis(prices, ticks, symbol, type) {
-        // Gaussian Skew Calculation
+    quantumMomentumAnalysis(prices) {
         const mean = prices.reduce((a, b) => a + b, 0) / prices.length;
         const sorted = [...prices].sort((a, b) => a - b);
         const median = sorted[Math.floor(sorted.length / 2)];
         
-        // Standard deviation
         const variance = prices.reduce((acc, p) => acc + Math.pow(p - mean, 2), 0) / prices.length;
         const stdDev = Math.sqrt(variance);
         
-        // Skewness (3rd moment)
         let skewness = 0;
         prices.forEach(p => {
             skewness += Math.pow((p - mean) / stdDev, 3);
         });
         skewness /= prices.length;
         
-        // Kurtosis (4th moment) - measures tail thickness
-        let kurtosis = 0;
-        prices.forEach(p => {
-            kurtosis += Math.pow((p - mean) / stdDev, 4);
-        });
-        kurtosis /= prices.length;
-        
-        // QUANTUM MOMENTUM - Hilbert Transform for cycle detection
-        const hilbertTransform = [];
-        for (let i = 2; i < prices.length; i++) {
-            const real = prices[i] - prices[i-2];
-            const imag = 2 * prices[i-1] - prices[i] - prices[i-2];
-            hilbertTransform.push({ real, imag, phase: Math.atan2(imag, real) });
-        }
-        
-        // Instantaneous phase and frequency
-        const phases = hilbertTransform.map(h => h.phase);
-        let phaseVelocity = 0;
-        for (let i = 1; i < phases.length; i++) {
-            phaseVelocity += Math.abs(phases[i] - phases[i-1]);
-        }
-        phaseVelocity /= phases.length;
-        
-        // Detect trend using phase velocity
-        const trend = phaseVelocity < 0.1 ? 'STRONG' : phaseVelocity < 0.3 ? 'WEAK' : 'RANDOM';
-        
-        // Mean Reversion Force (like a spring)
         const currentPrice = prices[prices.length - 1];
         const zScore = (currentPrice - mean) / stdDev;
         
-        // Elastic potential energy
-        const elasticForce = Math.abs(zScore) * 0.5;
-        
-        // QUANTUM TUNNELING PROBABILITY
-        const barrierHeight = Math.abs(zScore);
-        const tunnelingProb = Math.exp(-Math.PI * barrierHeight / 2);
-        
-        // Determine direction and confidence
         let direction;
         let confidence;
         
         if (skewness > 0.5) {
-            // Positive skew - more upside potential
             direction = 'RISE (SKEW+)';
-            confidence = 70 + skewness * 15 + tunnelingProb * 10;
+            confidence = 70 + skewness * 15;
         } else if (skewness < -0.5) {
-            // Negative skew - more downside potential
             direction = 'FALL (SKEW-)';
-            confidence = 70 + Math.abs(skewness) * 15 + tunnelingProb * 10;
+            confidence = 70 + Math.abs(skewness) * 15;
         } else {
-            // Use momentum
             const momentum = prices[prices.length - 1] - prices[prices.length - 5];
             if (momentum > 0) {
                 direction = 'RISE';
@@ -574,10 +462,6 @@ class ZionQuantumScanner {
             }
         }
         
-        // Apply quantum corrections
-        confidence *= (0.8 + 0.2 * Math.exp(-phaseVelocity));
-        
-        // Mean reversion check (overbought/oversold)
         if (zScore > 2) {
             direction = 'FALL (REVERSION)';
             confidence *= 1.3;
@@ -591,18 +475,14 @@ class ZionQuantumScanner {
             confidence: Math.min(99, Math.round(confidence)),
             details: {
                 entropy: (skewness + 2).toFixed(2),
-                phase: (phaseVelocity * 180).toFixed(0) + '°',
-                decay: (tunnelingProb * 100).toFixed(0) + '%'
+                phase: (zScore * 30).toFixed(0) + '°',
+                decay: (Math.abs(zScore) / 4).toFixed(2)
             },
-            reason: `SKEW: ${skewness.toFixed(3)} | Z-SCORE: ${zScore.toFixed(2)} | TUNNEL: ${(tunnelingProb*100).toFixed(0)}%`
+            reason: `SKEW: ${skewness.toFixed(3)} | Z-SCORE: ${zScore.toFixed(2)}`
         };
     }
     
-    // ============================================
-    // QUANTUM Z-SCORE ANALYSIS (OVER/UNDER)
-    // ============================================
-    quantumZScoreAnalysis(prices, ticks, symbol, type) {
-        // Multi-timeframe analysis
+    quantumZScoreAnalysis(prices) {
         const timeframes = [10, 20, 30, 50];
         const zScores = [];
         
@@ -616,10 +496,8 @@ class ZionQuantumScanner {
             }
         });
         
-        // Quantum coherence (agreement between timeframes)
         const coherence = 1 - (Math.max(...zScores) - Math.min(...zScores)) / 4;
         
-        // Weighted Z-score
         const weights = [0.4, 0.3, 0.2, 0.1];
         let weightedZ = 0;
         let totalWeight = 0;
@@ -631,15 +509,13 @@ class ZionQuantumScanner {
         
         weightedZ /= totalWeight;
         
-        // Determine over/under
-        const threshold = 0.5;
         let direction;
         let confidence;
         
-        if (weightedZ > threshold) {
+        if (weightedZ > 0.5) {
             direction = 'UNDER (REVERSION)';
             confidence = 70 + Math.min(25, weightedZ * 15);
-        } else if (weightedZ < -threshold) {
+        } else if (weightedZ < -0.5) {
             direction = 'OVER (REVERSION)';
             confidence = 70 + Math.min(25, Math.abs(weightedZ) * 15);
         } else {
@@ -647,12 +523,7 @@ class ZionQuantumScanner {
             confidence = 55 + Math.abs(weightedZ) * 20;
         }
         
-        // Apply coherence boost
         confidence *= (0.7 + 0.3 * coherence);
-        
-        // Quantum uncertainty principle
-        const uncertainty = Math.sqrt(variance / prices.length);
-        confidence *= (1 - Math.min(0.3, uncertainty / mean));
         
         return {
             type: direction,
@@ -660,118 +531,63 @@ class ZionQuantumScanner {
             details: {
                 entropy: (1 - coherence).toFixed(3),
                 phase: (weightedZ * 30).toFixed(0) + '°',
-                decay: (uncertainty * 1000).toFixed(2)
+                decay: (Math.abs(weightedZ) / 2).toFixed(2)
             },
             reason: `Z-SCORE: ${weightedZ.toFixed(2)} | COHERENCE: ${(coherence*100).toFixed(0)}%`
         };
     }
     
-    // ============================================
-    // QUANTUM PATTERN ANALYSIS (MATCHES/DIFFERS)
-    // ============================================
-    quantumPatternAnalysis(prices, ticks, symbol, type) {
+    quantumPatternAnalysis(prices, ticks) {
         const digits = ticks.slice(-40).map(t => Math.floor(t.price * 100000) % 10);
         
-        // Quantum pattern recognition matrix
-        const patternMatrix = [];
-        for (let length = 2; length <= 4; length++) {
-            patternMatrix[length] = {};
-            
-            for (let i = 0; i <= digits.length - length; i++) {
-                const pattern = digits.slice(i, i + length).join('');
-                patternMatrix[length][pattern] = (patternMatrix[length][pattern] || 0) + 1;
-            }
+        const patternMatrix = {};
+        for (let i = 0; i <= digits.length - 3; i++) {
+            const pattern = digits.slice(i, i + 3).join('');
+            patternMatrix[pattern] = (patternMatrix[pattern] || 0) + 1;
         }
         
-        // Find most recent pattern
         const last3 = digits.slice(-3).join('');
-        const last2 = digits.slice(-2).join('');
+        const lastDigit = digits[digits.length - 1];
         
-        // Predict next using quantum superposition
-        let matchProb = 0;
-        let differProb = 0;
+        let matchProb = 0.5;
         
-        // Check pattern probabilities
-        if (patternMatrix[3] && patternMatrix[3][last3]) {
-            const total = Object.values(patternMatrix[3]).reduce((a, b) => a + b, 0);
-            const patternCount = patternMatrix[3][last3];
+        if (patternMatrix[last3]) {
             const nextDigits = [];
-            
-            // Find what followed this pattern historically
             for (let i = 0; i <= digits.length - 4; i++) {
                 if (digits.slice(i, i + 3).join('') === last3) {
                     nextDigits.push(digits[i + 3]);
                 }
             }
-            
             if (nextDigits.length > 0) {
-                const matches = nextDigits.filter(d => d === digits[digits.length - 1]).length;
+                const matches = nextDigits.filter(d => d === lastDigit).length;
                 matchProb = matches / nextDigits.length;
-                differProb = 1 - matchProb;
             }
         }
         
-        // Quantum collapse
-        const lastDigit = digits[digits.length - 1];
-        const predictedMatch = matchProb > 0.6;
-        
-        let direction;
-        let confidence;
-        
-        if (predictedMatch) {
-            direction = 'MATCHES (QUANTUM)';
-            confidence = 60 + matchProb * 30;
-        } else {
-            direction = 'DIFFERS (QUANTUM)';
-            confidence = 60 + differProb * 30;
-        }
-        
-        // Apply quantum entanglement (correlation with other high volatilities)
-        const market = this.marketTypes.find(m => m.name === 'MATCHES/DIFFERS');
-        let entanglement = 1.0;
-        
-        market.symbols.forEach(otherSymbol => {
-            if (otherSymbol !== symbol) {
-                ['standard', '1s'].forEach(otherType => {
-                    const otherState = this.quantumStates[otherSymbol]?.[otherType];
-                    if (otherState?.ticks.length > 30) {
-                        const otherDigits = otherState.ticks.slice(-20).map(t => 
-                            Math.floor(t.price * 100000) % 10
-                        );
-                        const otherMatch = otherDigits.filter((d, i) => 
-                            i > 0 && d === otherDigits[i-1]
-                        ).length / (otherDigits.length - 1);
-                        
-                        entanglement *= (0.8 + 0.2 * otherMatch);
-                    }
-                });
-            }
-        });
-        
-        confidence *= entanglement;
+        const direction = matchProb > 0.5 ? 'MATCHES' : 'DIFFERS';
+        const confidence = 55 + Math.abs(matchProb - 0.5) * 70;
         
         return {
             type: direction,
             confidence: Math.min(95, Math.round(confidence)),
             details: {
-                entropy: (1 - Math.max(matchProb, differProb)).toFixed(3),
+                entropy: (1 - Math.abs(matchProb - 0.5)).toFixed(3),
                 phase: (matchProb * 360).toFixed(0) + '°',
-                decay: (entanglement).toFixed(3)
+                decay: matchProb.toFixed(3)
             },
-            reason: `PATTERN: ${last3}→${predictedMatch ? 'MATCH' : 'DIFFER'} | ENTANGLE: ${(entanglement*100).toFixed(0)}%`
+            reason: `PATTERN: ${last3} → ${direction} (${(matchProb*100).toFixed(0)}%)`
         };
     }
     
     emitQuantumSignal(symbol, type, market, signal) {
         const signalId = `${symbol}-${type}-${Date.now()}`;
-        const expiryTime = Date.now() + 20000; // 20 seconds
+        const expiryTime = Date.now() + 20000;
         
-        // Check if we already have a signal for this symbol/type
         const existingKey = `${symbol}-${type}`;
         if (this.activeSignals.has(existingKey)) {
             const existing = this.activeSignals.get(existingKey);
             if (existing.signal.confidence > signal.confidence) {
-                return; // Keep stronger signal
+                return;
             }
         }
         
@@ -788,18 +604,13 @@ class ZionQuantumScanner {
         this.activeSignals.set(existingKey, signalData);
         this.signalsGenerated++;
         
-        // Update UI
         this.displayQuantumSignal(symbol, type, signal);
         
-        // Update signal count
         document.getElementById('signalCount').innerText = this.activeSignals.size;
         
-        // Voice for elite signals
         if (!this.isMuted && signal.confidence > 90) {
-            this.speak(`ELITE ${market.name} signal on ${symbol} ${type} with ${signal.confidence} percent confidence`);
+            this.speak(`ELITE ${market.name} signal on ${symbol} with ${signal.confidence} percent confidence`);
         }
-        
-        console.log('⚛️ QUANTUM SIGNAL:', signalData);
     }
     
     displayQuantumSignal(symbol, type, signal) {
@@ -812,9 +623,14 @@ class ZionQuantumScanner {
             if (signal.confidence >= 85) confidenceClass = 'high';
             else if (signal.confidence >= 70) confidenceClass = 'medium';
             
+            let typeClass = 'even-odd';
+            if (signal.type.includes('RISE') || signal.type.includes('FALL')) typeClass = 'rise-fall';
+            else if (signal.type.includes('OVER') || signal.type.includes('UNDER')) typeClass = 'over-under';
+            else if (signal.type.includes('MATCH') || signal.type.includes('DIFF')) typeClass = 'matches-differs';
+            
             signalEl.innerHTML = `
                 <div class="signal-primary">
-                    <span class="signal-type ${this.getSignalClass(signal.type)}">${signal.type}</span>
+                    <span class="signal-type ${typeClass}">${signal.type}</span>
                     <span class="signal-confidence ${confidenceClass}">${signal.confidence}%</span>
                 </div>
                 <div class="signal-quantum-details">
@@ -825,16 +641,13 @@ class ZionQuantumScanner {
                 <div class="signal-reason">⚛️ ${signal.reason}</div>
             `;
             
-            // Show timer
             timerEl.style.display = 'flex';
             
-            // Update frequency
             if (freqEl) {
                 const currentFreq = parseInt(freqEl.innerText) || 0;
                 freqEl.innerText = `${currentFreq + 1} sig/h`;
             }
             
-            // Highlight card
             const card = document.querySelector(`[data-symbol="${symbol}"][data-vol-type="${type}"]`);
             if (card) {
                 card.classList.add('quantum-active');
@@ -843,13 +656,6 @@ class ZionQuantumScanner {
                 }
             }
         }
-    }
-    
-    getSignalClass(type) {
-        if (type.includes('EVEN') || type.includes('ODD')) return 'even-odd';
-        if (type.includes('RISE') || type.includes('FALL')) return 'rise-fall';
-        if (type.includes('OVER') || type.includes('UNDER')) return 'over-under';
-        return 'matches-differs';
     }
     
     updateQuantumTimers() {
@@ -873,7 +679,6 @@ class ZionQuantumScanner {
             } else {
                 timerEl.style.display = 'none';
                 
-                // Remove highlight from card
                 const card = document.querySelector(`[data-symbol="${symbol}"][data-vol-type="${type}"]`);
                 if (card) {
                     card.classList.remove('quantum-active', 'elite-signal');
@@ -922,19 +727,8 @@ class ZionQuantumScanner {
             const bestEl = document.getElementById('bestMarket');
             bestEl.innerHTML = `
                 <span class="quantum-indicator"></span>
-                ⚛️ QUANTUM ELITE: ${bestSignal.marketType} on ${bestSignal.symbol} (${bestSignal.signal.confidence}%)
+                ⚛️ ELITE: ${bestSignal.marketType} on ${bestSignal.symbol} (${bestSignal.signal.confidence}%)
             `;
-        }
-    }
-    
-    updateAccuracyDisplay() {
-        const accuracyEl = document.getElementById('accuracyDisplay');
-        const overallEl = document.getElementById('overallAccuracy');
-        
-        if (this.signalsGenerated > 0) {
-            const accuracy = (this.signalsAccurate / this.signalsGenerated * 100).toFixed(1);
-            if (accuracyEl) accuracyEl.innerText = `${accuracy}%`;
-            if (overallEl) overallEl.innerHTML = `⚛️ ${accuracy}%`;
         }
     }
     
@@ -984,21 +778,17 @@ class ZionQuantumScanner {
     }
     
     runQuantumDiagnostic() {
-        this.speak('Running full quantum diagnostic');
+        this.speak('Running quantum diagnostic');
         document.getElementById('bestMarket').innerHTML = `
             <span class="quantum-indicator"></span>
-            ⚛️ QUANTUM DIAGNOSTIC: SCANNING ALL STATES...
+            ⚛️ QUANTUM DIAGNOSTIC: SCANNING...
         `;
         
         setTimeout(() => {
             const signalCount = this.activeSignals.size;
-            const accuracy = this.signalsGenerated > 0 
-                ? (this.signalsAccurate / this.signalsGenerated * 100).toFixed(1) 
-                : '0.0';
-            
             document.getElementById('bestMarket').innerHTML = `
                 <span class="quantum-indicator"></span>
-                ⚛️ QUANTUM: ${signalCount} ACTIVE | ACC: ${accuracy}% | COHERENCE: ${(Math.random() * 0.3 + 0.7).toFixed(2)}
+                ⚛️ QUANTUM: ${signalCount} ACTIVE | COHERENCE: ${(Math.random() * 0.3 + 0.7).toFixed(2)}
             `;
         }, 2000);
     }
@@ -1023,7 +813,6 @@ class ZionQuantumScanner {
     }
 }
 
-// Initialize
 document.addEventListener('DOMContentLoaded', () => {
     window.quantumLab = new ZionQuantumScanner();
 });
