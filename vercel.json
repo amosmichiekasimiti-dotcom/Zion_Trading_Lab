@@ -1,5 +1,7 @@
 {
   "version": 2,
   "name": "zion-trading-lab",
-  "cleanUrls": true
+  "cleanUrls": true,
+  "framework": null,
+  "regions": ["arn1"]
 }
