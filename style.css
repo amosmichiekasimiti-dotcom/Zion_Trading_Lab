@@ -1,16 +1,13 @@
-:root { --neon: #00ffad; --bg: #0d1117; --wa-green: #25D366; }
-body { background: var(--bg); color: #fff; font-family: sans-serif; margin: 0; }
-header { background: #000; padding: 20px; border-bottom: 2px solid var(--neon); display: flex; justify-content: space-between; align-items: center; }
+#sig-panel h1 {
+    font-size: 2.5rem;
+    line-height: 1.5;
+    animation: fade-in 1s ease-in-out; /* Smooth transition for signals */
+}
 
-.wa-btn { background: var(--wa-green); color: #fff; padding: 10px 15px; border-radius: 5px; text-decoration: none; font-weight: bold; }
-
-.status-card { background: #161b22; border: 1px solid #30363d; padding: 15px; border-radius: 8px; width: fit-content; margin: 20px; }
-code { background: #000; padding: 4px; color: #888; border-radius: 3px; }
-
-.dashboard { display: flex; height: 100vh; }
-.market-panel { width: 220px; background: #0d1117; border-right: 1px solid #333; padding: 20px; overflow-y: auto; }
-.m-list button { width: 100%; margin: 5px 0; background: #21262d; border: 1px solid #30363d; color: #c9d1d9; cursor: pointer; padding: 10px; text-align: left; }
-.m-list button:hover { background: var(--neon); color: #000; }
-
-.engine { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-#live-signal { font-size: 5rem; color: var(--neon); text-shadow: 0 0 15px var(--neon); }
+.market-matrix button {
+    padding: 15px; /* Bigger buttons for mobile */
+    font-weight: bold;
+    border-radius: 10px;
+    background: #1a1e24;
+    color: #00ffad;
+}
