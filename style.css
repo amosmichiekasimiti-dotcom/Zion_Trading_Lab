@@ -2,7 +2,7 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace;
 }
 
 body {
@@ -15,7 +15,7 @@ body {
 }
 
 .dashboard {
-    max-width: 1400px;
+    max-width: 1600px;
     width: 100%;
     background: #0b1020;
     border-radius: 40px;
@@ -24,7 +24,7 @@ body {
     box-shadow: 0 30px 50px rgba(0,0,0,0.9);
 }
 
-/* Header Styles */
+/* Header */
 .app-header {
     display: flex;
     justify-content: space-between;
@@ -120,18 +120,20 @@ body {
     font-size: 1.4rem;
 }
 
-/* Market Grid */
-.market-grid {
+/* Market Sections */
+.market-sections {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 30px;
     margin-bottom: 30px;
 }
 
-/* Market Type Sections */
 .market-section {
     width: 100%;
-    margin-bottom: 10px;
+    background: #0f1422;
+    border-radius: 30px;
+    padding: 20px;
+    border: 2px solid #2a3a60;
 }
 
 .section-header {
@@ -175,24 +177,23 @@ body {
     margin-top: 5px;
 }
 
-.quantum-badge {
+.section-badge {
     background: #2ecc71;
     color: #0b1020;
-    padding: 8px 25px;
+    padding: 12px 25px;
     border-radius: 40px;
     font-weight: 800;
-    font-size: 1.1rem;
+    font-size: 1rem;
     border: 2px solid #fff;
-    min-width: 180px;
+    min-width: 220px;
     text-align: center;
 }
 
-/* Volatility Grid - 2 cards per row */
+/* Volatility Grid */
 .vol-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, 1fr);
     gap: 20px;
-    margin-bottom: 30px;
 }
 
 /* Market Cards */
@@ -206,7 +207,7 @@ body {
     position: relative;
 }
 
-.market-card.quantum-active {
+.market-card.signal-active {
     border: 3px solid #4ac7ff;
     box-shadow: 0 0 30px #4ac7ff, 0 8px 0 #0b1020;
 }
@@ -217,9 +218,9 @@ body {
 }
 
 .market-card.elite-signal::after {
-    content: '👑 ELITE';
+    content: '👑 LONG SIGNAL';
     position: absolute;
-    top: -8px;
+    top: -10px;
     right: 20px;
     background: #ffd700;
     color: #0b1020;
@@ -231,11 +232,11 @@ body {
     z-index: 10;
 }
 
-/* Market Type Left Borders */
-.market-card[data-market-type="EVEN/ODD"] { border-left: 6px solid #9b59b6; }
-.market-card[data-market-type="RISE/FALL"] { border-left: 6px solid #3498db; }
-.market-card[data-market-type="OVER/UNDER"] { border-left: 6px solid #e67e22; }
-.market-card[data-market-type="MATCHES/DIFFERS"] { border-left: 6px solid #e74c3c; }
+/* Market Type Borders */
+.market-card[data-market="EVEN/ODD"] { border-left: 8px solid #9b59b6; }
+.market-card[data-market="RISE/FALL"] { border-left: 8px solid #3498db; }
+.market-card[data-market="OVER/UNDER"] { border-left: 8px solid #e67e22; }
+.market-card[data-market="MATCHES/DIFFERS"] { border-left: 8px solid #e74c3c; }
 
 /* Volatility Badges */
 .vol-badge {
@@ -267,13 +268,20 @@ body {
     100% { box-shadow: 0 0 5px #8e44ad; }
 }
 
+.vol-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #b9ceff;
+    margin-bottom: 5px;
+}
+
 .main-row {
     display: flex;
     justify-content: center;
     gap: 20px;
     font-size: 1.8rem;
     font-weight: 800;
-    margin-bottom: 10px;
+    margin: 10px 0;
 }
 
 .price-display {
@@ -287,7 +295,6 @@ body {
     background: #0b1020;
     border-radius: 20px;
     border: 1px solid #2a3a60;
-    text-shadow: 0 0 10px #4ac7ff;
 }
 
 /* Signal Display */
@@ -307,15 +314,9 @@ body {
 }
 
 .signal-type {
-    font-size: 1.4rem;
+    font-size: 1.3rem;
     font-weight: 900;
-    letter-spacing: 1px;
 }
-
-.signal-type.even-odd { color: #9b59b6; }
-.signal-type.rise-fall { color: #3498db; }
-.signal-type.over-under { color: #e67e22; }
-.signal-type.matches-differs { color: #e74c3c; }
 
 .signal-confidence {
     font-size: 1.8rem;
@@ -330,32 +331,14 @@ body {
 .signal-confidence.medium { color: #f39c12; border-color: #f39c12; }
 .signal-confidence.low { color: #e74c3c; border-color: #e74c3c; }
 
-.signal-quantum-details {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    margin: 10px 0;
-    font-size: 0.8rem;
-    color: #95a5a6;
+.signal-duration {
+    font-size: 1rem;
+    color: #ffd966;
+    margin: 5px 0;
 }
 
-.quantum-metric {
-    background: #0b1020;
-    padding: 5px;
-    border-radius: 8px;
-    text-align: center;
-}
-
-.quantum-metric .label {
-    color: #7f8c8d;
-    display: block;
-    font-size: 0.7rem;
-}
-
-.quantum-metric .value {
-    color: #4ac7ff;
-    font-weight: 700;
-    font-size: 0.9rem;
+.signal-duration i {
+    margin-right: 5px;
 }
 
 .signal-reason {
@@ -390,9 +373,9 @@ body {
 }
 
 .timer-progress {
-    height: 6px;
+    height: 8px;
     background: #1a2340;
-    border-radius: 3px;
+    border-radius: 4px;
     flex: 1;
     overflow: hidden;
 }
@@ -428,7 +411,7 @@ body {
 
 .signal-frequency {
     color: #2ecc71;
-    font-size: 0.8rem;
+    font-size: 0.9rem;
 }
 
 /* Social Container */
@@ -563,7 +546,7 @@ body {
 
 .best-market {
     color: #ffd966;
-    font-size: 1.4rem;
+    font-size: 1.2rem;
     font-weight: 700;
     display: flex;
     align-items: center;
@@ -625,9 +608,4 @@ body {
     .social-container {
         grid-template-columns: repeat(2, 1fr);
     }
-    
-    .signal-feedback {
-        flex-direction: column;
-        text-align: center;
-    }
-    }
+}
