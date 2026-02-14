@@ -1,218 +1,307 @@
 // ============================================
-// ZION QUANTUM LAB - ELITE TRADING ENGINE
-// STANDARD vs 1s VOLATILITIES · QUANTUM ALGORITHMS
+// ZION QUANTUM SENSOR - PROFESSIONAL EDITION
+// LONG-LASTING SIGNAL DETECTION FOR ALL OPTION TYPES
+// LIVE DERIV DATA · 20+ SECOND SIGNALS
 // App ID: 126973 | Token: rbQgwOkbsfDoKw2
 // ============================================
 
-class ZionQuantumScanner {
+class ZionQuantumSensor {
     constructor() {
-        // Credentials
+        // Deriv Credentials
         this.apiToken = 'rbQgwOkbsfDoKw2';
         this.appId = '126973';
         this.websocket = null;
+        this.isConnected = false;
         
-        // Standard and 1s Volatilities
+        // ============================================
+        // COMPLETE VOLATILITY LIST - PROPERLY NAMED
+        // ============================================
         this.volatilities = {
+            // Standard Volatilities (No 1s suffix)
             standard: [
-                { name: 'Volatility 10', symbol: 'R_10', baseVol: 10, type: 'standard' },
-                { name: 'Volatility 25', symbol: 'R_25', baseVol: 25, type: 'standard' },
-                { name: 'Volatility 50', symbol: 'R_50', baseVol: 50, type: 'standard' },
-                { name: 'Volatility 75', symbol: 'R_75', baseVol: 75, type: 'standard' },
-                { name: 'Volatility 100', symbol: 'R_100', baseVol: 100, type: 'standard' }
+                { id: 'R_10', name: 'Volatility 10', baseVol: 10, displayName: 'VOL 10', type: 'standard' },
+                { id: 'R_25', name: 'Volatility 25', baseVol: 25, displayName: 'VOL 25', type: 'standard' },
+                { id: 'R_50', name: 'Volatility 50', baseVol: 50, displayName: 'VOL 50', type: 'standard' },
+                { id: 'R_75', name: 'Volatility 75', baseVol: 75, displayName: 'VOL 75', type: 'standard' },
+                { id: 'R_100', name: 'Volatility 100', baseVol: 100, displayName: 'VOL 100', type: 'standard' }
             ],
+            // 1 Second Volatilities (With 1s suffix)
             oneSecond: [
-                { name: 'Volatility 10 (1s)', symbol: 'R_10', baseVol: 10, type: '1s' },
-                { name: 'Volatility 15 (1s)', symbol: 'R_15', baseVol: 15, type: '1s' },
-                { name: 'Volatility 25 (1s)', symbol: 'R_25', baseVol: 25, type: '1s' },
-                { name: 'Volatility 30 (1s)', symbol: 'R_30', baseVol: 30, type: '1s' },
-                { name: 'Volatility 50 (1s)', symbol: 'R_50', baseVol: 50, type: '1s' },
-                { name: 'Volatility 75 (1s)', symbol: 'R_75', baseVol: 75, type: '1s' },
-                { name: 'Volatility 90 (1s)', symbol: 'R_90', baseVol: 90, type: '1s' },
-                { name: 'Volatility 100 (1s)', symbol: 'R_100', baseVol: 100, type: '1s' }
+                { id: 'R_10', name: 'Volatility 10 (1s)', baseVol: 10, displayName: 'VOL 10 1s', type: '1s' },
+                { id: 'R_15', name: 'Volatility 15 (1s)', baseVol: 15, displayName: 'VOL 15 1s', type: '1s' },
+                { id: 'R_25', name: 'Volatility 25 (1s)', baseVol: 25, displayName: 'VOL 25 1s', type: '1s' },
+                { id: 'R_30', name: 'Volatility 30 (1s)', baseVol: 30, displayName: 'VOL 30 1s', type: '1s' },
+                { id: 'R_50', name: 'Volatility 50 (1s)', baseVol: 50, displayName: 'VOL 50 1s', type: '1s' },
+                { id: 'R_75', name: 'Volatility 75 (1s)', baseVol: 75, displayName: 'VOL 75 1s', type: '1s' },
+                { id: 'R_90', name: 'Volatility 90 (1s)', baseVol: 90, displayName: 'VOL 90 1s', type: '1s' },
+                { id: 'R_100', name: 'Volatility 100 (1s)', baseVol: 100, displayName: 'VOL 100 1s', type: '1s' }
             ]
         };
         
-        // Market Types Configuration
-        this.marketTypes = [
+        // ============================================
+        // OPTION TYPES - EACH WITH DEDICATED SENSORS
+        // ============================================
+        this.optionTypes = [
             {
                 name: 'EVEN/ODD',
+                displayName: 'EVEN / ODD',
                 icon: '🎲',
-                symbols: ['R_10', 'R_15', 'R_25', 'R_30'],
-                minConfidence: 80,
-                colors: ['#9b59b6', '#8e44ad']
+                description: 'Last Digit Sensor',
+                color: '#9b59b6',
+                secondaryColor: '#8e44ad',
+                minConfidence: 75,
+                signalDuration: 25, // 25 seconds for even/odd
+                // Which volatilities to monitor for this option type
+                sensors: [
+                    // Low volatilities are best for digit trading
+                    { id: 'R_10', type: 'standard', name: 'Volatility 10' },
+                    { id: 'R_10', type: '1s', name: 'Volatility 10 (1s)' },
+                    { id: 'R_15', type: '1s', name: 'Volatility 15 (1s)' },
+                    { id: 'R_25', type: 'standard', name: 'Volatility 25' },
+                    { id: 'R_25', type: '1s', name: 'Volatility 25 (1s)' },
+                    { id: 'R_30', type: '1s', name: 'Volatility 30 (1s)' }
+                ]
             },
             {
                 name: 'RISE/FALL',
+                displayName: 'RISE / FALL',
                 icon: '📈',
-                symbols: ['R_50', 'R_75', 'R_90', 'R_100'],
-                minConfidence: 85,
-                colors: ['#3498db', '#2980b9']
+                description: 'Direction Sensor',
+                color: '#3498db',
+                secondaryColor: '#2980b9',
+                minConfidence: 80,
+                signalDuration: 30, // 30 seconds for rise/fall
+                sensors: [
+                    // Medium-high volatilities for momentum trading
+                    { id: 'R_50', type: 'standard', name: 'Volatility 50' },
+                    { id: 'R_50', type: '1s', name: 'Volatility 50 (1s)' },
+                    { id: 'R_75', type: 'standard', name: 'Volatility 75' },
+                    { id: 'R_75', type: '1s', name: 'Volatility 75 (1s)' },
+                    { id: 'R_90', type: '1s', name: 'Volatility 90 (1s)' },
+                    { id: 'R_100', type: 'standard', name: 'Volatility 100' },
+                    { id: 'R_100', type: '1s', name: 'Volatility 100 (1s)' }
+                ]
             },
             {
                 name: 'OVER/UNDER',
+                displayName: 'OVER / UNDER',
                 icon: '⚖️',
-                symbols: ['R_25', 'R_30', 'R_50', 'R_75'],
-                minConfidence: 82,
-                colors: ['#e67e22', '#d35400']
+                description: 'Range Sensor',
+                color: '#e67e22',
+                secondaryColor: '#d35400',
+                minConfidence: 78,
+                signalDuration: 25,
+                sensors: [
+                    // Medium volatilities for range trading
+                    { id: 'R_25', type: 'standard', name: 'Volatility 25' },
+                    { id: 'R_25', type: '1s', name: 'Volatility 25 (1s)' },
+                    { id: 'R_30', type: '1s', name: 'Volatility 30 (1s)' },
+                    { id: 'R_50', type: 'standard', name: 'Volatility 50' },
+                    { id: 'R_50', type: '1s', name: 'Volatility 50 (1s)' },
+                    { id: 'R_75', type: 'standard', name: 'Volatility 75' },
+                    { id: 'R_75', type: '1s', name: 'Volatility 75 (1s)' }
+                ]
             },
             {
                 name: 'MATCHES/DIFFERS',
+                displayName: 'MATCHES / DIFFERS',
                 icon: '🔄',
-                symbols: ['R_75', 'R_90', 'R_100'],
-                minConfidence: 78,
-                colors: ['#e74c3c', '#c0392b']
+                description: 'Pattern Sensor',
+                color: '#e74c3c',
+                secondaryColor: '#c0392b',
+                minConfidence: 75,
+                signalDuration: 20,
+                sensors: [
+                    // High volatilities for pattern recognition
+                    { id: 'R_75', type: 'standard', name: 'Volatility 75' },
+                    { id: 'R_75', type: '1s', name: 'Volatility 75 (1s)' },
+                    { id: 'R_90', type: '1s', name: 'Volatility 90 (1s)' },
+                    { id: 'R_100', type: 'standard', name: 'Volatility 100' },
+                    { id: 'R_100', type: '1s', name: 'Volatility 100 (1s)' }
+                ]
             }
         ];
         
         // Data Storage
-        this.priceHistory = {};
-        this.quantumStates = {};
-        this.activeSignals = new Map();
-        this.bestPerMarket = {};
-        this.signalsGenerated = 0;
-        this.signalsAccurate = 0;
+        this.sensorData = {};        // Stores tick data for each sensor
+        this.activeSignals = new Map(); // Currently active signals
+        this.signalHistory = [];      // History of signals
+        this.bestSignals = {};        // Best signal per option type
+        
+        // Performance
+        this.totalSignals = 0;
+        this.accurateSignals = 0;
         this.isMuted = false;
         
-        // Quantum Constants
-        this.QUANTUM_THRESHOLD = 0.84;
+        // Initialize sensor data structure
+        this.initializeSensors();
         
+        // Start the sensing machine
         this.init();
     }
     
-    init() {
-        this.createQuantumGrid();
-        this.setupEventListeners();
-        this.connectDerivWebSocket();
-        this.startQuantumEngine();
-        this.initQuantumVoice();
-    }
-    
-    createQuantumGrid() {
-        const grid = document.getElementById('marketGrid');
-        if (!grid) return;
-        
-        grid.innerHTML = '';
-        
-        this.marketTypes.forEach((market) => {
-            // Section Header
-            const section = document.createElement('div');
-            section.className = 'market-section';
-            section.innerHTML = `
-                <div class="section-header">
-                    <div class="section-icon">${market.icon}</div>
-                    <div class="section-title">
-                        <h2>${market.name}</h2>
-                        <div class="section-subtitle">
-                            <span>🔍 Scanning: ${market.symbols.length} volatilities</span>
-                            <span>⚡ Min conf: ${market.minConfidence}%</span>
-                        </div>
-                    </div>
-                    <div class="quantum-badge" id="best-${market.name.replace('/', '-')}">
-                        ⚛️ QUANTUM SCAN
-                    </div>
-                </div>
-            `;
-            grid.appendChild(section);
-            
-            // Grid for volatilities
-            const volGrid = document.createElement('div');
-            volGrid.className = 'vol-grid';
-            
-            market.symbols.forEach(symbol => {
-                const standard = this.volatilities.standard.find(v => v.symbol === symbol);
-                const oneSec = this.volatilities.oneSecond.find(v => v.symbol === symbol);
-                
-                if (standard) {
-                    volGrid.appendChild(this.createVolatilityCard(standard, market));
-                }
-                if (oneSec) {
-                    volGrid.appendChild(this.createVolatilityCard(oneSec, market));
+    initializeSensors() {
+        // Create a data store for each unique sensor
+        this.optionTypes.forEach(option => {
+            option.sensors.forEach(sensor => {
+                const key = `${sensor.id}-${sensor.type}`;
+                if (!this.sensorData[key]) {
+                    this.sensorData[key] = {
+                        id: sensor.id,
+                        type: sensor.type,
+                        name: sensor.name,
+                        ticks: [],
+                        lastPrice: null,
+                        indicators: {},
+                        lastSignal: null,
+                        signalCount: 0
+                    };
                 }
             });
-            
-            grid.appendChild(volGrid);
         });
     }
     
-    createVolatilityCard(volInfo, marketType) {
+    init() {
+        this.buildInterface();
+        this.setupEventListeners();
+        this.connectToDeriv();
+        this.startSensingEngine();
+        this.initVoice();
+    }
+    
+    buildInterface() {
+        const container = document.getElementById('marketSections');
+        if (!container) return;
+        
+        container.innerHTML = '';
+        
+        // Create a section for each option type
+        this.optionTypes.forEach(option => {
+            const section = this.createOptionSection(option);
+            container.appendChild(section);
+        });
+        
+        // Update counts
+        this.updateSensorCounts();
+    }
+    
+    createOptionSection(option) {
+        const section = document.createElement('div');
+        section.className = 'market-section';
+        section.id = `section-${option.name.toLowerCase().replace('/', '-')}`;
+        
+        // Create header
+        const header = document.createElement('div');
+        header.className = 'section-header';
+        header.innerHTML = `
+            <div class="section-icon">${option.icon}</div>
+            <div class="section-title">
+                <h2 style="color: ${option.color}">${option.displayName}</h2>
+                <div class="section-subtitle">
+                    <span>🔍 ${option.description}</span>
+                    <span>⏱️ ${option.signalDuration}s signals</span>
+                </div>
+            </div>
+            <div class="section-badge" id="badge-${option.name.toLowerCase().replace('/', '-')}">
+                🎯 SENSOR ACTIVE<br>
+                <small>${option.sensors.length} sensors</small>
+            </div>
+        `;
+        section.appendChild(header);
+        
+        // Create grid for sensors
+        const grid = document.createElement('div');
+        grid.className = 'vol-grid';
+        
+        // Add a card for each sensor in this option type
+        option.sensors.forEach(sensor => {
+            const card = this.createSensorCard(sensor, option);
+            grid.appendChild(card);
+        });
+        
+        section.appendChild(grid);
+        return section;
+    }
+    
+    createSensorCard(sensor, option) {
         const card = document.createElement('div');
         card.className = 'market-card';
-        card.dataset.symbol = volInfo.symbol;
-        card.dataset.volatility = volInfo.baseVol;
-        card.dataset.marketType = marketType.name;
-        card.dataset.volType = volInfo.type;
-        card.dataset.name = volInfo.name;
+        card.dataset.symbol = sensor.id;
+        card.dataset.type = sensor.type;
+        card.dataset.market = option.name;
+        card.dataset.key = `${sensor.id}-${sensor.type}`;
         
-        const [left, right] = marketType.name.split('/');
+        const [left, right] = option.displayName.split('/');
         
         card.innerHTML = `
-            <div class="vol-badge ${volInfo.type === 'standard' ? 'standard' : 'one-second'}">
-                ${volInfo.type === 'standard' ? '📊 STANDARD' : '⚡ 1 SECOND'}
+            <div class="vol-badge ${sensor.type}">
+                ${sensor.type === 'standard' ? '📊 STANDARD' : '⚡ 1 SECOND'}
             </div>
+            <div class="vol-name">${sensor.name}</div>
             <div class="main-row">
-                <div style="color: ${marketType.colors[0]}">${left}</div>
-                <div style="color: ${marketType.colors[1]}">${right || ''}</div>
+                <div style="color: ${option.color}">${left.trim()}</div>
+                <div style="color: ${option.secondaryColor}">${right ? right.trim() : ''}</div>
             </div>
-            <div class="price-display" id="price-${volInfo.symbol}-${volInfo.type}">---</div>
-            <div class="signal-quantum" id="signal-${volInfo.symbol}-${volInfo.type}">
+            <div class="price-display" id="price-${sensor.id}-${sensor.type}">
+                ---
+            </div>
+            <div class="signal-quantum" id="signal-${sensor.id}-${sensor.type}">
                 <div class="signal-primary">
-                    <span class="signal-type">⚛️ QUANTUM</span>
+                    <span class="signal-type">⏳ SENSOR</span>
                     <span class="signal-confidence low">0%</span>
                 </div>
-                <div class="signal-quantum-details">
-                    <div class="quantum-metric"><span class="label">ENTROPY</span><span class="value">0.00</span></div>
-                    <div class="quantum-metric"><span class="label">PHASE</span><span class="value">0°</span></div>
-                    <div class="quantum-metric"><span class="label">DECAY</span><span class="value">0.0</span></div>
+                <div class="signal-duration">
+                    <i class="fas fa-hourglass-half"></i> Waiting for data...
                 </div>
-                <div class="signal-reason">Initializing quantum scan...</div>
+                <div class="signal-reason">Initializing sensor</div>
             </div>
-            <div class="timer-quantum" id="timer-${volInfo.symbol}-${volInfo.type}" style="display: none;">
+            <div class="timer-quantum" id="timer-${sensor.id}-${sensor.type}" style="display: none;">
                 <span class="timer-text">0s</span>
                 <div class="timer-progress"><div class="timer-progress-fill" style="width: 0%"></div></div>
             </div>
             <div class="market-footer">
-                <span class="volatility-value"><i class="fas fa-bolt"></i> ${volInfo.baseVol}%</span>
-                <span class="signal-frequency" id="freq-${volInfo.symbol}-${volInfo.type}">0 sig/h</span>
+                <span class="volatility-value"><i class="fas fa-bolt"></i> ${sensor.baseVol || '--'}%</span>
+                <span class="signal-frequency" id="freq-${sensor.id}-${sensor.type}">0 signals</span>
             </div>
         `;
         
-        card.addEventListener('click', () => this.selectMarket(card));
         return card;
     }
     
-    connectDerivWebSocket() {
+    connectToDeriv() {
         const statusEl = document.getElementById('apiStatus');
         
         try {
             this.websocket = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${this.appId}`);
             
             this.websocket.onopen = () => {
-                statusEl.innerHTML = '<i class="fas fa-circle" style="color:#2ecc71"></i> QUANTUM ENGINE: ONLINE | LIVE DATA';
-                this.sendAuthorize();
-                this.subscribeToAll();
-                this.startQuantumHeartbeat();
+                this.isConnected = true;
+                statusEl.innerHTML = '<i class="fas fa-circle" style="color:#2ecc71"></i> SENSOR ONLINE · LIVE DATA STREAM';
+                this.authenticate();
+                this.subscribeToAllSensors();
             };
             
             this.websocket.onmessage = (event) => {
                 const data = JSON.parse(event.data);
-                this.processQuantumData(data);
+                this.processTickData(data);
             };
             
             this.websocket.onclose = () => {
-                statusEl.innerHTML = '<i class="fas fa-circle" style="color:#e74c3c"></i> QUANTUM ENGINE: RECONNECTING...';
-                setTimeout(() => this.connectDerivWebSocket(), 5000);
+                this.isConnected = false;
+                statusEl.innerHTML = '<i class="fas fa-circle" style="color:#e74c3c"></i> SENSOR RECONNECTING...';
+                setTimeout(() => this.connectToDeriv(), 5000);
             };
             
             this.websocket.onerror = () => {
-                statusEl.innerHTML = '<i class="fas fa-circle" style="color:#e74c3c"></i> QUANTUM ENGINE: ERROR';
+                statusEl.innerHTML = '<i class="fas fa-circle" style="color:#e74c3c"></i> SENSOR ERROR';
             };
             
         } catch (error) {
-            statusEl.innerHTML = '<i class="fas fa-circle" style="color:#e74c3c"></i> QUANTUM ENGINE: OFFLINE';
+            statusEl.innerHTML = '<i class="fas fa-circle" style="color:#e74c3c"></i> CONNECTION FAILED';
         }
     }
     
-    sendAuthorize() {
+    authenticate() {
         if (this.websocket?.readyState === WebSocket.OPEN) {
             this.websocket.send(JSON.stringify({
                 "authorize": this.apiToken
@@ -220,474 +309,549 @@ class ZionQuantumScanner {
         }
     }
     
-    subscribeToAll() {
-        const allSymbols = [...new Set([
-            ...this.volatilities.standard.map(v => v.symbol),
-            ...this.volatilities.oneSecond.map(v => v.symbol)
+    subscribeToAllSensors() {
+        // Get unique symbols
+        const symbols = [...new Set([
+            ...this.volatilities.standard.map(v => v.id),
+            ...this.volatilities.oneSecond.map(v => v.id)
         ])];
         
-        allSymbols.forEach(symbol => {
+        symbols.forEach(symbol => {
             this.websocket.send(JSON.stringify({
                 "ticks": symbol,
                 "subscribe": 1
             }));
-            
-            this.quantumStates[symbol] = {
-                standard: { ticks: [], quantumField: [], coherence: 1.0 },
-                '1s': { ticks: [], quantumField: [], coherence: 1.0 }
-            };
         });
+        
+        console.log(`📡 Subscribed to ${symbols.length} symbols`);
     }
     
-    processQuantumData(data) {
+    processTickData(data) {
+        if (data.error) {
+            console.error('API Error:', data.error);
+            return;
+        }
+        
         if (data.tick) {
-            const { symbol, quote } = data.tick;
+            const { symbol, quote, epoch } = data.tick;
             
-            if (!this.quantumStates[symbol]) {
-                this.quantumStates[symbol] = {
-                    standard: { ticks: [], quantumField: [], coherence: 1.0 },
-                    '1s': { ticks: [], quantumField: [], coherence: 1.0 }
-                };
-            }
-            
-            this.quantumStates[symbol].standard.ticks.push({
-                price: quote,
-                timestamp: Date.now()
+            // Update both standard and 1s versions
+            ['standard', '1s'].forEach(type => {
+                const key = `${symbol}-${type}`;
+                if (this.sensorData[key]) {
+                    this.sensorData[key].ticks.push({
+                        price: quote,
+                        time: Date.now(),
+                        epoch: epoch
+                    });
+                    
+                    // Keep last 100 ticks
+                    if (this.sensorData[key].ticks.length > 100) {
+                        this.sensorData[key].ticks.shift();
+                    }
+                    
+                    this.sensorData[key].lastPrice = quote;
+                    
+                    // Update price display
+                    this.updatePriceDisplay(symbol, type, quote);
+                    
+                    // Run sensor analysis
+                    this.analyzeSensor(key);
+                }
             });
-            
-            this.quantumStates[symbol]['1s'].ticks.push({
-                price: quote,
-                timestamp: Date.now()
-            });
-            
-            if (this.quantumStates[symbol].standard.ticks.length > 200) {
-                this.quantumStates[symbol].standard.ticks.shift();
-            }
-            if (this.quantumStates[symbol]['1s'].ticks.length > 200) {
-                this.quantumStates[symbol]['1s'].ticks.shift();
-            }
-            
-            this.updatePriceDisplay(symbol, quote, 'standard');
-            this.updatePriceDisplay(symbol, quote, '1s');
         }
     }
     
-    updatePriceDisplay(symbol, price, type) {
+    updatePriceDisplay(symbol, type, price) {
         const priceEl = document.getElementById(`price-${symbol}-${type}`);
         if (priceEl) {
             priceEl.textContent = price.toFixed(5);
+            
+            // Flash effect
+            priceEl.style.transition = 'background 0.2s';
+            priceEl.style.background = '#4ac7ff33';
+            setTimeout(() => {
+                priceEl.style.background = '#0b1020';
+            }, 200);
         }
     }
     
-    startQuantumEngine() {
+    startSensingEngine() {
+        // Run analysis every 500ms
         setInterval(() => {
-            this.runQuantumAnalysis();
+            this.runAllSensors();
         }, 500);
         
+        // Update timers every 100ms
         setInterval(() => {
-            this.updateQuantumTimers();
+            this.updateSignalTimers();
         }, 100);
         
+        // Clean up expired signals
         setInterval(() => {
-            this.cleanExpiredQuantumSignals();
+            this.cleanExpiredSignals();
         }, 1000);
+        
+        console.log('🔍 Sensing engine started');
     }
     
-    runQuantumAnalysis() {
-        this.marketTypes.forEach(market => {
-            let bestForMarket = null;
-            let highestConfidence = 0;
+    runAllSensors() {
+        // Process each option type
+        this.optionTypes.forEach(option => {
+            let bestForOption = null;
+            let bestConfidence = 0;
             
-            market.symbols.forEach(symbol => {
-                ['standard', '1s'].forEach(type => {
-                    const state = this.quantumStates[symbol]?.[type];
-                    if (!state || state.ticks.length < 50) return;
+            option.sensors.forEach(sensor => {
+                const key = `${sensor.id}-${sensor.type}`;
+                const sensorData = this.sensorData[key];
+                
+                if (!sensorData || sensorData.ticks.length < 30) return;
+                
+                // Check if already has active signal
+                if (this.activeSignals.has(key)) return;
+                
+                // Run specific sensor based on option type
+                let signal = null;
+                
+                switch(option.name) {
+                    case 'EVEN/ODD':
+                        signal = this.evenOddSensor(sensorData, option);
+                        break;
+                    case 'RISE/FALL':
+                        signal = this.riseFallSensor(sensorData, option);
+                        break;
+                    case 'OVER/UNDER':
+                        signal = this.overUnderSensor(sensorData, option);
+                        break;
+                    case 'MATCHES/DIFFERS':
+                        signal = this.matchesDiffersSensor(sensorData, option);
+                        break;
+                }
+                
+                if (signal && signal.confidence >= option.minConfidence) {
+                    // This is a valid signal
+                    this.emitSignal(key, sensor, option, signal);
                     
-                    const signal = this.generateQuantumSignal(market, symbol, type, state);
-                    
-                    if (signal && signal.confidence > market.minConfidence) {
-                        if (signal.confidence > highestConfidence) {
-                            highestConfidence = signal.confidence;
-                            bestForMarket = { symbol, type, signal };
-                        }
-                        
-                        if (signal.confidence >= this.QUANTUM_THRESHOLD * 100) {
-                            this.emitQuantumSignal(symbol, type, market, signal);
-                        }
+                    if (signal.confidence > bestConfidence) {
+                        bestConfidence = signal.confidence;
+                        bestForOption = { key, sensor, signal };
                     }
-                });
+                }
             });
             
-            if (bestForMarket) {
-                this.updateMarketBestDisplay(market, bestForMarket);
+            // Update best signal for this option type
+            if (bestForOption) {
+                this.updateOptionBadge(option, bestForOption);
             }
         });
         
+        // Update overall best signal
         this.updateOverallBest();
     }
     
-    generateQuantumSignal(market, symbol, type, state) {
-        const ticks = state.ticks;
-        const prices = ticks.slice(-50).map(t => t.price);
+    // ============================================
+    // EVEN/ODD SENSOR - Digit Analysis for Long Signals
+    // ============================================
+    evenOddSensor(data, option) {
+        const ticks = data.ticks;
+        const recentTicks = ticks.slice(-40);
         
-        switch(market.name) {
-            case 'EVEN/ODD':
-                return this.quantumDigitAnalysis(prices, ticks);
-            case 'RISE/FALL':
-                return this.quantumMomentumAnalysis(prices, ticks);
-            case 'OVER/UNDER':
-                return this.quantumZScoreAnalysis(prices, ticks);
-            case 'MATCHES/DIFFERS':
-                return this.quantumPatternAnalysis(prices, ticks);
-            default:
-                return null;
-        }
-    }
-    
-    quantumDigitAnalysis(prices, ticks) {
-        const digits = ticks.slice(-30).map(t => Math.floor(t.price * 100000) % 10);
+        // Extract last digits
+        const digits = recentTicks.map(t => Math.floor(t.price * 100000) % 10);
+        const lastDigit = digits[digits.length - 1];
         
-        const digitFrequency = Array(10).fill(0);
-        digits.forEach(d => digitFrequency[d]++);
-        
+        // Calculate entropy (randomness)
+        const freq = Array(10).fill(0);
+        digits.forEach(d => freq[d]++);
         let entropy = 0;
-        digitFrequency.forEach(count => {
-            const p = count / digits.length;
+        freq.forEach(f => {
+            const p = f / digits.length;
             if (p > 0) entropy -= p * Math.log2(p);
         });
-        const normalizedEntropy = entropy / 3.32;
+        const maxEntropy = Math.log2(10);
+        const normEntropy = entropy / maxEntropy;
         
-        let phase = 0;
-        for (let i = 1; i < digits.length; i++) {
-            if (digits[i] === digits[i-1]) phase += 1;
-        }
-        phase = (phase / digits.length) * 360;
-        
-        const decayMatrix = [];
-        for (let i = 0; i < 10; i++) {
-            decayMatrix[i] = Array(10).fill(0);
+        // Detect patterns (decay)
+        let pattern = 0;
+        for (let i = 1; i < 10; i++) {
+            if (digits[digits.length - i] === lastDigit) pattern++;
         }
         
-        for (let i = 1; i < digits.length; i++) {
-            decayMatrix[digits[i-1]][digits[i]]++;
-        }
+        // Check even/odd streaks
+        const evenCount = digits.slice(-15).filter(d => d % 2 === 0).length;
+        const evenRatio = evenCount / 15;
         
-        for (let i = 0; i < 10; i++) {
-            const sum = decayMatrix[i].reduce((a, b) => a + b, 0);
-            if (sum > 0) {
-                for (let j = 0; j < 10; j++) {
-                    decayMatrix[i][j] /= sum;
-                }
+        // Determine signal
+        let signalType = '';
+        let confidence = 50;
+        let reason = '';
+        
+        // Strong pattern detection
+        if (evenRatio > 0.8) {
+            // Too many evens, odds are due
+            signalType = lastDigit % 2 === 0 ? 'ODD (REVERSAL)' : 'EVEN';
+            confidence = 75 + (evenRatio - 0.8) * 50;
+            reason = `Even streak: ${evenCount}/15, reversal likely`;
+        } else if (evenRatio < 0.2) {
+            // Too many odds, evens are due
+            signalType = lastDigit % 2 === 0 ? 'EVEN' : 'EVEN (REVERSAL)';
+            confidence = 75 + (0.2 - evenRatio) * 50;
+            reason = `Odd streak: ${15-evenCount}/15, reversal likely`;
+        } else if (normEntropy < 0.7) {
+            // Low entropy means pattern emerging
+            if (pattern > 3) {
+                signalType = lastDigit % 2 === 0 ? 'EVEN' : 'ODD';
+                confidence = 70 + pattern * 5;
+                reason = `Pattern detected: ${pattern} repeats`;
+            } else {
+                signalType = lastDigit % 2 === 0 ? 'EVEN' : 'ODD';
+                confidence = 60;
+                reason = 'Normal distribution';
             }
-        }
-        
-        const lastDigit = digits[digits.length - 1];
-        const predictionProb = decayMatrix[lastDigit];
-        
-        let maxProb = 0;
-        let predictedDigit = lastDigit;
-        for (let i = 0; i < 10; i++) {
-            if (predictionProb[i] > maxProb) {
-                maxProb = predictionProb[i];
-                predictedDigit = i;
-            }
-        }
-        
-        const evenProb = predictionProb.filter((_, i) => i % 2 === 0).reduce((a, b) => a + b, 0);
-        const isEven = predictedDigit % 2 === 0;
-        let confidence = (isEven ? evenProb : 1 - evenProb) * 100;
-        
-        confidence *= (1 - normalizedEntropy * 0.2);
-        confidence *= (0.8 + 0.2 * Math.sin(phase * Math.PI / 180));
-        
-        const recentEven = digits.slice(-10).filter(d => d % 2 === 0).length;
-        let signalType;
-        
-        if (recentEven > 8 && !isEven) {
-            signalType = 'ODD (REVERSAL)';
-            confidence *= 1.2;
-        } else if (recentEven < 2 && isEven) {
-            signalType = 'EVEN (REVERSAL)';
-            confidence *= 1.2;
         } else {
-            signalType = isEven ? 'EVEN' : 'ODD';
+            // Random - low confidence
+            signalType = lastDigit % 2 === 0 ? 'EVEN' : 'ODD';
+            confidence = 55;
+            reason = 'High entropy, low certainty';
         }
+        
+        // Long signal check
+        const isLongSignal = pattern > 2 && confidence > 75;
         
         return {
             type: signalType,
-            confidence: Math.min(99, Math.round(confidence)),
-            details: {
-                entropy: normalizedEntropy.toFixed(3),
-                phase: phase.toFixed(0) + '°',
-                decay: maxProb.toFixed(3)
-            },
-            reason: `ENTROPY: ${normalizedEntropy.toFixed(3)} | PHASE: ${phase.toFixed(0)}°`
+            confidence: Math.min(98, Math.round(confidence)),
+            duration: isLongSignal ? option.signalDuration : 15,
+            reason: reason,
+            isLong: isLongSignal,
+            entropy: normEntropy.toFixed(2),
+            pattern: pattern
         };
     }
     
-    quantumMomentumAnalysis(prices) {
-        const mean = prices.reduce((a, b) => a + b, 0) / prices.length;
-        const sorted = [...prices].sort((a, b) => a - b);
-        const median = sorted[Math.floor(sorted.length / 2)];
+    // ============================================
+    // RISE/FALL SENSOR - Momentum Analysis for Long Signals
+    // ============================================
+    riseFallSensor(data, option) {
+        const ticks = data.ticks;
+        const prices = ticks.slice(-40).map(t => t.price);
         
+        // Calculate indicators
+        const mean = prices.reduce((a, b) => a + b, 0) / prices.length;
+        const current = prices[prices.length - 1];
+        
+        // Volatility
         const variance = prices.reduce((acc, p) => acc + Math.pow(p - mean, 2), 0) / prices.length;
         const stdDev = Math.sqrt(variance);
         
-        let skewness = 0;
-        prices.forEach(p => {
-            skewness += Math.pow((p - mean) / stdDev, 3);
-        });
-        skewness /= prices.length;
+        // Momentum (rate of change)
+        const mom5 = (prices[prices.length - 1] - prices[prices.length - 6]) / 5;
+        const mom10 = (prices[prices.length - 1] - prices[prices.length - 11]) / 10;
+        const mom20 = (prices[prices.length - 1] - prices[prices.length - 21]) / 20;
         
-        const currentPrice = prices[prices.length - 1];
-        const zScore = (currentPrice - mean) / stdDev;
+        // Trend strength
+        const trend = (mom5 * 0.5 + mom10 * 0.3 + mom20 * 0.2) / stdDev;
         
-        let direction;
-        let confidence;
+        // RSI approximation
+        let gains = 0, losses = 0;
+        for (let i = 1; i < prices.length; i++) {
+            const diff = prices[i] - prices[i-1];
+            if (diff > 0) gains += diff;
+            else losses -= diff;
+        }
+        const rsi = gains + losses === 0 ? 50 : 100 - (100 / (1 + gains/losses));
         
-        if (skewness > 0.5) {
-            direction = 'RISE (SKEW+)';
-            confidence = 70 + skewness * 15;
-        } else if (skewness < -0.5) {
-            direction = 'FALL (SKEW-)';
-            confidence = 70 + Math.abs(skewness) * 15;
+        // Determine signal
+        let signalType = '';
+        let confidence = 50;
+        let reason = '';
+        
+        // Strong trend detection
+        if (trend > 0.5) {
+            signalType = 'RISE';
+            confidence = 70 + Math.min(25, trend * 20);
+            reason = `Strong upward momentum: ${trend.toFixed(2)}`;
+        } else if (trend < -0.5) {
+            signalType = 'FALL';
+            confidence = 70 + Math.min(25, Math.abs(trend) * 20);
+            reason = `Strong downward momentum: ${trend.toFixed(2)}`;
+        } else if (rsi > 70) {
+            signalType = 'FALL (REVERSAL)';
+            confidence = 75;
+            reason = `Overbought (RSI: ${rsi.toFixed(0)})`;
+        } else if (rsi < 30) {
+            signalType = 'RISE (REVERSAL)';
+            confidence = 75;
+            reason = `Oversold (RSI: ${rsi.toFixed(0)})`;
         } else {
-            const momentum = prices[prices.length - 1] - prices[prices.length - 5];
-            if (momentum > 0) {
-                direction = 'RISE';
-                confidence = 60 + Math.min(30, momentum / stdDev * 10);
-            } else {
-                direction = 'FALL';
-                confidence = 60 + Math.min(30, Math.abs(momentum) / stdDev * 10);
-            }
+            signalType = prices[prices.length - 1] > prices[prices.length - 2] ? 'RISE' : 'FALL';
+            confidence = 60;
+            reason = `Weak momentum, following last tick`;
         }
         
-        if (zScore > 2) {
-            direction = 'FALL (REVERSION)';
-            confidence *= 1.3;
-        } else if (zScore < -2) {
-            direction = 'RISE (REVERSION)';
-            confidence *= 1.3;
-        }
+        // Long signal check
+        const isLongSignal = Math.abs(trend) > 0.8 && confidence > 75;
         
         return {
-            type: direction,
-            confidence: Math.min(99, Math.round(confidence)),
-            details: {
-                entropy: (skewness + 2).toFixed(2),
-                phase: (zScore * 30).toFixed(0) + '°',
-                decay: (Math.abs(zScore) / 4).toFixed(2)
-            },
-            reason: `SKEW: ${skewness.toFixed(3)} | Z-SCORE: ${zScore.toFixed(2)}`
-        };
-    }
-    
-    quantumZScoreAnalysis(prices) {
-        const timeframes = [10, 20, 30, 50];
-        const zScores = [];
-        
-        timeframes.forEach(tf => {
-            if (prices.length >= tf) {
-                const subset = prices.slice(-tf);
-                const mean = subset.reduce((a, b) => a + b, 0) / tf;
-                const std = Math.sqrt(subset.reduce((acc, p) => acc + Math.pow(p - mean, 2), 0) / tf);
-                const current = subset[subset.length - 1];
-                zScores.push((current - mean) / std);
-            }
-        });
-        
-        const coherence = 1 - (Math.max(...zScores) - Math.min(...zScores)) / 4;
-        
-        const weights = [0.4, 0.3, 0.2, 0.1];
-        let weightedZ = 0;
-        let totalWeight = 0;
-        
-        zScores.forEach((z, i) => {
-            weightedZ += z * weights[i];
-            totalWeight += weights[i];
-        });
-        
-        weightedZ /= totalWeight;
-        
-        let direction;
-        let confidence;
-        
-        if (weightedZ > 0.5) {
-            direction = 'UNDER (REVERSION)';
-            confidence = 70 + Math.min(25, weightedZ * 15);
-        } else if (weightedZ < -0.5) {
-            direction = 'OVER (REVERSION)';
-            confidence = 70 + Math.min(25, Math.abs(weightedZ) * 15);
-        } else {
-            direction = prices[prices.length - 1] > prices[prices.length - 2] ? 'OVER' : 'UNDER';
-            confidence = 55 + Math.abs(weightedZ) * 20;
-        }
-        
-        confidence *= (0.7 + 0.3 * coherence);
-        
-        return {
-            type: direction,
+            type: signalType,
             confidence: Math.min(98, Math.round(confidence)),
-            details: {
-                entropy: (1 - coherence).toFixed(3),
-                phase: (weightedZ * 30).toFixed(0) + '°',
-                decay: (Math.abs(weightedZ) / 2).toFixed(2)
-            },
-            reason: `Z-SCORE: ${weightedZ.toFixed(2)} | COHERENCE: ${(coherence*100).toFixed(0)}%`
+            duration: isLongSignal ? option.signalDuration : 20,
+            reason: reason,
+            isLong: isLongSignal,
+            trend: trend.toFixed(2),
+            rsi: rsi.toFixed(0)
         };
     }
     
-    quantumPatternAnalysis(prices, ticks) {
+    // ============================================
+    // OVER/UNDER SENSOR - Range Analysis for Long Signals
+    // ============================================
+    overUnderSensor(data, option) {
+        const ticks = data.ticks;
+        const prices = ticks.slice(-50).map(t => t.price);
+        
+        // Calculate support/resistance levels
+        const max = Math.max(...prices);
+        const min = Math.min(...prices);
+        const mean = prices.reduce((a, b) => a + b, 0) / prices.length;
+        const current = prices[prices.length - 1];
+        
+        // Position in range
+        const range = max - min;
+        const position = range === 0 ? 0.5 : (current - min) / range;
+        
+        // Distance from mean (Z-score)
+        const variance = prices.reduce((acc, p) => acc + Math.pow(p - mean, 2), 0) / prices.length;
+        const stdDev = Math.sqrt(variance);
+        const zScore = (current - mean) / stdDev;
+        
+        // Determine signal
+        let signalType = '';
+        let confidence = 50;
+        let reason = '';
+        
+        if (position > 0.85) {
+            signalType = 'UNDER';
+            confidence = 75 + (position - 0.85) * 50;
+            reason = `Near resistance (${(position*100).toFixed(0)}% of range)`;
+        } else if (position < 0.15) {
+            signalType = 'OVER';
+            confidence = 75 + (0.15 - position) * 50;
+            reason = `Near support (${(position*100).toFixed(0)}% of range)`;
+        } else if (zScore > 1.5) {
+            signalType = 'UNDER';
+            confidence = 70 + (zScore - 1.5) * 15;
+            reason = `Z-score: ${zScore.toFixed(2)} above mean`;
+        } else if (zScore < -1.5) {
+            signalType = 'OVER';
+            confidence = 70 + Math.abs(zScore + 1.5) * 15;
+            reason = `Z-score: ${zScore.toFixed(2)} below mean`;
+        } else {
+            signalType = current > mean ? 'OVER' : 'UNDER';
+            confidence = 60;
+            reason = `Near mean (${(position*100).toFixed(0)}% range)`;
+        }
+        
+        // Long signal check
+        const isLongSignal = (position > 0.9 || position < 0.1) && confidence > 75;
+        
+        return {
+            type: signalType,
+            confidence: Math.min(98, Math.round(confidence)),
+            duration: isLongSignal ? option.signalDuration : 15,
+            reason: reason,
+            isLong: isLongSignal,
+            position: (position * 100).toFixed(0),
+            zScore: zScore.toFixed(2)
+        };
+    }
+    
+    // ============================================
+    // MATCHES/DIFFERS SENSOR - Pattern Analysis for Long Signals
+    // ============================================
+    matchesDiffersSensor(data, option) {
+        const ticks = data.ticks;
         const digits = ticks.slice(-40).map(t => Math.floor(t.price * 100000) % 10);
         
-        const patternMatrix = {};
-        for (let i = 0; i <= digits.length - 3; i++) {
-            const pattern = digits.slice(i, i + 3).join('');
-            patternMatrix[pattern] = (patternMatrix[pattern] || 0) + 1;
-        }
-        
-        const last3 = digits.slice(-3).join('');
         const lastDigit = digits[digits.length - 1];
+        const prevDigit = digits[digits.length - 2];
         
-        let matchProb = 0.5;
-        
-        if (patternMatrix[last3]) {
-            const nextDigits = [];
-            for (let i = 0; i <= digits.length - 4; i++) {
-                if (digits.slice(i, i + 3).join('') === last3) {
-                    nextDigits.push(digits[i + 3]);
-                }
-            }
-            if (nextDigits.length > 0) {
-                const matches = nextDigits.filter(d => d === lastDigit).length;
-                matchProb = matches / nextDigits.length;
-            }
+        // Pattern detection
+        let matches = 0;
+        for (let i = 1; i < 10; i++) {
+            if (digits[digits.length - i] === lastDigit) matches++;
         }
         
-        const direction = matchProb > 0.5 ? 'MATCHES' : 'DIFFERS';
-        const confidence = 55 + Math.abs(matchProb - 0.5) * 70;
+        // Check for repeating patterns
+        let pattern = '';
+        for (let i = 1; i <= 3; i++) {
+            pattern += digits[digits.length - i];
+        }
+        
+        // Find pattern frequency
+        let patternCount = 0;
+        for (let i = 0; i < digits.length - 3; i++) {
+            if (digits.slice(i, i+3).join('') === pattern) patternCount++;
+        }
+        
+        // Determine signal
+        let signalType = lastDigit === prevDigit ? 'MATCHES' : 'DIFFERS';
+        let confidence = 50;
+        let reason = '';
+        
+        if (matches > 4) {
+            // Strong match pattern
+            signalType = 'MATCHES';
+            confidence = 75 + matches * 3;
+            reason = `Strong match pattern (${matches}/10)`;
+        } else if (patternCount > 2) {
+            // Repeating pattern
+            signalType = 'MATCHES';
+            confidence = 70 + patternCount * 5;
+            reason = `Pattern ${pattern} repeating`;
+        } else if (lastDigit === prevDigit) {
+            confidence = 60;
+            reason = 'Recent match, low confidence';
+        } else {
+            confidence = 55;
+            reason = 'Recent differ, random distribution';
+        }
+        
+        // Long signal check
+        const isLongSignal = matches > 3 || patternCount > 2;
         
         return {
-            type: direction,
-            confidence: Math.min(95, Math.round(confidence)),
-            details: {
-                entropy: (1 - Math.abs(matchProb - 0.5)).toFixed(3),
-                phase: (matchProb * 360).toFixed(0) + '°',
-                decay: matchProb.toFixed(3)
-            },
-            reason: `PATTERN: ${last3} → ${direction} (${(matchProb*100).toFixed(0)}%)`
+            type: signalType,
+            confidence: Math.min(98, Math.round(confidence)),
+            duration: isLongSignal ? option.signalDuration : 15,
+            reason: reason,
+            isLong: isLongSignal,
+            matches: matches,
+            pattern: pattern
         };
     }
     
-    emitQuantumSignal(symbol, type, market, signal) {
-        const signalId = `${symbol}-${type}-${Date.now()}`;
-        const expiryTime = Date.now() + 20000;
+    emitSignal(key, sensor, option, signal) {
+        const expiryTime = Date.now() + (signal.duration * 1000);
         
-        const existingKey = `${symbol}-${type}`;
-        if (this.activeSignals.has(existingKey)) {
-            const existing = this.activeSignals.get(existingKey);
+        // Check if already has active signal
+        if (this.activeSignals.has(key)) {
+            const existing = this.activeSignals.get(key);
             if (existing.signal.confidence > signal.confidence) {
-                return;
+                return; // Keep stronger signal
             }
         }
         
         const signalData = {
-            id: signalId,
-            symbol,
-            type: type,
-            marketType: market.name,
+            id: `${key}-${Date.now()}`,
+            key: key,
+            symbol: sensor.id,
+            type: sensor.type,
+            optionType: option.name,
+            sensorName: sensor.name,
             signal: signal,
             expiry: expiryTime,
             timestamp: Date.now()
         };
         
-        this.activeSignals.set(existingKey, signalData);
-        this.signalsGenerated++;
+        this.activeSignals.set(key, signalData);
+        this.totalSignals++;
         
-        this.displayQuantumSignal(symbol, type, signal);
+        // Update UI
+        this.displaySignal(key, signalData);
+        this.updateSensorFrequency(key);
         
+        // Update signal count
         document.getElementById('signalCount').innerText = this.activeSignals.size;
         
-        if (!this.isMuted && signal.confidence > 90) {
-            this.speak(`ELITE ${market.name} signal on ${symbol} with ${signal.confidence} percent confidence`);
+        // Voice for long signals
+        if (!this.isMuted && signal.isLong) {
+            this.speak(`Long ${option.name} signal on ${sensor.name} with ${signal.confidence} percent confidence`);
         }
-    }
-    
-    displayQuantumSignal(symbol, type, signal) {
-        const signalEl = document.getElementById(`signal-${symbol}-${type}`);
-        const timerEl = document.getElementById(`timer-${symbol}-${type}`);
-        const freqEl = document.getElementById(`freq-${symbol}-${type}`);
         
-        if (signalEl) {
-            let confidenceClass = 'low';
-            if (signal.confidence >= 85) confidenceClass = 'high';
-            else if (signal.confidence >= 70) confidenceClass = 'medium';
-            
-            let typeClass = 'even-odd';
-            if (signal.type.includes('RISE') || signal.type.includes('FALL')) typeClass = 'rise-fall';
-            else if (signal.type.includes('OVER') || signal.type.includes('UNDER')) typeClass = 'over-under';
-            else if (signal.type.includes('MATCH') || signal.type.includes('DIFF')) typeClass = 'matches-differs';
-            
-            signalEl.innerHTML = `
-                <div class="signal-primary">
-                    <span class="signal-type ${typeClass}">${signal.type}</span>
-                    <span class="signal-confidence ${confidenceClass}">${signal.confidence}%</span>
-                </div>
-                <div class="signal-quantum-details">
-                    <div class="quantum-metric"><span class="label">ENTROPY</span><span class="value">${signal.details.entropy}</span></div>
-                    <div class="quantum-metric"><span class="label">PHASE</span><span class="value">${signal.details.phase}</span></div>
-                    <div class="quantum-metric"><span class="label">DECAY</span><span class="value">${signal.details.decay}</span></div>
-                </div>
-                <div class="signal-reason">⚛️ ${signal.reason}</div>
-            `;
-            
-            timerEl.style.display = 'flex';
-            
-            if (freqEl) {
-                const currentFreq = parseInt(freqEl.innerText) || 0;
-                freqEl.innerText = `${currentFreq + 1} sig/h`;
-            }
-            
-            const card = document.querySelector(`[data-symbol="${symbol}"][data-vol-type="${type}"]`);
-            if (card) {
-                card.classList.add('quantum-active');
-                if (signal.confidence >= 90) {
-                    card.classList.add('elite-signal');
-                }
+        console.log('🔔 SIGNAL DETECTED:', signalData);
+    }
+    
+    displaySignal(key, signalData) {
+        const signalEl = document.getElementById(`signal-${signalData.symbol}-${signalData.type}`);
+        const timerEl = document.getElementById(`timer-${signalData.symbol}-${signalData.type}`);
+        
+        if (!signalEl) return;
+        
+        const signal = signalData.signal;
+        let confidenceClass = 'low';
+        if (signal.confidence >= 85) confidenceClass = 'high';
+        else if (signal.confidence >= 70) confidenceClass = 'medium';
+        
+        // Get option colors
+        const option = this.optionTypes.find(o => o.name === signalData.optionType);
+        const typeColor = option ? option.color : '#4ac7ff';
+        
+        signalEl.innerHTML = `
+            <div class="signal-primary">
+                <span class="signal-type" style="color: ${typeColor}">${signal.type}</span>
+                <span class="signal-confidence ${confidenceClass}">${signal.confidence}%</span>
+            </div>
+            <div class="signal-duration">
+                <i class="fas fa-hourglass-half"></i> ${signal.duration}s signal
+                ${signal.isLong ? ' 👑 LONG' : ''}
+            </div>
+            <div class="signal-reason">🔍 ${signal.reason}</div>
+        `;
+        
+        // Show and update timer
+        timerEl.style.display = 'flex';
+        
+        // Highlight card
+        const card = document.querySelector(`[data-key="${key}"]`);
+        if (card) {
+            card.classList.add('signal-active');
+            if (signal.isLong) {
+                card.classList.add('elite-signal');
             }
         }
     }
     
-    updateQuantumTimers() {
+    updateSensorFrequency(key) {
+        const freqEl = document.getElementById(`freq-${key.split('-')[0]}-${key.split('-')[1]}`);
+        if (freqEl) {
+            const current = parseInt(freqEl.innerText) || 0;
+            freqEl.innerText = `${current + 1} signals`;
+        }
+    }
+    
+    updateSignalTimers() {
         const now = Date.now();
         
-        for (const [key, signal] of this.activeSignals) {
-            const [symbol, type] = key.split('-');
-            const timerEl = document.getElementById(`timer-${symbol}-${type}`);
+        for (const [key, signalData] of this.activeSignals) {
+            const timerEl = document.getElementById(`timer-${signalData.symbol}-${signalData.type}`);
             
             if (!timerEl) continue;
             
-            const timeLeft = Math.max(0, signal.expiry - now);
+            const timeLeft = Math.max(0, signalData.expiry - now);
             const secondsLeft = Math.ceil(timeLeft / 1000);
-            const progressPercent = (timeLeft / 20000) * 100;
+            const progressPercent = (timeLeft / (signalData.signal.duration * 1000)) * 100;
             
             if (timeLeft > 0) {
                 timerEl.innerHTML = `
                     <span class="timer-text">${secondsLeft}s</span>
-                    <div class="timer-progress"><div class="timer-progress-fill" style="width: ${progressPercent}%"></div></div>
+                    <div class="timer-progress">
+                        <div class="timer-progress-fill" style="width: ${progressPercent}%"></div>
+                    </div>
                 `;
             } else {
                 timerEl.style.display = 'none';
                 
-                const card = document.querySelector(`[data-symbol="${symbol}"][data-vol-type="${type}"]`);
+                // Remove highlight
+                const card = document.querySelector(`[data-key="${key}"]`);
                 if (card) {
-                    card.classList.remove('quantum-active', 'elite-signal');
+                    card.classList.remove('signal-active', 'elite-signal');
                 }
             }
         }
     }
     
-    cleanExpiredQuantumSignals() {
+    cleanExpiredSignals() {
         const now = Date.now();
         for (const [key, signal] of this.activeSignals) {
             if (signal.expiry <= now) {
@@ -697,16 +861,14 @@ class ZionQuantumScanner {
         document.getElementById('signalCount').innerText = this.activeSignals.size;
     }
     
-    updateMarketBestDisplay(market, best) {
-        const badgeId = `best-${market.name.replace('/', '-')}`;
+    updateOptionBadge(option, best) {
+        const badgeId = `badge-${option.name.toLowerCase().replace('/', '-')}`;
         const badge = document.getElementById(badgeId);
         
         if (badge) {
-            const volInfo = this.volatilities[best.type === 'standard' ? 'standard' : 'oneSecond']
-                .find(v => v.symbol === best.symbol && v.type === best.type);
-            
+            const sensor = best.sensor;
             badge.innerHTML = `
-                👑 ${volInfo?.name || best.symbol}<br>
+                👑 ${sensor.name}<br>
                 <small>${best.signal.type} (${best.signal.confidence}%)</small>
             `;
         }
@@ -727,22 +889,17 @@ class ZionQuantumScanner {
             const bestEl = document.getElementById('bestMarket');
             bestEl.innerHTML = `
                 <span class="quantum-indicator"></span>
-                ⚛️ ELITE: ${bestSignal.marketType} on ${bestSignal.symbol} (${bestSignal.signal.confidence}%)
+                👑 ${bestSignal.optionType} on ${bestSignal.sensorName} (${bestSignal.signal.confidence}%) - ${bestSignal.signal.duration}s
             `;
         }
     }
     
-    startQuantumHeartbeat() {
-        setInterval(() => {
-            if (this.websocket?.readyState === WebSocket.OPEN) {
-                this.websocket.send(JSON.stringify({ "ping": 1 }));
-            }
-        }, 15000);
-    }
-    
-    selectMarket(card) {
-        document.querySelectorAll('.market-card').forEach(c => c.classList.remove('selected'));
-        card.classList.add('selected');
+    updateSensorCounts() {
+        // Count total sensors
+        let total = 0;
+        this.optionTypes.forEach(option => {
+            total += option.sensors.length;
+        });
     }
     
     setupEventListeners() {
@@ -761,7 +918,7 @@ class ZionQuantumScanner {
             } else {
                 icon.className = 'fas fa-volume-up';
                 label.innerText = 'mute';
-                this.speak('Quantum voice activated');
+                this.speak('Sensors activated');
             }
         });
         
@@ -773,27 +930,23 @@ class ZionQuantumScanner {
         });
         
         document.querySelector('.d-no')?.addEventListener('dblclick', () => {
-            this.runQuantumDiagnostic();
+            this.runDiagnostic();
         });
     }
     
-    runQuantumDiagnostic() {
-        this.speak('Running quantum diagnostic');
+    runDiagnostic() {
+        this.speak('Running sensor diagnostic');
         document.getElementById('bestMarket').innerHTML = `
             <span class="quantum-indicator"></span>
-            ⚛️ QUANTUM DIAGNOSTIC: SCANNING...
+            🔍 DIAGNOSTIC: ${Object.keys(this.sensorData).length} sensors active
         `;
         
         setTimeout(() => {
-            const signalCount = this.activeSignals.size;
-            document.getElementById('bestMarket').innerHTML = `
-                <span class="quantum-indicator"></span>
-                ⚛️ QUANTUM: ${signalCount} ACTIVE | COHERENCE: ${(Math.random() * 0.3 + 0.7).toFixed(2)}
-            `;
+            this.updateOverallBest();
         }, 2000);
     }
     
-    initQuantumVoice() {
+    initVoice() {
         if (window.speechSynthesis) {
             window.speechSynthesis.onvoiceschanged = () => {
                 this.voices = window.speechSynthesis.getVoices();
@@ -805,14 +958,15 @@ class ZionQuantumScanner {
         if (this.isMuted || !window.speechSynthesis) return;
         
         window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(`Quantum signal: ${message}`);
-        utterance.rate = 0.85;
-        utterance.pitch = 1.2;
-        utterance.voice = this.voices?.find(v => v.name.includes('Google') || v.name.includes('Daniel'));
+        const utterance = new SpeechSynthesisUtterance(`Sensor: ${message}`);
+        utterance.rate = 0.9;
+        utterance.pitch = 1.1;
+        utterance.voice = this.voices?.find(v => v.name.includes('Google') || v.name.includes('Samantha'));
         window.speechSynthesis.speak(utterance);
     }
 }
 
+// Initialize when page loads
 document.addEventListener('DOMContentLoaded', () => {
-    window.quantumLab = new ZionQuantumScanner();
+    window.quantumSensor = new ZionQuantumSensor();
 });
