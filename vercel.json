@@ -1,5 +1,5 @@
 {
-  "name": "zion-quantum-lab",
+  "name": "zion-quantum-sensor",
   "version": 2,
   "builds": [
     {
@@ -16,16 +16,5 @@
   "env": {
     "DERIV_APP_ID": "126973",
     "DERIV_API_TOKEN": "rbQgwOkbsfDoKw2"
-  },
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; connect-src 'self' wss://ws.derivws.com;"
-        }
-      ]
-    }
-  ]
+  }
 }
