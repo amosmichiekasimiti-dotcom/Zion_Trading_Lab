@@ -15,8 +15,7 @@
   ],
   "env": {
     "DERIV_APP_ID": "126973",
-    "DERIV_API_TOKEN": "rbQgwOkbsfDoKw2",
-    "QUANTUM_THRESHOLD": "0.84"
+    "DERIV_API_TOKEN": "rbQgwOkbsfDoKw2"
   },
   "headers": [
     {
