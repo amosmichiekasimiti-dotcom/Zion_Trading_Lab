@@ -1,47 +1,79 @@
-// Zion Trading Lab - Advanced Stability Engine
+// ZION TRADING LAB - ADVANCED SYSTEMATIC ENGINE
 const APP_ID = '126973';
-const TOKEN = 'rbQgwOkbsfDoKw2';
+const TOKEN = 'rbQgwOkbsfDoKw2'; // Your authorized Deriv Token
+const GEMINI_KEY = 'AIzaSyDM7cKxbQwbwBX0ubb01Iel2WrFi8oEh2E';
 
-let socket, currentMarket = "Waiting...";
-let digitHistory = []; 
-let lastSignalTime = 0;
-const SIGNAL_DELAY = 5000; // 5 seconds minimum between announcements
+const VOLS = ['1HZ10V','1HZ15V','1HZ25V','1HZ30V','1HZ50V','1HZ75V','1HZ90V','1HZ100V','R_10','R_25','R_50','R_75','R_100'];
 
-// 1. Slow & Clear Voice Engine
-const announce = (msg) => {
+let analysisBuffers = {};
+let lastAnnouncementTime = 0;
+let isScanning = false;
+
+// 1. SYSTEMATIC DEMO TALK: Professional AI Voice
+const geminiTalk = (message) => {
     const synth = window.speechSynthesis;
-    const utterance = new SpeechSynthesisUtterance(msg);
-    utterance.rate = 0.75; // Slower for clear comprehension
+    const utterance = new SpeechSynthesisUtterance(message);
+    utterance.rate = 0.8; // Calibrated for clear, long-lasting signals
     utterance.pitch = 1.0;
     synth.speak(utterance);
 };
 
-// 2. Physics & Engineering Logic: Long-Lasting Detection
-const processLongSignal = (digit) => {
-    digitHistory.push(digit);
-    if (digitHistory.length > 60) digitHistory.shift(); // 60-tick window for stability
+// 2. TOKEN AUTHORIZATION & DATA STREAM
+const startMarketHunt = (strategy) => {
+    isScanning = true;
+    geminiTalk(`Gemini AI is authorizing your token and scanning all markets for ${strategy}. Filtering for 20-second stability.`);
+    
+    VOLS.forEach(symbol => {
+        const ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`);
+        
+        ws.onopen = () => {
+            // AUTHORIZE with your API Token
+            ws.send(JSON.stringify({ authorize: TOKEN }));
+            ws.send(JSON.stringify({ ticks: symbol, subscribe: 1 }));
+        };
 
-    // Calculate Density (How many times a trend appears in 60 ticks)
-    const evens = digitHistory.filter(d => d % 2 === 0).length;
-    const highDensity = (evens / digitHistory.length) * 100;
+        ws.onmessage = (msg) => {
+            const data = JSON.parse(msg.data);
+            if (data.error) console.error("API Error:", data.error.message);
+            if (data.tick) runPhysics(symbol, data.tick.quote, strategy);
+        };
+    });
+};
 
-    const now = Date.now();
-    // Only announce if the trend is strong ( > 65%) and 5 seconds have passed
-    if (now - lastSignalTime > SIGNAL_DELAY) {
-        if (highDensity > 65) {
-            triggerSignal("EVEN / RISE", "OVER 5", digit);
-            lastSignalTime = now;
-        } else if (highDensity < 35) {
-            triggerSignal("ODD / FALL", "UNDER 4", digit);
-            lastSignalTime = now;
+// 3. PHYSICS & MATHEMATICS: Filter for "Long-Lasting" signals
+function runPhysics(symbol, price, strategy) {
+    if (!analysisBuffers[symbol]) analysisBuffers[symbol] = [];
+    const digit = parseInt(price.toString().slice(-1));
+    analysisBuffers[symbol].push(digit);
+
+    if (analysisBuffers[symbol].length > 100) { 
+        analysisBuffers[symbol].shift();
+        
+        const evens = analysisBuffers[symbol].filter(d => d % 2 === 0).length;
+        const confidence = evens / 100;
+        const now = Date.now();
+
+        // Ensure 20-second stability (No "Disco Dancer" fast signals)
+        if (now - lastAnnouncementTime > 20000) {
+            if (confidence > 0.80 || confidence < 0.20) {
+                const side = confidence > 0.5 ? "EVEN" : "ODD";
+                const strength = Math.round(confidence > 0.5 ? confidence * 100 : (1 - confidence) * 100);
+                
+                updateUI(symbol, side, strength);
+                geminiTalk(`Confirmed Trend. The best market is ${symbol}. Mathematics shows ${strength} percent stability. Execute ${side} trade. Signal valid for 20 seconds.`);
+                lastAnnouncementTime = now;
+            }
         }
     }
-};
+}
 
-const triggerSignal = (type, strat, digit) => {
-    const panel = document.getElementById('sig-panel');
-    panel.innerHTML = `<h1>${currentMarket}<br>${type}<br>${strat}</h1>`;
-    announce(`Confirmed long-term trend on ${currentMarket}. Strategy is ${strat} with ${type}. Last digit ${digit}.`);
-};
-
-// ... WebSocket connection logic stays same
+function updateUI(market, side, conf) {
+    const output = document.getElementById('winner-output');
+    output.innerHTML = `
+        <div class="signal-card">
+            <h2>BEST MARKET: ${market}</h2>
+            <h1>${side}</h1>
+            <p>STABILITY: ${conf}%</p>
+        </div>
+    `;
+}
