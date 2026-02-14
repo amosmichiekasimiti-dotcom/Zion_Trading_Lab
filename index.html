@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zion Trading Lab | AI Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="zion-container">
+        <header>
+            <div class="logo">ZION TRADING LAB</div>
+            <div class="header-links">
+                <a href="https://wa.me/254742024175" target="_blank" class="whatsapp-btn">WHATSAPP SIGNALS</a>
+                <button id="voice-btn" onclick="toggleVoice()">VOICE: ON</button>
+            </div>
+        </header>
+
+        <main class="dashboard">
+            <aside class="sidebar">
+                <h3>MARKETS</h3>
+                <div class="market-list">
+                    <button onclick="changeMarket('1HZ10V')">10 (1s) Index</button>
+                    <button onclick="changeMarket('1HZ15V')">15 (1s) Index</button>
+                    <button onclick="changeMarket('1HZ25V')">25 (1s) Index</button>
+                    <button onclick="changeMarket('1HZ30V')">30 (1s) Index</button>
+                    <button onclick="changeMarket('1HZ50V')">50 (1s) Index</button>
+                    <button onclick="changeMarket('1HZ75V')">75 (1s) Index</button>
+                    <button onclick="changeMarket('1HZ90V')">90 (1s) Index</button>
+                    <button onclick="changeMarket('1HZ100V')">100 (1s) Index</button>
+                    <hr>
+                    <button onclick="changeMarket('R_10')">Volatility 10</button>
+                    <button onclick="changeMarket('R_25')">Volatility 25</button>
+                    <button onclick="changeMarket('R_50')">Volatility 50</button>
+                    <button onclick="changeMarket('R_75')">Volatility 75</button>
+                    <button onclick="changeMarket('R_100')">Volatility 100</button>
+                </div>
+            </aside>
+
+            <section class="main-engine">
+                <div class="credentials-card">
+                    <h4>SYSTEM STATUS</h4>
+                    <p><strong>Gemini Key:</strong> <code>AIzaSyDM7cKxbQwbwBX0ubb01Iel2WrFi8oEh2E</code></p>
+                    <p><strong>App ID:</strong> 126973</p>
+                </div>
+
+                <div class="signal-display">
+                    <h1 id="signal-text">ANALYZING...</h1>
+                    <div id="ai-status">AI Model: Gemini-1.5-Flash Active</div>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
