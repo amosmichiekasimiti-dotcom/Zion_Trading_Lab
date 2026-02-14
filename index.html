@@ -1,18 +1,34 @@
-<nav class="market-matrix">
-    <h3>1S HIGH FREQUENCY (FAST)</h3>
-    <button onclick="switchMarket('1HZ10V', 'Vol 10 (1s)')">Volatility 10 (1s)</button>
-    <button onclick="switchMarket('1HZ15V', 'Vol 15 (1s)')">Volatility 15 (1s)</button>
-    <button onclick="switchMarket('1HZ25V', 'Vol 25 (1s)')">Volatility 25 (1s)</button>
-    <button onclick="switchMarket('1HZ30V', 'Vol 30 (1s)')">Volatility 30 (1s)</button>
-    <button onclick="switchMarket('1HZ50V', 'Vol 50 (1s)')">Volatility 50 (1s)</button>
-    <button onclick="switchMarket('1HZ75V', 'Vol 75 (1s)')">Volatility 75 (1s)</button>
-    <button onclick="switchMarket('1HZ90V', 'Vol 90 (1s)')">Volatility 90 (1s)</button>
-    <button onclick="switchMarket('1HZ100V', 'Vol 100 (1s)')">Volatility 100 (1s)</button>
-    
-    <h3>STANDARD INDICES (STABLE)</h3>
-    <button onclick="switchMarket('R_10', 'Volatility 10')">Vol 10 Index</button>
-    <button onclick="switchMarket('R_25', 'Volatility 25')">Vol 25 Index</button>
-    <button onclick="switchMarket('R_50', 'Volatility 50')">Vol 50 Index</button>
-    <button onclick="switchMarket('R_75', 'Volatility 75')">Vol 75 Index</button>
-    <button onclick="switchMarket('R_100', 'Volatility 100')">Vol 100 Index</button>
-</nav>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Zion Trading Lab | Advanced AI</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-layout">
+        <div class="status-bar">
+            <span>AI: Gemini-1.5-Flash</span> | <span>TOKEN: Authorized</span>
+        </div>
+
+        <div class="strategy-grid">
+            <button class="box" onclick="startMarketHunt('RISE_FALL')">RISE & FALL</button>
+            <button class="box" onclick="startMarketHunt('EVEN_ODD')">EVEN ODD</button>
+            <button class="box" onclick="startMarketHunt('OVER_UNDER')">OVER UNDER</button>
+            <button class="box" onclick="startMarketHunt('MATCHES_DIFFERS')">MATCHES & DIFFERS</button>
+        </div>
+
+        <div id="winner-output" class="display-panel">
+            <div class="idle">READY TO SCAN ALL MARKETS...</div>
+        </div>
+
+        <div class="menu-overlay">
+            <h4>SOCIAL CHANNELS</h4>
+            <a href="https://wa.me/254742024175">WHATSAPP</a>
+            <a href="#">TIKTOK</a>
+            <a href="#">FACEBOOK</a>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
