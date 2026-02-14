@@ -1,39 +1,32 @@
-:root { --neon: #00ffad; --bg: #0a0b10; }
-body { background: var(--bg); color: white; font-family: 'Inter', sans-serif; margin: 0; }
+:root { --neon: #00ffad; --active: #ffad00; }
+body { background: #0a0b10; color: white; font-family: sans-serif; }
 
-.strategy-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-    padding: 20px;
-}
+.strategy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 15px; }
 
-.box {
+/* THE 'ATTACHED' BOX STYLE */
+.strat-box {
     background: transparent;
     border: 2px solid var(--neon);
     color: var(--neon);
-    padding: 30px;
-    font-size: 1.1rem;
+    padding: 20px;
+    border-radius: 8px;
     font-weight: bold;
-    border-radius: 12px;
     cursor: pointer;
-    transition: 0.3s;
 }
 
-.box:active { background: var(--neon); color: black; }
+.active-box {
+    border-color: var(--active);
+    color: var(--active);
+    box-shadow: 0 0 15px var(--active);
+    transform: scale(1.05);
+}
 
-.display-panel {
+.monitor-screen {
     margin: 20px;
     padding: 40px;
     border: 1px solid #333;
-    border-radius: 20px;
+    border-radius: 15px;
     text-align: center;
 }
 
-.signal-card h1 {
-    font-size: 4rem;
-    color: var(--neon);
-    text-shadow: 0 0 20px var(--neon);
-}
-
-.status-bar { padding: 10px; background: #161b22; text-align: center; font-size: 0.8rem; color: #888; }
+.signal-card h1 { font-size: 4rem; color: var(--neon); text-shadow: 0 0 20px var(--neon); }
