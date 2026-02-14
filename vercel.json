@@ -1,1 +1,32 @@
-
+{
+  "name": "zion-quantum-lab",
+  "version": 2,
+  "builds": [
+    {
+      "src": "*.html",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
+  "env": {
+    "DERIV_APP_ID": "126973",
+    "DERIV_API_TOKEN": "rbQgwOkbsfDoKw2",
+    "QUANTUM_THRESHOLD": "0.84"
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; connect-src 'self' wss://ws.derivws.com;"
+        }
+      ]
+    }
+  ]
+}
