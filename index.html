@@ -3,27 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZION QUANTUM ELITE - FIXED</title>
+    <title>ZION QUANTUM ELITE · LIVE SENSOR</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace;
         }
 
         body {
             background: #03050b;
             padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .dashboard {
-            max-width: 1400px;
-            margin: 0 auto;
+            max-width: 1600px;
+            width: 100%;
             background: #0b1020;
-            border-radius: 30px;
+            border-radius: 40px;
             padding: 25px;
             border: 2px solid #2a3a60;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
         }
 
         /* Header */
@@ -32,8 +37,8 @@
             justify-content: space-between;
             align-items: center;
             background: #0f1627;
-            padding: 15px 20px;
-            border-radius: 50px;
+            padding: 15px 25px;
+            border-radius: 60px;
             border: 1px solid #3d4f7a;
             margin-bottom: 25px;
             flex-wrap: wrap;
@@ -41,7 +46,7 @@
         }
 
         .logo h1 {
-            font-size: 1.8rem;
+            font-size: 2rem;
             background: linear-gradient(145deg, #7b68ee, #4ac7ff);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -56,11 +61,12 @@
             font-size: 0.8rem;
             font-weight: 800;
             margin-left: 10px;
+            -webkit-text-fill-color: #0b1020;
         }
 
         .stats {
             display: flex;
-            gap: 15px;
+            gap: 20px;
         }
 
         .stat {
@@ -69,19 +75,26 @@
             border-radius: 40px;
             color: #b9ceff;
             border: 1px solid #3d4f7a;
+            font-weight: 600;
+        }
+
+        .stat i {
+            color: #4ac7ff;
+            margin-right: 8px;
         }
 
         .app-id {
             background: #2a3650;
             color: #a3ffb0;
-            padding: 8px 16px;
-            border-radius: 30px;
+            padding: 8px 20px;
+            border-radius: 40px;
             border: 1px solid #4f6390;
+            font-weight: 600;
         }
 
         .menu-btn {
             background: #2f3e64;
-            padding: 10px 20px;
+            padding: 10px 25px;
             border-radius: 40px;
             display: flex;
             align-items: center;
@@ -90,19 +103,24 @@
             border: 2px solid #f1d271;
             color: white;
             font-weight: 600;
+            transition: all 0.1s ease;
         }
 
-        /* Market Sections - THESE WILL DEFINITELY SHOW */
+        .menu-btn:active {
+            transform: translateY(2px);
+        }
+
+        /* Market Sections */
         .market-sections {
             display: flex;
             flex-direction: column;
-            gap: 25px;
+            gap: 30px;
             margin: 25px 0;
         }
 
         .market-section {
             background: #0f1422;
-            border-radius: 25px;
+            border-radius: 30px;
             padding: 20px;
             border: 2px solid #2a3a60;
         }
@@ -112,33 +130,35 @@
             align-items: center;
             gap: 20px;
             background: #1a2340;
-            padding: 15px 20px;
-            border-radius: 40px;
+            padding: 15px 25px;
+            border-radius: 50px;
             border: 2px solid #4ac7ff;
             margin-bottom: 20px;
         }
 
         .section-icon {
-            font-size: 2rem;
+            font-size: 2.2rem;
             background: #0b1020;
-            width: 50px;
-            height: 50px;
+            width: 55px;
+            height: 55px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 25px;
+            border-radius: 30px;
             border: 2px solid #ffd966;
         }
 
         .section-title h2 {
             color: #ffd966;
-            font-size: 1.8rem;
+            font-size: 2rem;
         }
 
         .section-subtitle {
             color: #95a5a6;
             font-size: 0.9rem;
             margin-top: 5px;
+            display: flex;
+            gap: 15px;
         }
 
         /* Sensor Grid */
@@ -148,13 +168,26 @@
             gap: 20px;
         }
 
-        /* Sensor Card */
+        /* Sensor Cards */
         .sensor-card {
             background: #1a2340;
-            border-radius: 20px;
+            border-radius: 25px;
             padding: 20px;
             border: 2px solid #2a3a60;
-            border-left: 6px solid;
+            border-left: 8px solid;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .sensor-card.manipulation-alert {
+            border: 4px solid #e74c3c;
+            animation: alert-pulse 1s infinite;
+        }
+
+        @keyframes alert-pulse {
+            0% { box-shadow: 0 0 10px #e74c3c; }
+            50% { box-shadow: 0 0 30px #e74c3c; }
+            100% { box-shadow: 0 0 10px #e74c3c; }
         }
 
         .card-even { border-left-color: #9b59b6; }
@@ -164,11 +197,11 @@
 
         .sensor-badge {
             display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
+            padding: 5px 15px;
+            border-radius: 30px;
+            font-size: 0.85rem;
             font-weight: 700;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             border: 2px solid;
         }
 
@@ -182,6 +215,13 @@
             background: #8e44ad;
             border-color: #c39bd3;
             color: white;
+            animation: glow 2s infinite;
+        }
+
+        @keyframes glow {
+            0% { box-shadow: 0 0 5px #8e44ad; }
+            50% { box-shadow: 0 0 15px #8e44ad; }
+            100% { box-shadow: 0 0 5px #8e44ad; }
         }
 
         .sensor-name {
@@ -194,14 +234,14 @@
         .sensor-type {
             display: flex;
             justify-content: center;
-            gap: 20px;
-            font-size: 1.5rem;
+            gap: 25px;
+            font-size: 1.6rem;
             font-weight: 800;
             margin: 15px 0;
         }
 
         .price-box {
-            font-family: monospace;
+            font-family: 'Courier New', monospace;
             font-size: 1.8rem;
             color: #4ac7ff;
             text-align: center;
@@ -209,8 +249,32 @@
             padding: 15px;
             border-radius: 15px;
             margin: 15px 0;
+            letter-spacing: 2px;
         }
 
+        .last-digit {
+            display: inline-block;
+            background: #2a3a60;
+            padding: 2px 8px;
+            border-radius: 10px;
+            color: #ffd966;
+            font-size: 1rem;
+            margin-left: 10px;
+        }
+
+        /* Manipulation Warning */
+        .manipulation-warning {
+            background: #e74c3c22;
+            border: 1px solid #e74c3c;
+            color: #e74c3c;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin: 5px 0;
+            display: inline-block;
+        }
+
+        /* Signal Box */
         .signal-box {
             background: #0f1627;
             border-radius: 15px;
@@ -222,19 +286,28 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
 
         .signal-type {
-            font-size: 1.2rem;
-            font-weight: 700;
+            font-size: 1.3rem;
+            font-weight: 800;
+        }
+
+        .signal-type .digit-hint {
+            font-size: 0.9rem;
+            background: #1a2340;
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin-left: 8px;
+            color: #ffd966;
         }
 
         .signal-conf {
-            font-size: 1.4rem;
-            font-weight: 800;
-            padding: 5px 15px;
-            border-radius: 30px;
+            font-size: 1.5rem;
+            font-weight: 900;
+            padding: 5px 18px;
+            border-radius: 40px;
             border: 2px solid;
         }
 
@@ -246,44 +319,55 @@
             color: #b9ceff;
             font-size: 0.9rem;
             background: #0b1020;
-            padding: 8px;
-            border-radius: 8px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            margin-top: 8px;
+            border-left: 3px solid #4ac7ff;
         }
 
+        /* Timer */
         .timer {
             display: flex;
             align-items: center;
             gap: 10px;
             background: #0b1020;
             padding: 8px 15px;
-            border-radius: 30px;
+            border-radius: 40px;
             margin: 15px 0;
         }
 
         .timer-text {
             color: #ffd966;
             font-weight: 700;
+            font-size: 1.1rem;
             min-width: 45px;
+            font-family: monospace;
         }
 
         .timer-bar {
-            height: 6px;
+            height: 8px;
             background: #1a2340;
-            border-radius: 3px;
+            border-radius: 4px;
             flex: 1;
+            overflow: hidden;
         }
 
         .timer-fill {
             height: 100%;
-            width: 75%;
             background: linear-gradient(90deg, #4ac7ff, #9b59b6);
-            border-radius: 3px;
+            border-radius: 4px;
+            transition: width 1s linear;
         }
 
+        .timer-fill.warning {
+            background: linear-gradient(90deg, #e74c3c, #f39c12);
+        }
+
+        /* Footer */
         .footer {
             display: flex;
             justify-content: space-between;
-            color: #95a5a6;
+            align-items: center;
             margin-top: 15px;
             padding-top: 15px;
             border-top: 1px solid #2a3a60;
@@ -292,39 +376,58 @@
         .vol-value {
             background: #0b1020;
             padding: 5px 15px;
-            border-radius: 20px;
+            border-radius: 30px;
+            color: #95a5a6;
+            font-size: 0.9rem;
         }
 
-        /* Social */
+        .vol-value i {
+            color: #f39c12;
+            margin-right: 5px;
+        }
+
+        .signal-count {
+            color: #2ecc71;
+            font-weight: 600;
+        }
+
+        /* Social Menu */
         .social-menu {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 10px;
             background: #1f2a44;
-            border-radius: 30px;
+            border-radius: 40px;
             padding: 15px;
             margin: 20px 0;
-        }
-
-        .social-item {
-            background: #2e3b5a;
-            color: white;
-            padding: 12px;
-            border-radius: 20px;
-            text-align: center;
-            cursor: pointer;
-            border: 1px solid #7f92c0;
+            border: 2px solid #50618d;
         }
 
         .social-menu.hidden {
             display: none;
         }
 
-        /* Voice */
+        .social-item {
+            background: #2e3b5a;
+            color: white;
+            padding: 12px;
+            border-radius: 30px;
+            text-align: center;
+            cursor: pointer;
+            border: 1px solid #7f92c0;
+            font-weight: 600;
+            transition: all 0.1s ease;
+        }
+
+        .social-item:active {
+            transform: translateY(2px);
+        }
+
+        /* Voice Bar */
         .voice-bar {
             background: #0f1627;
-            border-radius: 30px;
-            padding: 15px 20px;
+            border-radius: 60px;
+            padding: 15px 25px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -335,28 +438,35 @@
         .voice-label {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             color: white;
             font-size: 1.2rem;
             font-weight: 600;
         }
 
+        .voice-label i {
+            font-size: 1.8rem;
+            color: #8efcda;
+        }
+
         .mute-btn {
             background: #1a2340;
-            padding: 8px 25px;
-            border-radius: 30px;
+            padding: 8px 30px;
+            border-radius: 40px;
             display: flex;
             align-items: center;
             gap: 10px;
             cursor: pointer;
             border: 2px solid #ffd966;
+            color: white;
+            font-weight: 600;
         }
 
-        /* Status */
+        /* Status Bar */
         .status-bar {
             background: #0f1627;
-            border-radius: 30px;
-            padding: 15px 20px;
+            border-radius: 60px;
+            padding: 15px 25px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -369,12 +479,17 @@
         .dno {
             background: #e74c3c;
             color: white;
-            padding: 8px 25px;
-            border-radius: 30px;
-            font-weight: 800;
+            padding: 8px 30px;
+            border-radius: 40px;
+            font-weight: 900;
             font-size: 1.3rem;
             border: 2px solid #ffb2b2;
             cursor: pointer;
+            transition: all 0.1s ease;
+        }
+
+        .dno:active {
+            transform: translateY(2px);
         }
 
         .best-signal {
@@ -384,34 +499,52 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            flex: 1;
         }
 
-        .dot {
+        .live-dot {
             width: 10px;
             height: 10px;
             background: #2ecc71;
             border-radius: 50%;
-            animation: pulse 1s infinite;
+            animation: live-pulse 1s infinite;
         }
 
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
+        @keyframes live-pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
         }
 
+        .accuracy-badge {
+            background: #0b1020;
+            color: #ffd966;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-weight: 700;
+            border: 1px solid #f1d271;
+        }
+
+        /* API Status */
         .api-status {
             background: #0b1020;
-            padding: 12px;
-            border-radius: 30px;
+            padding: 12px 20px;
+            border-radius: 40px;
             color: #4ac7ff;
             text-align: center;
             font-family: monospace;
+            border: 1px solid #2a3a60;
         }
 
+        /* Responsive */
         @media (max-width: 768px) {
             .sensor-grid {
                 grid-template-columns: 1fr;
+            }
+            
+            .header {
+                flex-direction: column;
+                text-align: center;
             }
         }
     </style>
@@ -424,284 +557,35 @@
                 <h1>⚡ ZION QUANTUM <span class="badge">ELITE</span></h1>
             </div>
             <div class="stats">
-                <div class="stat"><span id="signalCount">3</span> signals</div>
-                <div class="stat"><span id="accuracy">87.5</span>%</div>
+                <div class="stat"><i class="fas fa-bolt"></i><span id="signalCount">6</span> signals</div>
+                <div class="stat"><i class="fas fa-crosshairs"></i><span id="accuracy">87.8</span>%</div>
             </div>
-            <div class="app-id">App ID: 126973</div>
+            <div class="app-id"><i class="fas fa-id-card"></i> App ID: 126973</div>
             <div class="menu-btn" onclick="toggleMenu()">
                 <span>MENU</span>
-                <span>☰</span>
+                <i class="fas fa-bars"></i>
             </div>
         </div>
 
-        <!-- MARKET SECTIONS - HARDCODED TO GUARANTEE DISPLAY -->
-        <div class="market-sections">
-            
-            <!-- EVEN/ODD Section -->
-            <div class="market-section">
-                <div class="section-header">
-                    <div class="section-icon">🎲</div>
-                    <div class="section-title">
-                        <h2 style="color: #9b59b6">EVEN / ODD</h2>
-                        <div class="section-subtitle">6 sensors active • 25s signals</div>
-                    </div>
-                </div>
-                <div class="sensor-grid">
-                    <!-- Volatility 10 Standard -->
-                    <div class="sensor-card card-even">
-                        <span class="sensor-badge badge-standard">📊 STANDARD</span>
-                        <div class="sensor-name">Volatility 10</div>
-                        <div class="sensor-type">
-                            <span style="color: #9b59b6">EVEN</span>
-                            <span style="color: #8e44ad">ODD</span>
-                        </div>
-                        <div class="price-box">5,234.56789</div>
-                        <div class="signal-box">
-                            <div class="signal-row">
-                                <span class="signal-type">ODD (REVERSAL)</span>
-                                <span class="signal-conf conf-high">92%</span>
-                            </div>
-                            <div class="signal-reason">Even streak: 8/10, reversal likely</div>
-                        </div>
-                        <div class="timer">
-                            <span class="timer-text">18s</span>
-                            <div class="timer-bar"><div class="timer-fill" style="width: 60%"></div></div>
-                        </div>
-                        <div class="footer">
-                            <span class="vol-value">⚡ 10%</span>
-                            <span>12 signals</span>
-                        </div>
-                    </div>
-
-                    <!-- Volatility 10 1s -->
-                    <div class="sensor-card card-even">
-                        <span class="sensor-badge badge-1s">⚡ 1 SECOND</span>
-                        <div class="sensor-name">Volatility 10 (1s)</div>
-                        <div class="sensor-type">
-                            <span style="color: #9b59b6">EVEN</span>
-                            <span style="color: #8e44ad">ODD</span>
-                        </div>
-                        <div class="price-box">5,189.12345</div>
-                        <div class="signal-box">
-                            <div class="signal-row">
-                                <span class="signal-type">EVEN</span>
-                                <span class="signal-conf conf-medium">76%</span>
-                            </div>
-                            <div class="signal-reason">Pattern detected: 3 repeats</div>
-                        </div>
-                        <div class="timer">
-                            <span class="timer-text">12s</span>
-                            <div class="timer-bar"><div class="timer-fill" style="width: 40%"></div></div>
-                        </div>
-                        <div class="footer">
-                            <span class="vol-value">⚡ 10%</span>
-                            <span>8 signals</span>
-                        </div>
-                    </div>
-
-                    <!-- Volatility 15 1s -->
-                    <div class="sensor-card card-even">
-                        <span class="sensor-badge badge-1s">⚡ 1 SECOND</span>
-                        <div class="sensor-name">Volatility 15 (1s)</div>
-                        <div class="sensor-type">
-                            <span style="color: #9b59b6">EVEN</span>
-                            <span style="color: #8e44ad">ODD</span>
-                        </div>
-                        <div class="price-box">3,456.78901</div>
-                        <div class="signal-box">
-                            <div class="signal-row">
-                                <span class="signal-type">ODD</span>
-                                <span class="signal-conf conf-low">58%</span>
-                            </div>
-                            <div class="signal-reason">High entropy, low certainty</div>
-                        </div>
-                        <div class="footer">
-                            <span class="vol-value">⚡ 15%</span>
-                            <span>3 signals</span>
-                        </div>
-                    </div>
-
-                    <!-- Volatility 25 Standard -->
-                    <div class="sensor-card card-even">
-                        <span class="sensor-badge badge-standard">📊 STANDARD</span>
-                        <div class="sensor-name">Volatility 25</div>
-                        <div class="sensor-type">
-                            <span style="color: #9b59b6">EVEN</span>
-                            <span style="color: #8e44ad">ODD</span>
-                        </div>
-                        <div class="price-box">2,345.67890</div>
-                        <div class="signal-box">
-                            <div class="signal-row">
-                                <span class="signal-type">EVEN</span>
-                                <span class="signal-conf conf-medium">71%</span>
-                            </div>
-                            <div class="signal-reason">Normal distribution</div>
-                        </div>
-                        <div class="footer">
-                            <span class="vol-value">⚡ 25%</span>
-                            <span>5 signals</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- RISE/FALL Section -->
-            <div class="market-section">
-                <div class="section-header">
-                    <div class="section-icon">📈</div>
-                    <div class="section-title">
-                        <h2 style="color: #3498db">RISE / FALL</h2>
-                        <div class="section-subtitle">7 sensors active • 30s signals</div>
-                    </div>
-                </div>
-                <div class="sensor-grid">
-                    <!-- Volatility 50 Standard -->
-                    <div class="sensor-card card-rise">
-                        <span class="sensor-badge badge-standard">📊 STANDARD</span>
-                        <div class="sensor-name">Volatility 50</div>
-                        <div class="sensor-type">
-                            <span style="color: #3498db">RISE</span>
-                            <span style="color: #2980b9">FALL</span>
-                        </div>
-                        <div class="price-box">12,345.67890</div>
-                        <div class="signal-box">
-                            <div class="signal-row">
-                                <span class="signal-type">RISE</span>
-                                <span class="signal-conf conf-high">88%</span>
-                            </div>
-                            <div class="signal-reason">Strong upward momentum: 0.85</div>
-                        </div>
-                        <div class="timer">
-                            <span class="timer-text">22s</span>
-                            <div class="timer-bar"><div class="timer-fill" style="width: 73%"></div></div>
-                        </div>
-                        <div class="footer">
-                            <span class="vol-value">⚡ 50%</span>
-                            <span>15 signals</span>
-                        </div>
-                    </div>
-
-                    <!-- Volatility 50 1s -->
-                    <div class="sensor-card card-rise">
-                        <span class="sensor-badge badge-1s">⚡ 1 SECOND</span>
-                        <div class="sensor-name">Volatility 50 (1s)</div>
-                        <div class="sensor-type">
-                            <span style="color: #3498db">RISE</span>
-                            <span style="color: #2980b9">FALL</span>
-                        </div>
-                        <div class="price-box">12,356.78901</div>
-                        <div class="signal-box">
-                            <div class="signal-row">
-                                <span class="signal-type">FALL (REVERSAL)</span>
-                                <span class="signal-conf conf-high">84%</span>
-                            </div>
-                            <div class="signal-reason">Overbought (RSI: 76)</div>
-                        </div>
-                        <div class="timer">
-                            <span class="timer-text">15s</span>
-                            <div class="timer-bar"><div class="timer-fill" style="width: 50%"></div></div>
-                        </div>
-                        <div class="footer">
-                            <span class="vol-value">⚡ 50%</span>
-                            <span>9 signals</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- OVER/UNDER Section -->
-            <div class="market-section">
-                <div class="section-header">
-                    <div class="section-icon">⚖️</div>
-                    <div class="section-title">
-                        <h2 style="color: #e67e22">OVER / UNDER</h2>
-                        <div class="section-subtitle">7 sensors active • 25s signals</div>
-                    </div>
-                </div>
-                <div class="sensor-grid">
-                    <!-- Volatility 75 Standard -->
-                    <div class="sensor-card card-over">
-                        <span class="sensor-badge badge-standard">📊 STANDARD</span>
-                        <div class="sensor-name">Volatility 75</div>
-                        <div class="sensor-type">
-                            <span style="color: #e67e22">OVER</span>
-                            <span style="color: #d35400">UNDER</span>
-                        </div>
-                        <div class="price-box">23,456.78901</div>
-                        <div class="signal-box">
-                            <div class="signal-row">
-                                <span class="signal-type">UNDER</span>
-                                <span class="signal-conf conf-high">91%</span>
-                            </div>
-                            <div class="signal-reason">Near resistance (92% of range)</div>
-                        </div>
-                        <div class="timer">
-                            <span class="timer-text">20s</span>
-                            <div class="timer-bar"><div class="timer-fill" style="width: 80%"></div></div>
-                        </div>
-                        <div class="footer">
-                            <span class="vol-value">⚡ 75%</span>
-                            <span>18 signals</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- MATCHES/DIFFERS Section -->
-            <div class="market-section">
-                <div class="section-header">
-                    <div class="section-icon">🔄</div>
-                    <div class="section-title">
-                        <h2 style="color: #e74c3c">MATCHES / DIFFERS</h2>
-                        <div class="section-subtitle">5 sensors active • 20s signals</div>
-                    </div>
-                </div>
-                <div class="sensor-grid">
-                    <!-- Volatility 100 1s -->
-                    <div class="sensor-card card-match">
-                        <span class="sensor-badge badge-1s">⚡ 1 SECOND</span>
-                        <div class="sensor-name">Volatility 100 (1s)</div>
-                        <div class="sensor-type">
-                            <span style="color: #e74c3c">MATCH</span>
-                            <span style="color: #c0392b">DIFF</span>
-                        </div>
-                        <div class="price-box">45,678.12345</div>
-                        <div class="signal-box">
-                            <div class="signal-row">
-                                <span class="signal-type">MATCHES</span>
-                                <span class="signal-conf conf-high">87%</span>
-                            </div>
-                            <div class="signal-reason">Strong match pattern (6/10)</div>
-                        </div>
-                        <div class="timer">
-                            <span class="timer-text">14s</span>
-                            <div class="timer-bar"><div class="timer-fill" style="width: 70%"></div></div>
-                        </div>
-                        <div class="footer">
-                            <span class="vol-value">⚡ 100%</span>
-                            <span>21 signals</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <!-- Market Sections -->
+        <div class="market-sections" id="marketSections"></div>
 
         <!-- Social Menu -->
         <div class="social-menu hidden" id="socialMenu">
-            <div class="social-item" onclick="openSocial('tiktok')">📱 TIKTOK</div>
-            <div class="social-item" onclick="openSocial('whatsapp')">💬 WHATSAPP</div>
-            <div class="social-item" onclick="openSocial('facebook')">📘 FACEBOOK</div>
-            <div class="social-item" onclick="openSocial('instagram')">📷 INSTAGRAM</div>
+            <div class="social-item" onclick="openSocial('tiktok')"><i class="fab fa-tiktok"></i> TIKTOK</div>
+            <div class="social-item" onclick="openSocial('whatsapp')"><i class="fab fa-whatsapp"></i> WHATSAPP</div>
+            <div class="social-item" onclick="openSocial('facebook')"><i class="fab fa-facebook-f"></i> FACEBOOK</div>
+            <div class="social-item" onclick="openSocial('instagram')"><i class="fab fa-instagram"></i> INSTAGRAM</div>
         </div>
 
         <!-- Voice Control -->
         <div class="voice-bar">
             <div class="voice-label">
-                <span>🎤</span>
+                <i class="fas fa-microphone-alt"></i>
                 <span>AI QUANTUM VOICE</span>
             </div>
             <div class="mute-btn" onclick="toggleMute()" id="muteBtn">
-                <span id="muteIcon">🔊</span>
+                <i class="fas fa-volume-up" id="muteIcon"></i>
                 <span id="muteText">mute</span>
             </div>
         </div>
@@ -710,7 +594,7 @@
         <div class="status-bar">
             <div class="dno" onclick="dnoClick()">D NO</div>
             <div class="best-signal">
-                <span class="dot"></span>
+                <span class="live-dot"></span>
                 <span id="bestSignal">👑 ELITE: RISE/FALL on Volatility 50 (88%)</span>
             </div>
             <div class="accuracy-badge" id="overallAcc">⚡ 87.5%</div>
@@ -718,58 +602,351 @@
 
         <!-- API Status -->
         <div class="api-status" id="apiStatus">
-            <span>🔵</span> QUANTUM ENGINE: ONLINE · LIVE DATA STREAM
+            <i class="fas fa-circle" style="color: #2ecc71"></i> QUANTUM ENGINE: ONLINE · LIVE DATA STREAM
         </div>
     </div>
 
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
     <script>
-        // Simple JavaScript for interactivity
+        // State management
         let isMuted = false;
+        let sensors = [];
+        let activeSignals = new Map();
         
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeSensors();
+            startLiveUpdates();
+            startCountdowns();
+            detectManipulation();
+        });
+
+        // ============================================
+        // SENSOR INITIALIZATION
+        // ============================================
+        function initializeSensors() {
+            const container = document.getElementById('marketSections');
+            if (!container) return;
+
+            // EVEN/ODD Sensors
+            const evenOddSensors = [
+                { name: 'Volatility 10', type: 'standard', vol: 10, price: 5235.72813, signal: 'ODD (REVERSAL)', conf: 92, reason: 'Even streak: 8/10, reversal likely', timer: 18, color: '#9b59b6' },
+                { name: 'Volatility 10 (1s)', type: '1s', vol: 10, price: 5182.14897, signal: 'EVEN', conf: 76, reason: 'Pattern detected: 3 repeats', timer: 12, color: '#9b59b6' },
+                { name: 'Volatility 15 (1s)', type: '1s', vol: 15, price: 3456.78901, signal: 'ODD', conf: 58, reason: 'High entropy, low certainty', timer: 8, color: '#9b59b6' },
+                { name: 'Volatility 25', type: 'standard', vol: 25, price: 2345.67890, signal: 'EVEN', conf: 71, reason: 'Normal distribution', timer: 22, color: '#9b59b6' }
+            ];
+
+            // RISE/FALL Sensors
+            const riseFallSensors = [
+                { name: 'Volatility 50', type: 'standard', vol: 50, price: 12345.67890, signal: 'RISE', conf: 88, reason: 'Strong upward momentum: 0.85', timer: 22, color: '#3498db' },
+                { name: 'Volatility 50 (1s)', type: '1s', vol: 50, price: 12345.10626, signal: 'FALL (REVERSAL)', conf: 84, reason: 'Overbought (RSI: 76)', timer: 15, color: '#3498db' },
+                { name: 'Volatility 75', type: 'standard', vol: 75, price: 23456.78901, signal: 'FALL', conf: 79, reason: 'Weak momentum', timer: 10, color: '#3498db' },
+                { name: 'Volatility 75 (1s)', type: '1s', vol: 75, price: 23467.63316, signal: 'RISE', conf: 73, reason: 'Oversold (RSI: 28)', timer: 5, color: '#3498db' }
+            ];
+
+            // OVER/UNDER Sensors
+            const overUnderSensors = [
+                { name: 'Volatility 75', type: 'standard', vol: 75, price: 23467.63316, signal: 'UNDER', conf: 91, reason: 'Near resistance (92% of range)', timer: 20, color: '#e67e22' },
+                { name: 'Volatility 50', type: 'standard', vol: 50, price: 12356.78901, signal: 'OVER', conf: 82, reason: 'Z-score: 1.8 above mean', timer: 18, color: '#e67e22' },
+                { name: 'Volatility 30 (1s)', type: '1s', vol: 30, price: 6789.12345, signal: 'UNDER', conf: 77, reason: 'Near resistance (88% of range)', timer: 12, color: '#e67e22' }
+            ];
+
+            // MATCHES/DIFFERS Sensors
+            const matchesDiffersSensors = [
+                { name: 'Volatility 100 (1s)', type: '1s', vol: 100, price: 45684.88852, signal: 'MATCHES', conf: 87, reason: 'Strong match pattern (6/10)', timer: 14, color: '#e74c3c', lastDigit: 2, matchDigit: 2 },
+                { name: 'Volatility 100', type: 'standard', vol: 100, price: 45789.12345, signal: 'DIFFERS', conf: 82, reason: 'Pattern: 789 → 123 (differs)', timer: 10, color: '#e74c3c', lastDigit: 3, matchDigit: 9 },
+                { name: 'Volatility 90 (1s)', type: '1s', vol: 90, price: 34567.89123, signal: 'MATCHES', conf: 79, reason: 'Pattern: 891 → 891 (match)', timer: 8, color: '#e74c3c', lastDigit: 1, matchDigit: 1 }
+            ];
+
+            // Build sections
+            container.innerHTML = `
+                ${buildSection('EVEN / ODD', '🎲', evenOddSensors, 'card-even')}
+                ${buildSection('RISE / FALL', '📈', riseFallSensors, 'card-rise')}
+                ${buildSection('OVER / UNDER', '⚖️', overUnderSensors, 'card-over')}
+                ${buildSection('MATCHES / DIFFERS', '🔄', matchesDiffersSensors, 'card-match')}
+            `;
+
+            // Store sensor data
+            sensors = [...evenOddSensors, ...riseFallSensors, ...overUnderSensors, ...matchesDiffersSensors];
+        }
+
+        function buildSection(title, icon, sensors, cardClass) {
+            const [left, right] = title.split('/');
+            
+            return `
+                <div class="market-section">
+                    <div class="section-header">
+                        <div class="section-icon">${icon}</div>
+                        <div class="section-title">
+                            <h2>${title}</h2>
+                            <div class="section-subtitle">
+                                <span>${sensors.length} sensors active • 20-30s signals</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="sensor-grid">
+                        ${sensors.map(s => buildSensorCard(s, cardClass, left, right)).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function buildSensorCard(sensor, cardClass, left, right) {
+            const confClass = sensor.conf >= 85 ? 'high' : sensor.conf >= 70 ? 'medium' : 'low';
+            const badgeClass = sensor.type === 'standard' ? 'badge-standard' : 'badge-1s';
+            const badgeText = sensor.type === 'standard' ? '📊 STANDARD' : '⚡ 1 SECOND';
+            
+            // Calculate last digit for price
+            const priceStr = sensor.price.toFixed(5);
+            const lastDigit = priceStr.slice(-1);
+            
+            // Manipulation detection (random for demo)
+            const manipulation = Math.random() > 0.7;
+            
+            return `
+                <div class="sensor-card ${cardClass} ${manipulation ? 'manipulation-alert' : ''}" id="card-${sensor.name.replace(/\s/g, '')}">
+                    ${manipulation ? '<div class="manipulation-warning"><i class="fas fa-exclamation-triangle"></i> MANIPULATION DETECTED</div>' : ''}
+                    <span class="sensor-badge ${badgeClass}">${badgeText}</span>
+                    <div class="sensor-name">${sensor.name}</div>
+                    <div class="sensor-type">
+                        <span style="color: ${sensor.color}">${left.trim()}</span>
+                        <span style="color: ${sensor.color}">${right ? right.trim() : ''}</span>
+                    </div>
+                    <div class="price-box" id="price-${sensor.name.replace(/\s/g, '')}">
+                        ${formatPrice(sensor.price)}
+                        <span class="last-digit" id="digit-${sensor.name.replace(/\s/g, '')}">${lastDigit}</span>
+                    </div>
+                    <div class="signal-box">
+                        <div class="signal-row">
+                            <span class="signal-type">
+                                ${sensor.signal}
+                                ${sensor.lastDigit ? `<span class="digit-hint">Digit: ${sensor.lastDigit} → ${sensor.matchDigit}</span>` : ''}
+                            </span>
+                            <span class="signal-conf conf-${confClass}">${sensor.conf}%</span>
+                        </div>
+                        <div class="signal-reason" id="reason-${sensor.name.replace(/\s/g, '')}">
+                            <i class="fas fa-microchip"></i> ${sensor.reason}
+                        </div>
+                    </div>
+                    <div class="timer" id="timer-${sensor.name.replace(/\s/g, '')}">
+                        <span class="timer-text" id="time-${sensor.name.replace(/\s/g, '')}">${sensor.timer}s</span>
+                        <div class="timer-bar">
+                            <div class="timer-fill ${sensor.timer < 5 ? 'warning' : ''}" 
+                                 id="fill-${sensor.name.replace(/\s/g, '')}" 
+                                 style="width: ${(sensor.timer / 30) * 100}%">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="footer">
+                        <span class="vol-value"><i class="fas fa-bolt"></i> ${sensor.vol}%</span>
+                        <span class="signal-count" id="count-${sensor.name.replace(/\s/g, '')}">
+                            ${Math.floor(Math.random() * 20 + 5)} signals
+                        </span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function formatPrice(price) {
+            return price.toLocaleString('en-US', {
+                minimumFractionDigits: 5,
+                maximumFractionDigits: 5
+            });
+        }
+
+        // ============================================
+        // LIVE UPDATES
+        // ============================================
+        function startLiveUpdates() {
+            setInterval(() => {
+                sensors.forEach(sensor => {
+                    const id = sensor.name.replace(/\s/g, '');
+                    const priceEl = document.getElementById(`price-${id}`);
+                    const digitEl = document.getElementById(`digit-${id}`);
+                    const reasonEl = document.getElementById(`reason-${id}`);
+                    
+                    if (priceEl && digitEl) {
+                        // Update price with small random change
+                        const change = (Math.random() - 0.5) * 10;
+                        sensor.price += change;
+                        const newPrice = formatPrice(sensor.price);
+                        const newDigit = sensor.price.toFixed(5).slice(-1);
+                        
+                        priceEl.innerHTML = `${newPrice} <span class="last-digit">${newDigit}</span>`;
+                        
+                        // Update match/differ hint
+                        if (sensor.lastDigit !== undefined) {
+                            const match = parseInt(newDigit) === sensor.matchDigit;
+                            const signalEl = priceEl.parentElement.querySelector('.signal-type');
+                            if (signalEl) {
+                                const hint = signalEl.querySelector('.digit-hint');
+                                if (hint) {
+                                    hint.innerHTML = `Digit: ${newDigit} → ${sensor.matchDigit} (${match ? 'MATCH' : 'DIFF'})`;
+                                }
+                            }
+                        }
+                        
+                        // Update reason
+                        if (reasonEl) {
+                            const manipulations = [
+                                'Spike detected: +2.3σ',
+                                'Unusual volume: 3.5x normal',
+                                'Pattern break detected',
+                                'Algorithm reset suspected',
+                                'Liquidity grab in progress'
+                            ];
+                            
+                            if (Math.random() > 0.8) {
+                                reasonEl.innerHTML = `<i class="fas fa-exclamation-triangle" style="color: #e74c3c"></i> ⚠️ ${manipulations[Math.floor(Math.random() * manipulations.length)]}`;
+                                
+                                // Add manipulation class to card
+                                const card = document.getElementById(`card-${id}`);
+                                if (card && !card.classList.contains('manipulation-alert')) {
+                                    card.classList.add('manipulation-alert');
+                                    setTimeout(() => card.classList.remove('manipulation-alert'), 5000);
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                // Update overall stats
+                document.getElementById('signalCount').innerText = Math.floor(Math.random() * 4 + 4);
+                document.getElementById('accuracy').innerText = (85 + Math.random() * 10).toFixed(1);
+                
+            }, 2000);
+        }
+
+        // ============================================
+        // COUNTDOWN TIMERS
+        // ============================================
+        function startCountdowns() {
+            setInterval(() => {
+                sensors.forEach(sensor => {
+                    const id = sensor.name.replace(/\s/g, '');
+                    const timerEl = document.getElementById(`time-${id}`);
+                    const fillEl = document.getElementById(`fill-${id}`);
+                    
+                    if (timerEl && fillEl) {
+                        // Decrease timer
+                        sensor.timer -= 1;
+                        if (sensor.timer <= 0) {
+                            sensor.timer = 20 + Math.floor(Math.random() * 10);
+                            sensor.conf = 70 + Math.floor(Math.random() * 25);
+                            
+                            // Update signal type
+                            const signalEl = timerEl.parentElement.parentElement.querySelector('.signal-type');
+                            if (signalEl) {
+                                const types = ['RISE', 'FALL', 'EVEN', 'ODD', 'OVER', 'UNDER', 'MATCHES', 'DIFFERS'];
+                                const newType = types[Math.floor(Math.random() * types.length)];
+                                signalEl.innerHTML = newType;
+                                
+                                if (sensor.lastDigit !== undefined) {
+                                    sensor.matchDigit = Math.floor(Math.random() * 10);
+                                    signalEl.innerHTML += ` <span class="digit-hint">Digit: ${sensor.lastDigit} → ${sensor.matchDigit}</span>`;
+                                }
+                            }
+                        }
+                        
+                        timerEl.innerText = sensor.timer + 's';
+                        fillEl.style.width = (sensor.timer / 30) * 100 + '%';
+                        
+                        if (sensor.timer < 5) {
+                            fillEl.classList.add('warning');
+                        } else {
+                            fillEl.classList.remove('warning');
+                        }
+                    }
+                });
+            }, 1000);
+        }
+
+        // ============================================
+        // MANIPULATION DETECTION
+        // ============================================
+        function detectManipulation() {
+            setInterval(() => {
+                sensors.forEach(sensor => {
+                    if (Math.random() > 0.85) {
+                        const id = sensor.name.replace(/\s/g, '');
+                        const card = document.getElementById(`card-${id}`);
+                        const reasonEl = document.getElementById(`reason-${id}`);
+                        
+                        if (card && reasonEl) {
+                            card.classList.add('manipulation-alert');
+                            
+                            const manipulations = [
+                                '🚨 SPIKE DETECTED: +3.2σ',
+                                '🚨 UNUSUAL VOLUME: 5x NORMAL',
+                                '🚨 PATTERN MANIPULATION',
+                                '🚨 ALGORITHM RESET',
+                                '🚨 LIQUIDITY GRAB',
+                                '🚨 STOP HUNT IN PROGRESS'
+                            ];
+                            
+                            reasonEl.innerHTML = `<i class="fas fa-exclamation-triangle" style="color: #e74c3c"></i> ${manipulations[Math.floor(Math.random() * manipulations.length)]}`;
+                            
+                            setTimeout(() => {
+                                card.classList.remove('manipulation-alert');
+                            }, 8000);
+                        }
+                    }
+                });
+            }, 10000);
+        }
+
+        // ============================================
+        // UI FUNCTIONS
+        // ============================================
         function toggleMenu() {
             document.getElementById('socialMenu').classList.toggle('hidden');
         }
-        
+
         function toggleMute() {
             isMuted = !isMuted;
             const icon = document.getElementById('muteIcon');
             const text = document.getElementById('muteText');
             
             if (isMuted) {
-                icon.innerText = '🔇';
+                icon.className = 'fas fa-volume-off';
                 text.innerText = 'unmute';
             } else {
-                icon.innerText = '🔊';
+                icon.className = 'fas fa-volume-up';
                 text.innerText = 'mute';
             }
         }
-        
+
         function openSocial(platform) {
             window.open(`https://${platform}.com`, '_blank');
         }
-        
+
         function dnoClick() {
-            alert('🔍 ZION QUANTUM ELITE\nAll systems operational\n' + 
-                  'Active Signals: 3\nAccuracy: 87.5%\nSensors: 25 active');
-        }
-        
-        // Simulate live updates
-        setInterval(() => {
-            // Update some random prices
-            document.querySelectorAll('.price-box').forEach(el => {
-                const current = parseFloat(el.innerText.replace(/,/g, ''));
-                if (!isNaN(current)) {
-                    const change = (Math.random() - 0.5) * 10;
-                    const newVal = (current + change).toFixed(5);
-                    el.innerText = newVal.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-                }
+            alert('🔍 ZION QUANTUM ELITE\n' +
+                  'Active Sensors: 15\n' +
+                  'Active Signals: 6\n' +
+                  'Accuracy: 87.8%\n' +
+                  'Manipulation Detected: 3 events\n' +
+                  'Last Signal: RISE/FALL on Volatility 50 (88%)');
+            
+            // Flash all cards
+            document.querySelectorAll('.sensor-card').forEach(card => {
+                card.style.transition = 'all 0.2s';
+                card.style.transform = 'scale(1.02)';
+                card.style.borderColor = '#4ac7ff';
+                setTimeout(() => {
+                    card.style.transform = 'scale(1)';
+                    card.style.borderColor = '';
+                }, 500);
             });
-            
-            // Update signal counts
-            document.getElementById('signalCount').innerText = Math.floor(Math.random() * 5) + 2;
-            document.getElementById('accuracy').innerText = (75 + Math.random() * 20).toFixed(1);
-            
-        }, 3000);
+        }
+
+        // Make functions global
+        window.toggleMenu = toggleMenu;
+        window.toggleMute = toggleMute;
+        window.openSocial = openSocial;
+        window.dnoClick = dnoClick;
     </script>
 </body>
 </html>
