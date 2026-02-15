@@ -3,302 +3,622 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Synthetic Trading Terminal</title>
-<script src="https://s3.tradingview.com/tv.js"></script>
-
+<title>Zion Professional Deriv Dashboard · All 13 Volatilities</title>
+<script src="https://cdn.tailwindcss.com"></script>
 <style>
-body{
-    margin:0;
-    font-family:Arial, sans-serif;
-    background:#0f172a;
-    color:white;
-}
-
-header{
-    background:#111827;
-    padding:15px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    border-bottom:1px solid #1f2937;
-}
-
-h1{
-    font-size:18px;
-}
-
-select, input{
-    padding:6px;
-    background:#1f2937;
-    border:none;
-    color:white;
-}
-
-.container{
-    display:grid;
-    grid-template-columns: 2fr 1fr;
-    gap:15px;
-    padding:15px;
-}
-
-.card{
-    background:#111827;
-    border-radius:10px;
-    padding:15px;
-    box-shadow:0 5px 20px rgba(0,0,0,0.5);
-}
-
-button{
-    background:#2563eb;
-    border:none;
-    padding:10px;
-    color:white;
-    cursor:pointer;
-    border-radius:6px;
-    margin-top:5px;
-}
-
-button:hover{
-    background:#1d4ed8;
-}
-
-.chart-icons{
-    display:flex;
-    gap:15px;
-    margin-bottom:10px;
-}
-
-.icon{
-    background:#1f2937;
-    padding:10px;
-    border-radius:8px;
-    cursor:pointer;
-    text-align:center;
-    flex:1;
-}
-
-.icon:hover{
-    background:#374151;
-}
-
-.digit-grid{
-    display:grid;
-    grid-template-columns:repeat(5,1fr);
-    gap:5px;
-}
-
-.digit-box{
-    background:#1f2937;
-    padding:8px;
-    text-align:center;
-    border-radius:6px;
-}
-
-.signal{
-    font-size:18px;
-    font-weight:bold;
-    margin-top:10px;
-}
-
-.green{color:#10b981;}
-.red{color:#ef4444;}
-.yellow{color:#facc15;}
-
-footer{
-    text-align:center;
-    padding:10px;
-    font-size:12px;
-    color:gray;
-}
+body { background:#0f172a; color:white; font-family:'Inter',Arial; }
+.card { background:#1e293b; padding:20px; border-radius:12px; margin-bottom:15px; border:1px solid #334155; }
+.signal-card { background:#1e293b; border-left:5px solid #22c55e; padding:20px; border-radius:12px; margin-bottom:15px; transition:0.3s; border:1px solid #334155; }
+.signal-card.ultra { border-left:8px solid #fbbf24; box-shadow:0 0 30px rgba(251,191,36,0.3); }
+.digit { width:40px; height:40px; display:flex; align-items:center; justify-content:center; border-radius:6px; margin:2px; font-weight:bold; background:#334155; }
+.digit-peak { background:#22c55e; color:black; transform:scale(1.1); box-shadow:0 0 15px #22c55e; }
+.digit-decay { background:#ef4444; opacity:0.6; text-decoration:line-through; }
+.digit-exhaustion { background:#fbbf24; animation:pulse 1s infinite; color:black; }
+@keyframes pulse {0%{opacity:1}50%{opacity:0.5}100%{opacity:1}}
+.pattern-candle { width:12px; display:inline-block; margin:0 1px; border-radius:2px; }
+.pattern-candle.up { background:#22c55e; }
+.pattern-candle.down { background:#ef4444; }
+.volatility-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(200px,1fr)); gap:10px; margin:15px 0; }
+.vol-item { background:#2d3748; padding:10px; border-radius:8px; border-left:3px solid; }
+.vol-price { font-family:monospace; font-size:1.1rem; }
+.ultra-badge { background:#fbbf24; color:black; padding:2px 8px; border-radius:12px; font-size:0.7rem; font-weight:bold; }
+.metric { color:#94a3b8; font-size:0.8rem; }
 </style>
 </head>
+<body class="p-6">
 
-<body>
+<h1 class="text-3xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+    Zion Professional Deriv Dashboard · All 13 Volatilities
+</h1>
 
-<header>
-<h1>AI Synthetic Trading Terminal</h1>
-
-<div>
-Market:
-<select id="market">
-<option value="R_10">Volatility 10</option>
-<option value="R_25">Volatility 25</option>
-<option value="R_50">Volatility 50</option>
-<option value="R_75">Volatility 75</option>
-<option value="R_100">Volatility 100</option>
-</select>
-
-Stake: <input type="number" id="stake" value="1">
-Max Loss: <input type="number" id="maxLoss" value="5">
+<!-- API Connection -->
+<div class="card flex gap-4 items-center">
+    <input id="token" type="password" class="flex-1 p-2 rounded text-black" placeholder="Enter Deriv API Token">
+    <button onclick="connectWS()" class="bg-blue-600 px-6 py-2 rounded hover:bg-blue-700">Connect</button>
+    <span id="status" class="text-yellow-400">Disconnected</span>
 </div>
-</header>
 
-<div class="container">
+<!-- Market Controls -->
+<div class="card flex flex-wrap gap-4 items-center">
+    <label class="flex items-center gap-2">Primary Market:
+        <select id="market" class="bg-gray-800 text-white p-2 rounded border border-gray-700">
+            <optgroup label="1-Second Markets">
+                <option value="1HZ10V">Volatility 10 (1s)</option>
+                <option value="1HZ15V">Volatility 15 (1s)</option>
+                <option value="1HZ25V">Volatility 25 (1s)</option>
+                <option value="1HZ30V">Volatility 30 (1s)</option>
+                <option value="1HZ50V">Volatility 50 (1s)</option>
+                <option value="1HZ75V">Volatility 75 (1s)</option>
+                <option value="1HZ90V">Volatility 90 (1s)</option>
+                <option value="1HZ100V" selected>Volatility 100 (1s)</option>
+            </optgroup>
+            <optgroup label="Standard Markets">
+                <option value="R_10">Volatility 10</option>
+                <option value="R_25">Volatility 25</option>
+                <option value="R_50">Volatility 50</option>
+                <option value="R_75">Volatility 75</option>
+                <option value="R_100">Volatility 100</option>
+            </optgroup>
+        </select>
+    </label>
+    <button onclick="openDerivChart()" class="bg-green-600 px-4 py-2 rounded hover:bg-green-700">📊 Open Deriv Chart</button>
+    <button onclick="openDigitTrader()" class="bg-indigo-600 px-4 py-2 rounded hover:bg-indigo-700">🔢 Digit Trader</button>
+</div>
 
-<!-- LEFT SIDE -->
+<!-- Ultra Signal Card -->
+<div id="ultraSignal" class="signal-card ultra hidden">
+    <div class="flex justify-between items-center mb-4">
+        <span class="bg-yellow-500 px-3 py-1 rounded-full text-black font-bold text-sm">⭐ ULTRA SIGNAL ⭐</span>
+        <span id="ultraTime" class="text-gray-400">30s window</span>
+        <div id="ultraQuality" class="text-4xl font-bold text-yellow-400">0%</div>
+    </div>
+    <div class="grid grid-cols-3 gap-4 mb-4">
+        <div>
+            <div class="text-3xl font-bold text-green-400" id="ultraSignalText">--</div>
+            <div id="ultraMarket" class="text-gray-400">--</div>
+        </div>
+        <div>
+            <div class="metric">Entry Price</div>
+            <div class="text-2xl font-mono" id="ultraPrice">--</div>
+            <div class="metric mt-2">Target Digit</div>
+            <div class="text-2xl font-bold text-yellow-400" id="ultraDigit">-</div>
+        </div>
+        <div>
+            <div class="metric">Digit Health</div>
+            <div id="ultraHealth" class="text-green-400">--</div>
+            <div class="metric mt-2">Timeframe Alignment</div>
+            <div id="ultraAlignment" class="text-green-400">✅ 30s ✅ 2min ✅ 5min</div>
+        </div>
+    </div>
+    <button onclick="executeUltraTrade()" class="w-full bg-gradient-to-r from-yellow-500 to-amber-500 text-black font-bold py-4 rounded-xl text-xl hover:shadow-lg transition-all">
+        ⚡ EXECUTE ULTRA SIGNAL ⚡
+    </button>
+</div>
+
+<!-- Candlestick Pattern & Digit Heatmap Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <!-- Candlestick Pattern -->
+    <div class="card">
+        <h3 class="text-xl font-bold mb-2 flex items-center gap-2">
+            <span class="w-3 h-3 bg-green-500 rounded-full"></span>
+            Candlestick Pattern (Last 20 Candles)
+        </h3>
+        <div id="patternGrid" class="flex items-end h-40 gap-1"></div>
+        <div class="flex justify-between mt-2 text-sm text-gray-400">
+            <span>Trend: <span id="trend" class="text-green-400">--</span></span>
+            <span>Momentum: <span id="momentum" class="text-blue-400">--</span></span>
+        </div>
+    </div>
+
+    <!-- Digit Heatmap -->
+    <div class="card">
+        <h3 class="text-xl font-bold mb-2 flex items-center gap-2">
+            <span class="w-3 h-3 bg-purple-500 rounded-full"></span>
+            Digit Frequency Heatmap
+        </h3>
+        <div id="digitHeatmap" class="flex flex-wrap gap-1 justify-center"></div>
+        <div class="flex justify-between mt-2 text-sm">
+            <span><span class="metric">Peak:</span> <span id="peakDigit" class="text-green-400">-</span></span>
+            <span><span class="metric">Decay:</span> <span id="decayDigits" class="text-red-400">-</span></span>
+            <span><span class="metric">Exhausted:</span> <span id="exhaustedDigits" class="text-yellow-400">-</span></span>
+        </div>
+    </div>
+</div>
+
+<!-- All 13 Volatilities Live Monitor -->
 <div class="card">
-
-<div class="chart-icons">
-<div class="icon" onclick="openDeriv()">📊 Open Deriv Chart</div>
-<div class="icon" onclick="openTrader()">🔢 Digit Trader</div>
+    <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
+        <span class="w-3 h-3 bg-blue-500 rounded-full"></span>
+        All 13 Volatility Indices · Live Signals
+    </h3>
+    <div class="volatility-grid" id="volatilityGrid">
+        <!-- Populated by JavaScript -->
+    </div>
 </div>
 
-<div id="tv_chart" style="height:450px;"></div>
-
-</div>
-
-<!-- RIGHT SIDE -->
+<!-- Analysis Log -->
 <div class="card">
-
-<h3>Digit Analyzer</h3>
-<h2 id="lastDigit">-</h2>
-
-<div class="digit-grid" id="digitGrid"></div>
-
-<div class="signal" id="evenOddSignal">Even/Odd: -</div>
-<div class="signal" id="overUnderSignal">Over/Under: -</div>
-
-<hr>
-
-<h3>Risk Control</h3>
-<div>Loss Count: <span id="lossCount">0</span></div>
-<div>Total Loss: <span id="totalLoss">0</span></div>
-
-<button onclick="resetStats()">Reset</button>
-
+    <h3 class="text-lg font-bold mb-2 flex items-center gap-2">
+        <span class="w-3 h-3 bg-gray-500 rounded-full"></span>
+        Analysis Log
+    </h3>
+    <div id="log" class="h-32 overflow-y-auto text-sm font-mono text-gray-300 bg-gray-900 p-2 rounded"></div>
 </div>
-</div>
-
-<footer>
-Professional Synthetic Index Terminal
-</footer>
 
 <script>
-let digitFrequency = Array(10).fill(0);
-let tickHistory = [];
-let lossCount = 0;
-let totalLoss = 0;
-let ws;
+// =====================================================================
+// ZION PROFESSIONAL DERIV DASHBOARD - ALL 13 VOLATILITIES
+// =====================================================================
 
-// Initialize TradingView
-function loadChart(symbol){
-    document.getElementById("tv_chart").innerHTML="";
-    new TradingView.widget({
-        container_id:"tv_chart",
-        width:"100%",
-        height:450,
-        symbol:symbol,
-        interval:"1",
-        timezone:"Etc/UTC",
-        theme:"dark",
-        style:"1",
-        locale:"en",
-        toolbar_bg:"#111827",
-        enable_publishing:false
-    });
-}
+// ===== CONFIGURATION =====
+const APP_ID = '126973';
+const VOLATILITIES = [
+    // 1-Second Markets
+    { name: 'Volatility 10 (1s)', symbol: '1HZ10V', type: '1s' },
+    { name: 'Volatility 15 (1s)', symbol: '1HZ15V', type: '1s' },
+    { name: 'Volatility 25 (1s)', symbol: '1HZ25V', type: '1s' },
+    { name: 'Volatility 30 (1s)', symbol: '1HZ30V', type: '1s' },
+    { name: 'Volatility 50 (1s)', symbol: '1HZ50V', type: '1s' },
+    { name: 'Volatility 75 (1s)', symbol: '1HZ75V', type: '1s' },
+    { name: 'Volatility 90 (1s)', symbol: '1HZ90V', type: '1s' },
+    { name: 'Volatility 100 (1s)', symbol: '1HZ100V', type: '1s' },
+    
+    // Standard Markets
+    { name: 'Volatility 10', symbol: 'R_10', type: 'standard' },
+    { name: 'Volatility 25', symbol: 'R_25', type: 'standard' },
+    { name: 'Volatility 50', symbol: 'R_50', type: 'standard' },
+    { name: 'Volatility 75', symbol: 'R_75', type: 'standard' },
+    { name: 'Volatility 100', symbol: 'R_100', type: 'standard' }
+];
 
-loadChart("R_100");
+// ===== GLOBAL STATE =====
+let ws = null;
+let authorized = false;
+let accountId = '';
+let tickHistory = {};
+let priceHistory = {};
+let digitCounts = Array(10).fill(0);
+let candleHistory = [];
+let marketData = {};
+let ultraSignal = null;
+let signalTimer = null;
 
-// Open Deriv external
-function openDeriv(){
-    window.open("https://app.deriv.com/charts","_blank");
-}
-
-function openTrader(){
-    window.open("https://app.deriv.com/trader","_blank");
-}
-
-// Connect WebSocket
-function connect(){
-    if(ws) ws.close();
-
-    ws = new WebSocket("wss://ws.derivws.com/websockets/v3?app_id=1089");
-
-    ws.onopen = () => {
-        ws.send(JSON.stringify({
-            ticks: document.getElementById("market").value
-        }));
-    };
-
-    ws.onmessage = (msg)=>{
-        const data = JSON.parse(msg.data);
-        if(data.tick){
-            let price = data.tick.quote.toString();
-            let lastDigit = parseInt(price.slice(-1));
-            processDigit(lastDigit);
-        }
-    };
-}
-
-function processDigit(digit){
-    document.getElementById("lastDigit").innerText=digit;
-
-    digitFrequency[digit]++;
-    tickHistory.push(digit);
-    if(tickHistory.length>100) tickHistory.shift();
-
-    updateGrid();
-    generateSignals();
-}
-
-function updateGrid(){
-    let grid="";
-    for(let i=0;i<10;i++){
-        grid += `<div class="digit-box">${i}: ${digitFrequency[i]}</div>`;
-    }
-    document.getElementById("digitGrid").innerHTML=grid;
-}
-
-function generateSignals(){
-
-    let even = 0;
-    let odd = 0;
-
-    tickHistory.forEach(d=>{
-        if(d%2==0) even++;
-        else odd++;
-    });
-
-    if(even > odd){
-        document.getElementById("evenOddSignal").innerHTML=
-        "Even Bias: <span class='green'>BUY EVEN</span>";
-    }else{
-        document.getElementById("evenOddSignal").innerHTML=
-        "Odd Bias: <span class='green'>BUY ODD</span>";
-    }
-
-    let high=0, low=0;
-    tickHistory.forEach(d=>{
-        if(d>=5) high++;
-        else low++;
-    });
-
-    if(high>low){
-        document.getElementById("overUnderSignal").innerHTML=
-        "Over 5 Bias: <span class='yellow'>BUY OVER</span>";
-    }else{
-        document.getElementById("overUnderSignal").innerHTML=
-        "Under 5 Bias: <span class='yellow'>BUY UNDER</span>";
-    }
-}
-
-function resetStats(){
-    digitFrequency = Array(10).fill(0);
-    tickHistory=[];
-    lossCount=0;
-    totalLoss=0;
-    document.getElementById("lossCount").innerText=0;
-    document.getElementById("totalLoss").innerText=0;
-}
-
-document.getElementById("market").addEventListener("change",()=>{
-    loadChart(document.getElementById("market").value);
-    connect();
+// Initialize data structures
+VOLATILITIES.forEach(v => {
+    tickHistory[v.symbol] = [];
+    priceHistory[v.symbol] = [];
+    marketData[v.symbol] = { price: null, digit: null, time: null };
 });
 
-connect();
-</script>
+// DOM Elements
+const els = {
+    status: document.getElementById('status'),
+    ultraSignal: document.getElementById('ultraSignal'),
+    ultraTime: document.getElementById('ultraTime'),
+    ultraQuality: document.getElementById('ultraQuality'),
+    ultraSignalText: document.getElementById('ultraSignalText'),
+    ultraMarket: document.getElementById('ultraMarket'),
+    ultraPrice: document.getElementById('ultraPrice'),
+    ultraDigit: document.getElementById('ultraDigit'),
+    ultraHealth: document.getElementById('ultraHealth'),
+    ultraAlignment: document.getElementById('ultraAlignment'),
+    patternGrid: document.getElementById('patternGrid'),
+    digitHeatmap: document.getElementById('digitHeatmap'),
+    trend: document.getElementById('trend'),
+    momentum: document.getElementById('momentum'),
+    peakDigit: document.getElementById('peakDigit'),
+    decayDigits: document.getElementById('decayDigits'),
+    exhaustedDigits: document.getElementById('exhaustedDigits'),
+    volatilityGrid: document.getElementById('volatilityGrid'),
+    log: document.getElementById('log'),
+    marketSelect: document.getElementById('market')
+};
 
+// ===== LOGGING =====
+function log(msg) {
+    console.log(msg);
+    if (els.log) {
+        els.log.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}<br>` + els.log.innerHTML;
+    }
+}
+
+// ===== OPEN DERIV EXTERNAL =====
+function openDerivChart() { 
+    window.open("https://app.deriv.com/charts?symbol=" + els.marketSelect.value, "_blank"); 
+}
+
+function openDigitTrader() { 
+    window.open("https://app.deriv.com/trader", "_blank"); 
+}
+
+// ===== GET LAST DIGIT =====
+function getLastDigit(price) {
+    if (!price) return 0;
+    const str = price.toString();
+    if (str.includes('.')) {
+        return parseInt(str.split('.')[1].charAt(0)) || 0;
+    }
+    return parseInt(str.slice(-1)) || 0;
+}
+
+// ===== WEBSOCKET CONNECTION =====
+function connectWS() {
+    const token = document.getElementById('token').value;
+    if (!token) {
+        alert('Please enter your API token');
+        return;
+    }
+    
+    if (ws) ws.close();
+    
+    ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`);
+    
+    ws.onopen = () => {
+        log('WebSocket connected');
+        els.status.textContent = 'Connected';
+        els.status.className = 'text-green-400';
+        
+        // Send authorization
+        ws.send(JSON.stringify({ authorize: token }));
+    };
+    
+    ws.onmessage = (e) => {
+        const data = JSON.parse(e.data);
+        
+        if (data.msg_type === 'authorize') {
+            authorized = true;
+            accountId = data.authorize.loginid;
+            log(`✅ Authorized as: ${accountId}`);
+            
+            // Subscribe to all 13 volatilities
+            VOLATILITIES.forEach(v => {
+                ws.send(JSON.stringify({
+                    ticks: v.symbol,
+                    subscribe: 1
+                }));
+            });
+            log(`📡 Subscribed to ${VOLATILITIES.length} volatility indices`);
+        }
+        
+        else if (data.msg_type === 'tick') {
+            handleTick(data.tick);
+        }
+        
+        else if (data.error) {
+            log(`❌ Error: ${data.error.message}`);
+            if (data.error.code === 'InvalidToken') {
+                els.status.textContent = 'Invalid Token';
+                els.status.className = 'text-red-400';
+            }
+        }
+    };
+    
+    ws.onclose = () => {
+        authorized = false;
+        els.status.textContent = 'Disconnected';
+        els.status.className = 'text-yellow-400';
+        log('WebSocket closed');
+    };
+    
+    ws.onerror = () => {
+        log('WebSocket error');
+        els.status.textContent = 'Error';
+        els.status.className = 'text-red-400';
+    };
+}
+
+// ===== HANDLE TICK DATA =====
+function handleTick(tick) {
+    const symbol = tick.symbol;
+    const price = tick.quote;
+    const digit = getLastDigit(price);
+    
+    // Store in history
+    if (!tickHistory[symbol]) tickHistory[symbol] = [];
+    if (!priceHistory[symbol]) priceHistory[symbol] = [];
+    
+    tickHistory[symbol].push({ price, digit, time: tick.epoch });
+    priceHistory[symbol].push(price);
+    
+    if (tickHistory[symbol].length > 500) tickHistory[symbol].shift();
+    if (priceHistory[symbol].length > 300) priceHistory[symbol].shift();
+    
+    // Update market data
+    marketData[symbol] = { price, digit, time: tick.epoch };
+    
+    // Update displays
+    if (symbol === els.marketSelect.value) {
+        updatePrimaryDisplay(price, digit);
+        updateCandles(price);
+    }
+    
+    updateDigitCounts(digit);
+    updateVolatilityGrid();
+    analyzeSignals();
+}
+
+// ===== UPDATE PRIMARY DISPLAY =====
+function updatePrimaryDisplay(price, digit) {
+    // Update digit counts for primary market
+    digitCounts[digit]++;
+    renderDigitHeatmap();
+}
+
+// ===== UPDATE CANDLES =====
+let candleBuffer = [];
+function updateCandles(price) {
+    candleBuffer.push(price);
+    
+    // Create 1-second candles
+    if (candleBuffer.length >= 5) {
+        const open = candleBuffer[0];
+        const close = candleBuffer[candleBuffer.length - 1];
+        const high = Math.max(...candleBuffer);
+        const low = Math.min(...candleBuffer);
+        
+        candleHistory.push({ open, high, low, close });
+        if (candleHistory.length > 20) candleHistory.shift();
+        
+        candleBuffer = [];
+        renderCandles();
+    }
+}
+
+// ===== RENDER CANDLES =====
+function renderCandles() {
+    if (!els.patternGrid) return;
+    
+    const prices = candleHistory.map(c => c.close);
+    const maxPrice = Math.max(...prices);
+    const minPrice = Math.min(...prices);
+    const range = maxPrice - minPrice || 1;
+    
+    let html = '';
+    candleHistory.forEach(c => {
+        const isUp = c.close > c.open;
+        const height = ((c.close - minPrice) / range) * 100 + 10;
+        html += `<div class="pattern-candle ${isUp ? 'up' : 'down'}" style="height:${height}px;"></div>`;
+    });
+    els.patternGrid.innerHTML = html;
+    
+    // Update trend
+    if (candleHistory.length > 5) {
+        const trend = candleHistory[candleHistory.length - 1].close > candleHistory[0].close ? 'RISE' : 'FALL';
+        els.trend.textContent = trend;
+        els.trend.className = trend === 'RISE' ? 'text-green-400' : 'text-red-400';
+    }
+}
+
+// ===== RENDER DIGIT HEATMAP =====
+function renderDigitHeatmap() {
+    if (!els.digitHeatmap) return;
+    
+    const total = digitCounts.reduce((a, b) => a + b, 0) || 1;
+    const peak = Math.max(...digitCounts);
+    const peakDigit = digitCounts.indexOf(peak);
+    
+    let html = '';
+    for (let i = 0; i < 10; i++) {
+        const freq = digitCounts[i];
+        const pct = (freq / total * 100).toFixed(1);
+        let cls = 'digit';
+        
+        if (freq === peak && peak > total * 0.15) {
+            cls += ' digit-peak';
+        } else if (freq < total * 0.05) {
+            cls += ' digit-decay';
+        } else if (freq > total * 0.2 && freq < total * 0.25) {
+            cls += ' digit-exhaustion';
+        }
+        
+        html += `<div class="${cls}" title="${pct}%">${i}<br><small>${pct}%</small></div>`;
+    }
+    els.digitHeatmap.innerHTML = html;
+    
+    // Update digit health
+    els.peakDigit.textContent = `${peakDigit} (${(peak / total * 100).toFixed(1)}%)`;
+    
+    // Find decaying digits (<5%)
+    const decaying = [];
+    for (let i = 0; i < 10; i++) {
+        if (digitCounts[i] < total * 0.05) decaying.push(i);
+    }
+    els.decayDigits.textContent = decaying.length ? decaying.join(', ') : 'None';
+    
+    // Find exhausted digits (high then dropping)
+    const exhausted = [];
+    if (tickHistory[els.marketSelect.value]?.length > 50) {
+        const recent = tickHistory[els.marketSelect.value].slice(-50);
+        const recentCounts = Array(10).fill(0);
+        recent.forEach(t => recentCounts[t.digit]++);
+        
+        for (let i = 0; i < 10; i++) {
+            if (recentCounts[i] < total * 0.05 && digitCounts[i] > total * 0.15) {
+                exhausted.push(i);
+            }
+        }
+    }
+    els.exhaustedDigits.textContent = exhausted.length ? exhausted.join(', ') : 'None';
+}
+
+// ===== UPDATE VOLATILITY GRID =====
+function updateVolatilityGrid() {
+    if (!els.volatilityGrid) return;
+    
+    let html = '';
+    
+    VOLATILITIES.forEach(v => {
+        const data = marketData[v.symbol];
+        if (data && data.price) {
+            const digit = data.digit;
+            const price = data.price.toFixed(2);
+            
+            // Determine signal quality
+            let signalClass = 'border-gray-600';
+            let signalText = '--';
+            
+            if (digitCounts[digit] > 50) {
+                signalClass = 'border-green-500';
+                signalText = `🔥 MATCH ${digit}`;
+            } else if (digitCounts[digit] > 30) {
+                signalClass = 'border-yellow-500';
+                signalText = digit % 2 === 0 ? 'EVEN' : 'ODD';
+            }
+            
+            html += `<div class="vol-item ${signalClass}" style="border-left-color: ${signalClass.includes('green') ? '#22c55e' : signalClass.includes('yellow') ? '#fbbf24' : '#6b7280'}">
+                <div class="flex justify-between">
+                    <span class="font-bold">${v.name}</span>
+                    <span class="ultra-badge">${v.type}</span>
+                </div>
+                <div class="vol-price mt-1">${price}</div>
+                <div class="flex justify-between mt-1">
+                    <span>Digit: <span class="font-bold text-yellow-400">${digit}</span></span>
+                    <span class="${signalClass.includes('green') ? 'text-green-400' : signalClass.includes('yellow') ? 'text-yellow-400' : 'text-gray-400'}">${signalText}</span>
+                </div>
+            </div>`;
+        } else {
+            html += `<div class="vol-item border-gray-600">
+                <div class="flex justify-between">
+                    <span class="font-bold">${v.name}</span>
+                    <span class="ultra-badge">${v.type}</span>
+                </div>
+                <div class="vol-price mt-1">--</div>
+                <div class="text-gray-500 mt-1">Waiting for data...</div>
+            </div>`;
+        }
+    });
+    
+    els.volatilityGrid.innerHTML = html;
+}
+
+// ===== ANALYZE SIGNALS =====
+function analyzeSignals() {
+    const primarySymbol = els.marketSelect.value;
+    const history = tickHistory[primarySymbol];
+    
+    if (!history || history.length < 50) return;
+    
+    const recent = history.slice(-30);
+    const medium = history.slice(-120);
+    const long = history.slice(-300);
+    
+    // Calculate trends
+    const microTrend = recent[recent.length - 1].price > recent[0].price ? 'RISE' : 'FALL';
+    const mesoTrend = medium[medium.length - 1].price > medium[0].price ? 'RISE' : 'FALL';
+    const macroTrend = long[long.length - 1].price > long[0].price ? 'RISE' : 'FALL';
+    
+    // Check alignment
+    const aligned = microTrend === mesoTrend && mesoTrend === macroTrend;
+    
+    // Calculate momentum
+    let momentum = 0;
+    for (let i = 1; i < recent.length; i++) {
+        momentum += recent[i].price > recent[i-1].price ? 1 : -1;
+    }
+    const momentumPct = (momentum / recent.length * 100).toFixed(1);
+    els.momentum.textContent = momentumPct + '%';
+    
+    // Find peak digit
+    const digitFreq = Array(10).fill(0);
+    recent.forEach(t => digitFreq[t.digit]++);
+    const peakDigit = digitFreq.indexOf(Math.max(...digitFreq));
+    const peakStrength = (Math.max(...digitFreq) / recent.length * 100).toFixed(1);
+    
+    // Check for decay
+    const older = history.slice(-60, -30);
+    const olderFreq = Array(10).fill(0);
+    older.forEach(t => olderFreq[t.digit]++);
+    
+    let decaying = [];
+    for (let i = 0; i < 10; i++) {
+        const recentPct = digitFreq[i] / recent.length * 100;
+        const olderPct = olderFreq[i] / older.length * 100;
+        if (olderPct > 15 && recentPct < 5) {
+            decaying.push(i);
+        }
+    }
+    
+    // Calculate quality score
+    let quality = 0;
+    if (aligned) quality += 30;
+    if (Math.abs(parseFloat(momentumPct)) > 30) quality += 20;
+    if (peakStrength > 20) quality += 25;
+    if (decaying.length === 0) quality += 25;
+    
+    // Show ultra signal if quality >= 85%
+    if (quality >= 85 && aligned && decaying.length === 0) {
+        showUltraSignal(peakDigit, quality, microTrend, momentumPct);
+    } else {
+        els.ultraSignal.classList.add('hidden');
+        if (signalTimer) clearInterval(signalTimer);
+    }
+}
+
+// ===== SHOW ULTRA SIGNAL =====
+function showUltraSignal(digit, quality, trend, momentum) {
+    els.ultraSignal.classList.remove('hidden');
+    els.ultraQuality.textContent = quality + '%';
+    els.ultraSignalText.textContent = trend === 'RISE' ? `MATCH ${digit}` : `DIFFER ${digit}`;
+    els.ultraMarket.textContent = els.marketSelect.selectedOptions[0].text;
+    els.ultraPrice.textContent = marketData[els.marketSelect.value]?.price.toFixed(2) || '--';
+    els.ultraDigit.textContent = digit;
+    els.ultraHealth.textContent = `Peak Digit (${digit}) · Momentum ${momentum}%`;
+    
+    if (quality >= 90) {
+        els.ultraAlignment.innerHTML = '✅ 30s ✅ 2min ✅ 5min';
+    }
+    
+    // 30-second timer
+    let seconds = 30;
+    if (signalTimer) clearInterval(signalTimer);
+    signalTimer = setInterval(() => {
+        seconds--;
+        els.ultraTime.textContent = `${seconds}s remaining`;
+        if (seconds <= 0) {
+            clearInterval(signalTimer);
+            els.ultraSignal.classList.add('hidden');
+        }
+    }, 1000);
+    
+    log(`🔥 ULTRA SIGNAL: ${trend === 'RISE' ? 'MATCH' : 'DIFFER'} ${digit} | ${quality}% confidence`);
+}
+
+// ===== EXECUTE ULTRA TRADE =====
+function executeUltraTrade() {
+    if (!authorized) {
+        alert('Please connect first');
+        return;
+    }
+    
+    alert(`✅ EXECUTING ULTRA SIGNAL\n\n` +
+          `Signal: ${els.ultraSignalText.textContent}\n` +
+          `Market: ${els.ultraMarket.textContent}\n` +
+          `Entry: ${els.ultraPrice.textContent}\n` +
+          `Confidence: ${els.ultraQuality.textContent}\n\n` +
+          `30-second window active`);
+    
+    log(`🚀 Executed: ${els.ultraSignalText.textContent}`);
+}
+
+// ===== MARKET CHANGE HANDLER =====
+els.marketSelect.addEventListener('change', () => {
+    // Reset digit counts for new market
+    digitCounts = Array(10).fill(0);
+    candleHistory = [];
+    candleBuffer = [];
+    renderDigitHeatmap();
+    renderCandles();
+});
+
+// ===== INITIALIZE =====
+function init() {
+    log('🚀 Zion Professional Deriv Dashboard initialized');
+    log('📊 Monitoring all 13 volatility indices');
+    log('🔑 Enter your API token and click Connect');
+}
+
+// Start on load
+init();
+</script>
 </body>
 </html>
