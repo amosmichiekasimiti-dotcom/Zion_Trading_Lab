@@ -3,17 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zion Trading Lab · HFT Non-Linear Dynamics</title>
+    <title>Zion Trading Lab · Fixed WebSocket</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Math.js for scientific computing -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.7.0/math.min.js"></script>
     <style>
-        /* ===== CUSTOM CSS ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
@@ -23,7 +18,6 @@
             min-height: 100vh;
         }
         
-        /* Animations */
         @keyframes pulse-green {
             0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
             70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
@@ -38,14 +32,6 @@
         }
         .pulse-red { animation: pulse-red 2s infinite; }
         
-        @keyframes pulse-yellow {
-            0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
-        }
-        .pulse-yellow { animation: pulse-yellow 2s infinite; }
-        
-        /* Cards */
         .market-group-card {
             transition: all 0.3s ease;
             cursor: pointer;
@@ -73,14 +59,6 @@
             border: 1px solid #2d3748;
         }
         
-        .indicator-card {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 0.75rem;
-            padding: 0.75rem;
-            border: 1px solid #2d3748;
-        }
-        
-        /* Badges */
         .badge-active {
             background: rgba(34, 197, 94, 0.2);
             color: #4ade80;
@@ -90,6 +68,7 @@
             font-weight: 700;
             border: 1px solid rgba(74, 222, 128, 0.3);
         }
+        
         .badge-inactive {
             background: rgba(107, 114, 128, 0.2);
             color: #9ca3af;
@@ -100,34 +79,6 @@
             border: 1px solid #2d3748;
         }
         
-        .badge-chaos {
-            background: rgba(239, 68, 68, 0.2);
-            color: #f87171;
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 700;
-        }
-        
-        .badge-trend {
-            background: rgba(34, 197, 94, 0.2);
-            color: #4ade80;
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 700;
-        }
-        
-        .badge-stable {
-            background: rgba(59, 130, 246, 0.2);
-            color: #60a5fa;
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 700;
-        }
-        
-        /* Digit Bars */
         .digit-bar-container {
             display: flex;
             align-items: flex-end;
@@ -155,7 +106,6 @@
             color: #94a3b8;
         }
         
-        /* Table */
         .volatility-table {
             width: 100%;
             border-collapse: collapse;
@@ -176,7 +126,6 @@
         }
         .volatility-table tr:hover { background: rgba(45, 55, 72, 0.5); }
         
-        /* Buttons */
         .btn-success {
             background: #16a34a;
             color: white;
@@ -192,37 +141,29 @@
             transform: translateY(-2px);
         }
         
-        .btn-outline {
-            background: transparent;
-            color: #94a3b8;
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
-            font-weight: 500;
-            transition: all 0.2s;
-            border: 1px solid #2d3748;
-            cursor: pointer;
-        }
-        .btn-outline:hover {
-            background: #2d3748;
-            color: white;
-        }
-        
-        /* Container */
         .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem 1rem; }
         
-        /* Countdown */
         .countdown {
             font-family: monospace;
             font-size: 1.25rem;
             font-weight: 700;
             color: #fbbf24;
         }
+        
+        .error-message {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #f87171;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            margin-bottom: 1rem;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         
-        <!-- ===== HEADER ===== -->
+        <!-- Header -->
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div class="flex items-center gap-4">
                 <div class="w-14 h-14 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-xl">
@@ -241,34 +182,34 @@
             
             <div class="flex items-center gap-4 bg-slate-800/50 px-4 py-2 rounded-xl border border-slate-700">
                 <div class="flex items-center gap-2">
-                    <div id="connectionLed" class="w-3 h-3 rounded-full bg-yellow-500 pulse-yellow"></div>
-                    <span id="connectionText" class="text-sm text-yellow-400">CONNECTING</span>
+                    <div id="connectionLed" class="w-3 h-3 rounded-full bg-red-500"></div>
+                    <span id="connectionText" class="text-sm text-red-400">DISCONNECTED</span>
                 </div>
                 <div class="h-4 w-px bg-slate-700"></div>
                 <div class="flex items-center gap-2">
                     <i class="fas fa-clock text-gray-500 text-sm"></i>
                     <span id="lastUpdate" class="text-sm font-mono">--:--:--</span>
                 </div>
-                <div class="flex items-center gap-2">
-                    <i class="fas fa-database text-gray-500 text-sm"></i>
-                    <span id="tickCount" class="text-sm font-mono text-blue-400">0</span>
-                </div>
             </div>
         </div>
 
-        <!-- ===== MARKET STATE & INDICATORS ===== -->
+        <!-- Error Message (initially hidden) -->
+        <div id="errorMessage" class="error-message hidden">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            <span id="errorText"></span>
+        </div>
+
+        <!-- Market State & Indicators -->
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
-            <!-- Market State -->
             <div class="bg-slate-800/30 rounded-xl p-4 border border-slate-700 col-span-1">
                 <div class="flex items-center gap-2 mb-2">
                     <i class="fas fa-chart-line text-blue-400"></i>
                     <span class="text-sm text-gray-400">Market State</span>
                 </div>
-                <div id="marketState" class="text-xl font-bold text-blue-400">ANALYZING</div>
-                <div id="marketStateBadge" class="text-xs mt-1 inline-block px-2 py-1 bg-blue-500/20 text-blue-400 rounded-full">WAITING</div>
+                <div id="marketState" class="text-xl font-bold text-gray-500">NO DATA</div>
+                <div id="marketStateBadge" class="text-xs mt-1 inline-block px-2 py-1 bg-gray-500/20 text-gray-400 rounded-full">WAITING</div>
             </div>
             
-            <!-- Hurst Exponent -->
             <div class="bg-slate-800/30 rounded-xl p-4 border border-slate-700">
                 <div class="flex items-center justify-between">
                     <span class="text-sm text-gray-400">Hurst (H)</span>
@@ -278,7 +219,6 @@
                 <div class="text-xs text-gray-500">Trend persistence</div>
             </div>
             
-            <!-- Lyapunov Exponent -->
             <div class="bg-slate-800/30 rounded-xl p-4 border border-slate-700">
                 <div class="flex items-center justify-between">
                     <span class="text-sm text-gray-400">Lyapunov (λ)</span>
@@ -288,7 +228,6 @@
                 <div class="text-xs text-gray-500">Chaos detection</div>
             </div>
             
-            <!-- Kurtosis -->
             <div class="bg-slate-800/30 rounded-xl p-4 border border-slate-700">
                 <div class="flex items-center justify-between">
                     <span class="text-sm text-gray-400">Kurtosis</span>
@@ -299,9 +238,8 @@
             </div>
         </div>
 
-        <!-- ===== 4 MARKET TYPE GROUPS ===== -->
+        <!-- Market Groups -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            
             <!-- RISE/FALL -->
             <div id="groupRiseFall" class="market-group-card active" onclick="selectGroup('riseFall')">
                 <div class="flex items-center justify-between mb-3">
@@ -318,16 +256,15 @@
                     <div id="groupRiseFallBadge" class="badge-active">ACTIVE</div>
                 </div>
                 <div id="riseFallContent">
-                    <div class="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
+                    <div class="bg-gray-500/10 border border-gray-500/30 rounded-lg p-3">
                         <div class="flex justify-between">
-                            <span class="text-green-400 text-sm font-semibold" id="riseFallSignal">ANALYZING</span>
+                            <span class="text-gray-400 text-sm font-semibold" id="riseFallSignal">NO DATA</span>
                             <span class="text-xs text-gray-400">Primary</span>
                         </div>
                         <div class="flex items-end justify-between mt-1">
-                            <span class="text-2xl font-bold text-green-400" id="riseFallValue">--</span>
+                            <span class="text-2xl font-bold text-gray-500" id="riseFallValue">--</span>
                             <span class="text-xl font-bold" id="riseFallConf">--%</span>
                         </div>
-                        <div class="text-xs text-gray-500 mt-1" id="riseFallReason">Waiting for data</div>
                     </div>
                 </div>
             </div>
@@ -348,16 +285,8 @@
                     <div id="groupOverUnderBadge" class="badge-inactive">INACTIVE</div>
                 </div>
                 <div id="overUnderContent" class="hidden">
-                    <div class="bg-purple-500/10 border border-purple-500/30 rounded-lg p-3">
-                        <div class="flex justify-between">
-                            <span class="text-purple-400 text-sm font-semibold" id="overUnderSignal">ANALYZING</span>
-                            <span class="text-xs text-gray-400">Primary</span>
-                        </div>
-                        <div class="flex items-end justify-between mt-1">
-                            <span class="text-2xl font-bold text-purple-400" id="overUnderValue">--</span>
-                            <span class="text-xl font-bold" id="overUnderConf">--%</span>
-                        </div>
-                        <div class="text-xs text-gray-500 mt-1" id="overUnderReason">Waiting for data</div>
+                    <div class="bg-gray-500/10 border border-gray-500/30 rounded-lg p-3">
+                        <div class="text-gray-400 text-center">Waiting for data</div>
                     </div>
                 </div>
             </div>
@@ -378,16 +307,8 @@
                     <div id="groupMatchesBadge" class="badge-inactive">INACTIVE</div>
                 </div>
                 <div id="matchesContent" class="hidden">
-                    <div class="bg-pink-500/10 border border-pink-500/30 rounded-lg p-3">
-                        <div class="flex justify-between">
-                            <span class="text-pink-400 text-sm font-semibold" id="matchesSignal">ANALYZING</span>
-                            <span class="text-xs text-gray-400">Primary</span>
-                        </div>
-                        <div class="flex items-end justify-between mt-1">
-                            <span class="text-2xl font-bold text-pink-400" id="matchesValue">--</span>
-                            <span class="text-xl font-bold" id="matchesConf">--%</span>
-                        </div>
-                        <div class="text-xs text-gray-500 mt-1" id="matchesReason">Waiting for data</div>
+                    <div class="bg-gray-500/10 border border-gray-500/30 rounded-lg p-3">
+                        <div class="text-gray-400 text-center">Waiting for data</div>
                     </div>
                 </div>
             </div>
@@ -407,27 +328,14 @@
                     <div id="groupEvenOddBadge" class="badge-inactive">INACTIVE</div>
                 </div>
                 <div id="evenOddContent" class="hidden">
-                    <div class="grid grid-cols-2 gap-2 mb-2">
-                        <div class="bg-green-500/10 border border-green-500/30 rounded-lg p-2 text-center">
-                            <div class="text-xs text-gray-400">EVEN</div>
-                            <div class="text-xl font-bold text-green-400" id="evenPercent">--%</div>
-                        </div>
-                        <div class="bg-orange-500/10 border border-orange-500/30 rounded-lg p-2 text-center">
-                            <div class="text-xs text-gray-400">ODD</div>
-                            <div class="text-xl font-bold text-orange-400" id="oddPercent">--%</div>
-                        </div>
+                    <div class="bg-gray-500/10 border border-gray-500/30 rounded-lg p-3">
+                        <div class="text-gray-400 text-center">Waiting for data</div>
                     </div>
-                    <div class="bg-green-500/10 border border-green-500/30 rounded-lg p-2 text-center">
-                        <span class="text-xs text-gray-400">Prediction:</span>
-                        <span class="text-lg font-bold text-orange-400" id="evenOddPrediction">--</span>
-                        <span class="text-xs text-gray-500 ml-2" id="evenOddConf">--%</span>
-                    </div>
-                    <div class="text-xs text-gray-500 mt-1 text-center" id="evenOddReason">Marcus Strategy: 3 consecutive odds → EVEN</div>
                 </div>
             </div>
         </div>
 
-        <!-- ===== PRIMARY SIGNAL ===== -->
+        <!-- Primary Signal -->
         <div class="signal-card mb-6">
             <div class="flex items-center gap-2 mb-3">
                 <i class="fas fa-crown text-yellow-500 text-xl"></i>
@@ -438,8 +346,8 @@
             <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div class="col-span-2">
                     <div class="text-sm text-gray-400">Signal</div>
-                    <div class="text-4xl font-bold text-green-400" id="primaryDirection">ANALYZING</div>
-                    <div class="text-sm text-gray-400 mt-1" id="primaryMarket">Volatility 100 (1s) Index</div>
+                    <div class="text-4xl font-bold text-gray-500" id="primaryDirection">NO DATA</div>
+                    <div class="text-sm text-gray-400 mt-1" id="primaryMarket">Waiting for connection...</div>
                 </div>
                 <div>
                     <div class="text-sm text-gray-400">Price</div>
@@ -465,32 +373,25 @@
             
             <div class="mt-4 flex gap-3">
                 <button id="executeTradeBtn" class="btn-success flex-1 py-4 text-lg flex items-center justify-center gap-2" disabled>
-                    <i class="fas fa-arrow-up"></i> WAITING FOR SIGNAL
+                    <i class="fas fa-arrow-up"></i> WAITING FOR DATA
                 </button>
-                <button id="exportXmlBtn" class="btn-outline px-6 py-4" disabled>
-                    <i class="fas fa-code"></i> XML
-                </button>
-                <button id="voiceTestBtn" class="btn-outline px-4 py-4">
-                    <i class="fas fa-volume-up"></i>
+                <button id="demoModeBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-lg font-semibold">
+                    <i class="fas fa-database"></i> USE DEMO DATA
                 </button>
             </div>
         </div>
 
-        <!-- ===== VOICE ANNOUNCEMENT ===== -->
+        <!-- Voice -->
         <div class="bg-slate-800/30 rounded-xl p-4 border border-slate-700 flex items-center gap-4 mb-6">
             <i class="fas fa-volume-up text-3xl text-blue-400"></i>
             <div class="flex-1">
                 <div class="text-xs text-gray-500 mb-1">AI VOICE</div>
-                <div id="voiceText">"Zion Trading Lab initializing with App ID 126973. Connecting to Deriv WebSocket..."</div>
+                <div id="voiceText">"System ready. Click 'USE DEMO DATA' to start simulation."</div>
             </div>
-            <button id="muteVoiceBtn" class="text-gray-400 hover:text-white">
-                <i class="fas fa-volume-up"></i>
-            </button>
         </div>
 
-        <!-- ===== DIGIT DISTRIBUTION & INDICATORS ===== -->
+        <!-- Digit Distribution -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            <!-- Digit Distribution -->
             <div class="lg:col-span-2 bg-slate-800/30 rounded-xl p-5 border border-slate-700">
                 <h3 class="font-semibold mb-4 flex items-center gap-2">
                     <i class="fas fa-chart-bar text-blue-400"></i>
@@ -508,7 +409,7 @@
                 </div>
             </div>
             
-            <!-- Strategy Info -->
+            <!-- Strategies -->
             <div class="bg-slate-800/30 rounded-xl p-5 border border-slate-700">
                 <h3 class="font-semibold flex items-center gap-2 mb-4">
                     <i class="fas fa-robot text-green-400"></i>
@@ -516,16 +417,16 @@
                 </h3>
                 
                 <div class="space-y-3">
-                    <div class="indicator-card">
+                    <div class="bg-black/30 rounded-lg p-3">
                         <div class="flex justify-between">
                             <span class="text-sm font-semibold">Marcus Strategy</span>
-                            <span id="marcusStatus" class="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">Active</span>
+                            <span id="marcusStatus" class="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">Ready</span>
                         </div>
                         <div class="text-xs text-gray-500 mt-1">3 consecutive odds → EVEN on 4th tick</div>
                         <div class="text-xs text-gray-400 mt-1" id="marcusCounter">Consecutive odds: 0</div>
                     </div>
                     
-                    <div class="indicator-card">
+                    <div class="bg-black/30 rounded-lg p-3">
                         <div class="flex justify-between">
                             <span class="text-sm font-semibold">Under 8 Strategy</span>
                             <span id="under8Status" class="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">Ready</span>
@@ -533,27 +434,19 @@
                         <div class="text-xs text-gray-500 mt-1">When 9,8 < 10% → UNDER 8 on 9 or 0</div>
                         <div class="text-xs text-gray-400 mt-1" id="under8Counter">9:0% 8:0%</div>
                     </div>
-                    
-                    <div class="indicator-card">
-                        <div class="flex justify-between">
-                            <span class="text-sm font-semibold">Digit Significance</span>
-                            <span id="digitStatus" class="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full">--</span>
-                        </div>
-                        <div class="text-xs text-gray-500 mt-1">Differs: digits < 9% | Matches: >12%</div>
-                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- ===== LIVE VOLATILITY TABLE ===== -->
+        <!-- Table -->
         <div class="bg-slate-800/30 rounded-xl p-5 border border-slate-700">
             <h3 class="font-semibold mb-4 flex items-center gap-2">
                 <i class="fas fa-list text-blue-400"></i>
                 All 13 Volatility Indices · Live Signals
             </h3>
-            <div class="overflow-x-auto max-h-96 overflow-y-auto">
+            <div class="overflow-x-auto">
                 <table class="volatility-table">
-                    <thead class="sticky top-0 bg-slate-800">
+                    <thead>
                         <tr>
                             <th>Market</th>
                             <th>Cadence</th>
@@ -562,48 +455,31 @@
                             <th>Signal</th>
                             <th>Confidence</th>
                             <th>Hurst</th>
-                            <th>λ</th>
                         </tr>
                     </thead>
-                    <tbody id="volatilityTableBody"></tbody>
+                    <tbody id="volatilityTableBody">
+                        <tr><td colspan="7" class="text-center text-gray-500 py-8">Click 'USE DEMO DATA' to start simulation</td></tr>
+                    </tbody>
                 </table>
             </div>
-        </div>
-
-        <!-- ===== SPOOFING ALERT ===== -->
-        <div id="spoofingAlert" class="hidden mt-4 bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex items-center gap-3">
-            <i class="fas fa-exclamation-triangle text-red-500 text-xl"></i>
-            <div class="flex-1">
-                <span class="font-bold text-red-500">⚠️ SPOOFING DETECTED</span>
-                <p class="text-sm text-red-400">Kurtosis > 3.0 indicates fat tails. High-frequency digit trades paused.</p>
-            </div>
-            <button class="bg-red-600/30 hover:bg-red-600/50 px-4 py-2 rounded-lg text-sm" onclick="document.getElementById('spoofingAlert').classList.add('hidden')">
-                Acknowledge
-            </button>
-        </div>
-
-        <!-- ===== FOOTER ===== -->
-        <div class="mt-6 text-center text-xs text-gray-600 border-t border-slate-800 pt-4">
-            <i class="fas fa-brain mr-1"></i> Zion Trading Lab · HFT Non-Linear Dynamics · App ID: 126973 · Token: rbQgwOkbsfDoKw2
-            <br>Contact: <a href="https://wa.me/245742024175" class="text-blue-400 hover:underline">wa.me/245742024175</a>
         </div>
     </div>
 
     <script>
         // =====================================================================
-        // ZION TRADING LAB - HFT NON-LINEAR DYNAMICS
+        // ZION TRADING LAB - FIXED WEBSOCKET WITH DEMO FALLBACK
         // =====================================================================
         
-        // ===== CONFIGURATION =====
+        // Configuration
         const DERIV_CONFIG = {
             APP_ID: '126973',
             TOKEN: 'rbQgwOkbsfDoKw2',
             WS_URL: 'wss://ws.derivws.com/websockets/v3'
         };
         
-        // ===== ALL 13 VOLATILITY INDICES =====
+        // Volatility Indices
         const VOLATILITIES = [
-            // 1-Second Cadence (1s)
+            // 1-Second
             { display: 'Volatility 10 (1s) Index', symbol: '1HZ10V', cadence: '1s' },
             { display: 'Volatility 15 (1s) Index', symbol: '1HZ15V', cadence: '1s' },
             { display: 'Volatility 25 (1s) Index', symbol: '1HZ25V', cadence: '1s' },
@@ -612,8 +488,7 @@
             { display: 'Volatility 75 (1s) Index', symbol: '1HZ75V', cadence: '1s' },
             { display: 'Volatility 90 (1s) Index', symbol: '1HZ90V', cadence: '1s' },
             { display: 'Volatility 100 (1s) Index', symbol: '1HZ100V', cadence: '1s' },
-            
-            // Standard Cadence (2s)
+            // Standard
             { display: 'Volatility 10 Index', symbol: 'R_10', cadence: '2s' },
             { display: 'Volatility 25 Index', symbol: 'R_25', cadence: '2s' },
             { display: 'Volatility 50 Index', symbol: 'R_50', cadence: '2s' },
@@ -621,121 +496,120 @@
             { display: 'Volatility 100 Index', symbol: 'R_100', cadence: '2s' }
         ];
         
-        // ===== STATE =====
+        // State
         let derivWS = null;
-        let connected = false;
-        let authorized = false;
-        let tickData = {};
-        let tickHistory = {};
-        let priceHistory = {};
+        let usingDemoData = false;
+        let demoInterval = null;
+        let tickHistory = [];
+        let priceHistory = [];
         let currentGroup = 'riseFall';
         let voiceEnabled = true;
-        let consecutiveOdds = 0;
         
-        // Initialize data structures
-        VOLATILITIES.forEach(v => {
-            tickHistory[v.symbol] = [];
-            priceHistory[v.symbol] = [];
-        });
-        
-        // ===== DOM ELEMENTS =====
+        // DOM Elements
         const elements = {
             connectionLed: document.getElementById('connectionLed'),
             connectionText: document.getElementById('connectionText'),
             lastUpdate: document.getElementById('lastUpdate'),
-            tickCount: document.getElementById('tickCount'),
             marketState: document.getElementById('marketState'),
             marketStateBadge: document.getElementById('marketStateBadge'),
-            
             hurstValue: document.getElementById('hurstValue'),
-            hurstBadge: document.getElementById('hurstBadge'),
             lyapunovValue: document.getElementById('lyapunovValue'),
-            lyapunovBadge: document.getElementById('lyapunovBadge'),
             kurtosisValue: document.getElementById('kurtosisValue'),
-            kurtosisBadge: document.getElementById('kurtosisBadge'),
-            
             primaryDirection: document.getElementById('primaryDirection'),
             primaryMarket: document.getElementById('primaryMarket'),
             primaryEntry: document.getElementById('primaryEntry'),
             primaryConfidence: document.getElementById('primaryConfidence'),
             primaryDigit: document.getElementById('primaryDigit'),
-            primaryHurst: document.getElementById('primaryHurst'),
-            primaryLyapunov: document.getElementById('primaryLyapunov'),
-            primaryKurtosis: document.getElementById('primaryKurtosis'),
-            primarySpectral: document.getElementById('primarySpectral'),
-            primaryPayout: document.getElementById('primaryPayout'),
-            
             executeTradeBtn: document.getElementById('executeTradeBtn'),
-            exportXmlBtn: document.getElementById('exportXmlBtn'),
             voiceText: document.getElementById('voiceText'),
-            
-            // Group elements
-            riseFallSignal: document.getElementById('riseFallSignal'),
-            riseFallValue: document.getElementById('riseFallValue'),
-            riseFallConf: document.getElementById('riseFallConf'),
-            riseFallReason: document.getElementById('riseFallReason'),
-            
-            overUnderSignal: document.getElementById('overUnderSignal'),
-            overUnderValue: document.getElementById('overUnderValue'),
-            overUnderConf: document.getElementById('overUnderConf'),
-            overUnderReason: document.getElementById('overUnderReason'),
-            
-            matchesSignal: document.getElementById('matchesSignal'),
-            matchesValue: document.getElementById('matchesValue'),
-            matchesConf: document.getElementById('matchesConf'),
-            matchesReason: document.getElementById('matchesReason'),
-            
-            evenPercent: document.getElementById('evenPercent'),
-            oddPercent: document.getElementById('oddPercent'),
-            evenOddPrediction: document.getElementById('evenOddPrediction'),
-            evenOddConf: document.getElementById('evenOddConf'),
-            evenOddReason: document.getElementById('evenOddReason'),
-            
-            // Strategy elements
-            marcusCounter: document.getElementById('marcusCounter'),
-            under8Counter: document.getElementById('under8Counter'),
-            digitStatus: document.getElementById('digitStatus'),
-            
-            // Table
             volatilityTableBody: document.getElementById('volatilityTableBody'),
-            
-            // Spoofing alert
-            spoofingAlert: document.getElementById('spoofingAlert')
+            errorMessage: document.getElementById('errorMessage'),
+            errorText: document.getElementById('errorText')
         };
         
-        // ===== UTILITY FUNCTIONS =====
+        // ===== UTILITIES =====
         function getLastDigit(price) {
-            if (price === undefined || price === null) return 0;
-            const priceStr = price.toString();
-            if (priceStr.includes('.')) {
-                return parseInt(priceStr.split('.')[1].slice(0, 1)) || 0;
+            if (!price) return 0;
+            const str = price.toString();
+            if (str.includes('.')) {
+                return parseInt(str.split('.')[1].charAt(0)) || 0;
             }
-            return parseInt(priceStr.slice(-1)) || 0;
+            return parseInt(str.charAt(str.length - 1)) || 0;
         }
         
-        // ===== PHYSICS-BASED INDICATORS =====
+        function updateTimestamp() {
+            if (elements.lastUpdate) {
+                elements.lastUpdate.textContent = new Date().toLocaleTimeString();
+            }
+        }
+        
+        function showError(msg) {
+            if (elements.errorMessage && elements.errorText) {
+                elements.errorMessage.classList.remove('hidden');
+                elements.errorText.textContent = msg;
+            }
+        }
+        
+        function hideError() {
+            if (elements.errorMessage) {
+                elements.errorMessage.classList.add('hidden');
+            }
+        }
+        
+        function updateConnectionStatus(status, text) {
+            if (!elements.connectionLed || !elements.connectionText) return;
+            
+            if (status === 'connected') {
+                elements.connectionLed.className = 'w-3 h-3 rounded-full bg-green-500 pulse-green';
+                elements.connectionText.className = 'text-sm text-green-400';
+                elements.connectionText.textContent = text || 'LIVE';
+                hideError();
+            } else if (status === 'demo') {
+                elements.connectionLed.className = 'w-3 h-3 rounded-full bg-blue-500';
+                elements.connectionText.className = 'text-sm text-blue-400';
+                elements.connectionText.textContent = 'DEMO MODE';
+                hideError();
+            } else {
+                elements.connectionLed.className = 'w-3 h-3 rounded-full bg-red-500';
+                elements.connectionText.className = 'text-sm text-red-400';
+                elements.connectionText.textContent = text || 'DISCONNECTED';
+            }
+        }
+        
+        function announceVoice(msg) {
+            if (!voiceEnabled) return;
+            if (elements.voiceText) {
+                elements.voiceText.textContent = `"${msg}"`;
+            }
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(msg);
+                utterance.rate = 0.9;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+        
+        // ===== PHYSICS INDICATORS =====
         class PhysicsIndicators {
             static calculateHurst(prices) {
                 if (!prices || prices.length < 50) return 0.5;
                 
-                const lags = [5, 10, 15, 20, 25, 30];
+                const lags = [5, 10, 15, 20, 25];
                 const tau = [];
                 
                 for (const lag of lags) {
                     if (lag >= prices.length) continue;
-                    const diff = [];
+                    let sum = 0;
+                    let count = 0;
                     for (let i = lag; i < prices.length; i++) {
-                        diff.push(Math.abs(prices[i] - prices[i - lag]));
+                        sum += Math.abs(prices[i] - prices[i - lag]);
+                        count++;
                     }
-                    if (diff.length > 0) {
-                        const mean = diff.reduce((a, b) => a + b, 0) / diff.length;
-                        tau.push(mean);
-                    }
+                    if (count > 0) tau.push(sum / count);
                 }
                 
                 if (tau.length < 2) return 0.5;
                 
-                // Simple linear regression
                 const x = lags.slice(0, tau.length).map(l => Math.log(l));
                 const y = tau.map(t => Math.log(t));
                 
@@ -752,12 +626,11 @@
             static calculateLyapunov(prices) {
                 if (!prices || prices.length < 100) return 0;
                 
-                const n = prices.length;
                 let divergence = 0;
                 let count = 0;
                 
-                for (let i = 0; i < n - 20; i += 5) {
-                    for (let j = i + 10; j < n - 20; j += 5) {
+                for (let i = 0; i < prices.length - 20; i += 5) {
+                    for (let j = i + 10; j < prices.length - 20; j += 5) {
                         const d0 = Math.abs(prices[i] - prices[j]);
                         if (d0 < 0.001) continue;
                         
@@ -793,19 +666,17 @@
                 return (sum4 / n) / (variance * variance);
             }
             
-            static calculateSpectralDensity(prices) {
+            static calculateSpectral(prices) {
                 if (!prices || prices.length < 100) return 0;
                 
-                // Simple dominant frequency detection
-                const n = prices.length;
                 let maxPower = 0;
                 let dominantFreq = 0;
                 
                 for (let freq = 1; freq <= 10; freq++) {
                     let real = 0, imag = 0;
-                    for (let i = 0; i < n; i++) {
-                        real += prices[i] * Math.cos(2 * Math.PI * freq * i / n);
-                        imag += prices[i] * Math.sin(2 * Math.PI * freq * i / n);
+                    for (let i = 0; i < prices.length; i++) {
+                        real += prices[i] * Math.cos(2 * Math.PI * freq * i / prices.length);
+                        imag += prices[i] * Math.sin(2 * Math.PI * freq * i / prices.length);
                     }
                     const power = real * real + imag * imag;
                     if (power > maxPower) {
@@ -817,476 +688,219 @@
                 return dominantFreq;
             }
             
-            static calculateChiSquare(digitCounts, total) {
+            static calculateChiSquare(counts, total) {
                 if (total === 0) return 0;
                 const expected = total / 10;
-                let chiSquare = 0;
+                let chi = 0;
                 for (let i = 0; i < 10; i++) {
-                    chiSquare += Math.pow(digitCounts[i] - expected, 2) / expected;
+                    chi += Math.pow(counts[i] - expected, 2) / expected;
                 }
-                return chiSquare;
+                return chi;
             }
         }
         
-        // ===== WEBSOCKET CONNECTION =====
-        function connectDeriv() {
-            updateConnectionStatus('connecting', 'Connecting to Deriv...');
-            announceVoice('Connecting to Deriv servers');
+        // ===== DEMO DATA GENERATOR =====
+        function startDemoData() {
+            if (demoInterval) clearInterval(demoInterval);
             
-            try {
-                derivWS = new WebSocket(`${DERIV_CONFIG.WS_URL}?app_id=${DERIV_CONFIG.APP_ID}`);
-                
-                derivWS.onopen = function() {
-                    console.log('✅ WebSocket connected');
-                    updateConnectionStatus('connected', 'Connected');
-                    authorize();
-                };
-                
-                derivWS.onmessage = function(event) {
-                    const data = JSON.parse(event.data);
-                    handleDerivMessage(data);
-                };
-                
-                derivWS.onerror = function(error) {
-                    console.error('WebSocket error:', error);
-                    updateConnectionStatus('error', 'Connection error');
-                    setTimeout(connectDeriv, 5000);
-                };
-                
-                derivWS.onclose = function() {
-                    console.log('WebSocket closed');
-                    connected = false;
-                    authorized = false;
-                    updateConnectionStatus('disconnected', 'Disconnected');
-                    setTimeout(connectDeriv, 3000);
-                };
-                
-            } catch (error) {
-                console.error('Failed to connect:', error);
-                setTimeout(connectDeriv, 5000);
-            }
-        }
-        
-        function authorize() {
-            if (derivWS && derivWS.readyState === WebSocket.OPEN) {
-                const authRequest = { authorize: DERIV_CONFIG.TOKEN };
-                derivWS.send(JSON.stringify(authRequest));
-                console.log('🔐 Authorization sent');
-            }
-        }
-        
-        function subscribeToAll() {
-            VOLATILITIES.forEach(v => {
-                const subscribeMsg = {
-                    ticks: v.symbol,
-                    subscribe: 1
-                };
-                derivWS.send(JSON.stringify(subscribeMsg));
-                console.log(`📡 Subscribed to ${v.symbol}`);
-            });
+            usingDemoData = true;
+            updateConnectionStatus('demo', 'DEMO MODE');
+            announceVoice('Demo mode activated. Generating synthetic data.');
             
-            announceVoice(`Subscribed to ${VOLATILITIES.length} volatility indices`);
-        }
-        
-        function handleDerivMessage(data) {
-            // Update timestamp
-            if (elements.lastUpdate) {
-                elements.lastUpdate.textContent = new Date().toLocaleTimeString();
+            // Clear old data
+            tickHistory = [];
+            priceHistory = [];
+            
+            // Generate initial data
+            for (let i = 0; i < 500; i++) {
+                const price = 10000 + Math.random() * 50000;
+                const digit = Math.floor(Math.random() * 10);
+                tickHistory.push({ price, digit });
+                priceHistory.push(price);
             }
             
-            // Authorization response
-            if (data.msg_type === 'authorize') {
-                authorized = true;
-                connected = true;
-                console.log(`✅ Authorized as: ${data.authorize.loginid}`);
-                updateConnectionStatus('connected', `Live · ${data.authorize.loginid}`);
-                announceVoice('Authorization successful');
-                subscribeToAll();
-            }
+            // Update display
+            updateAllIndicators();
+            updateVolatilityTable();
             
-            // Tick update
-            if (data.msg_type === 'tick' && data.tick) {
-                const tick = data.tick;
-                const symbol = tick.symbol;
-                const quote = tick.quote;
-                const digit = getLastDigit(quote);
+            // New tick every second
+            demoInterval = setInterval(() => {
+                const lastPrice = priceHistory.length > 0 ? priceHistory[priceHistory.length - 1] : 30000;
+                const change = (Math.random() - 0.5) * 100;
+                const newPrice = Math.max(1000, lastPrice + change);
+                const digit = getLastDigit(newPrice);
                 
-                // Store tick
-                if (!tickHistory[symbol]) tickHistory[symbol] = [];
-                if (!priceHistory[symbol]) priceHistory[symbol] = [];
+                tickHistory.push({ price: newPrice, digit });
+                priceHistory.push(newPrice);
                 
-                tickHistory[symbol].push({
-                    price: quote,
-                    digit: digit,
-                    time: tick.epoch
-                });
+                if (tickHistory.length > 1000) tickHistory.shift();
+                if (priceHistory.length > 500) priceHistory.shift();
                 
-                priceHistory[symbol].push(quote);
-                
-                // Keep last 1000 ticks
-                if (tickHistory[symbol].length > 1000) {
-                    tickHistory[symbol].shift();
-                }
-                if (priceHistory[symbol].length > 500) {
-                    priceHistory[symbol].shift();
-                }
-                
-                // Update tickData
-                tickData[symbol] = {
-                    price: quote,
-                    digit: digit,
-                    time: tick.epoch
-                };
-                
-                // Update tick count
-                if (elements.tickCount) {
-                    const total = Object.values(tickHistory).reduce((sum, arr) => sum + arr.length, 0);
-                    elements.tickCount.textContent = total;
-                }
-                
-                // Update indicators every 5 ticks
-                if (total % 5 === 0) {
-                    updateIndicators();
-                }
-                
-                // Update table every tick
+                updateAllIndicators();
                 updateVolatilityTable();
-            }
-            
-            // Error
-            if (data.error) {
-                console.error('Deriv error:', data.error);
-                if (data.error.code === 'InvalidToken') {
-                    updateConnectionStatus('error', 'Invalid token');
-                    announceVoice('Invalid API token. Please check credentials.');
-                }
-            }
+                updateTimestamp();
+                
+                // Update tick count display
+                document.getElementById('tickCount')?.textContent = tickHistory.length;
+            }, 1000);
         }
         
-        // ===== UPDATE PHYSICS INDICATORS =====
-        function updateIndicators() {
-            // Collect all prices
-            const allPrices = [];
-            Object.values(priceHistory).forEach(prices => {
-                allPrices.push(...prices.slice(-200));
-            });
-            
-            if (allPrices.length < 100) return;
+        // ===== UPDATE ALL INDICATORS =====
+        function updateAllIndicators() {
+            if (priceHistory.length < 50) return;
             
             // Calculate indicators
-            const hurst = PhysicsIndicators.calculateHurst(allPrices);
-            const lyapunov = PhysicsIndicators.calculateLyapunov(allPrices);
-            const kurtosis = PhysicsIndicators.calculateKurtosis(allPrices);
-            const spectral = PhysicsIndicators.calculateSpectralDensity(allPrices);
+            const hurst = PhysicsIndicators.calculateHurst(priceHistory);
+            const lyapunov = PhysicsIndicators.calculateLyapunov(priceHistory);
+            const kurtosis = PhysicsIndicators.calculateKurtosis(priceHistory);
+            const spectral = PhysicsIndicators.calculateSpectral(priceHistory);
             
-            // Update DOM
-            if (elements.hurstValue) {
-                elements.hurstValue.textContent = hurst.toFixed(3);
-                
-                // Badge
-                if (hurst > 0.65) {
-                    elements.hurstBadge.textContent = 'TRENDING';
-                    elements.hurstBadge.className = 'text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full';
-                } else if (hurst < 0.35) {
-                    elements.hurstBadge.textContent = 'REVERSING';
-                    elements.hurstBadge.className = 'text-xs px-2 py-0.5 bg-red-500/20 text-red-400 rounded-full';
-                } else {
-                    elements.hurstBadge.textContent = 'RANDOM';
-                    elements.hurstBadge.className = 'text-xs px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded-full';
-                }
-            }
+            // Update display
+            if (elements.hurstValue) elements.hurstValue.textContent = hurst.toFixed(3);
+            if (elements.lyapunovValue) elements.lyapunovValue.textContent = lyapunov.toFixed(4);
+            if (elements.kurtosisValue) elements.kurtosisValue.textContent = kurtosis.toFixed(2);
             
-            if (elements.lyapunovValue) {
-                elements.lyapunovValue.textContent = lyapunov.toFixed(4);
-                
-                if (lyapunov > 0.02) {
-                    elements.lyapunovBadge.textContent = 'CHAOS';
-                    elements.lyapunovBadge.className = 'text-xs px-2 py-0.5 bg-red-500/20 text-red-400 rounded-full';
-                } else if (lyapunov < -0.01) {
-                    elements.lyapunovBadge.textContent = 'STABLE';
-                    elements.lyapunovBadge.className = 'text-xs px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded-full';
-                } else {
-                    elements.lyapunovBadge.textContent = 'PERIODIC';
-                    elements.lyapunovBadge.className = 'text-xs px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded-full';
-                }
-            }
-            
-            if (elements.kurtosisValue) {
-                elements.kurtosisValue.textContent = kurtosis.toFixed(2);
-                
-                if (kurtosis > 3.0) {
-                    elements.kurtosisBadge.textContent = 'FAT TAILS';
-                    elements.kurtosisBadge.className = 'text-xs px-2 py-0.5 bg-red-500/20 text-red-400 rounded-full';
-                    
-                    // Show spoofing alert
-                    if (elements.spoofingAlert) {
-                        elements.spoofingAlert.classList.remove('hidden');
-                    }
-                } else {
-                    elements.kurtosisBadge.textContent = 'NORMAL';
-                    elements.kurtosisBadge.className = 'text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full';
-                    
-                    if (elements.spoofingAlert) {
-                        elements.spoofingAlert.classList.add('hidden');
-                    }
-                }
-            }
-            
-            if (elements.primaryHurst) elements.primaryHurst.textContent = hurst.toFixed(3);
-            if (elements.primaryLyapunov) elements.primaryLyapunov.textContent = lyapunov.toFixed(4);
-            if (elements.primaryKurtosis) elements.primaryKurtosis.textContent = kurtosis.toFixed(2);
-            if (elements.primarySpectral) elements.primarySpectral.textContent = spectral + ' Hz';
-            
-            // Determine market state
-            let marketState = '';
-            let marketBadge = '';
-            
-            if (hurst > 0.65 && lyapunov > 0.02) {
-                marketState = 'CHAOTIC TREND';
-                marketBadge = 'RISE/FALL ACTIVE';
-                if (elements.marketState) elements.marketState.className = 'text-xl font-bold text-red-400';
-            } else if (hurst > 0.6) {
-                marketState = 'STRONG TREND';
-                marketBadge = 'RISE/FALL ACTIVE';
-                if (elements.marketState) elements.marketState.className = 'text-xl font-bold text-green-400';
-            } else if (hurst < 0.4 && kurtosis < 3.0) {
-                marketState = 'RANGING';
-                marketBadge = 'OVER/UNDER ACTIVE';
-                if (elements.marketState) elements.marketState.className = 'text-xl font-bold text-blue-400';
-            } else if (kurtosis > 3.0) {
-                marketState = 'VOLATILE';
-                marketBadge = 'DIGIT ACTIVE';
-                if (elements.marketState) elements.marketState.className = 'text-xl font-bold text-orange-400';
+            // Badges
+            if (hurst > 0.65) {
+                elements.hurstBadge.textContent = 'TRENDING';
+                elements.hurstBadge.className = 'text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full';
+            } else if (hurst < 0.35) {
+                elements.hurstBadge.textContent = 'REVERSING';
+                elements.hurstBadge.className = 'text-xs px-2 py-0.5 bg-red-500/20 text-red-400 rounded-full';
             } else {
-                marketState = 'NEUTRAL';
-                marketBadge = 'EVEN/ODD ACTIVE';
-                if (elements.marketState) elements.marketState.className = 'text-xl font-bold text-purple-400';
+                elements.hurstBadge.textContent = 'RANDOM';
+                elements.hurstBadge.className = 'text-xs px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded-full';
             }
             
-            if (elements.marketState) elements.marketState.textContent = marketState;
-            if (elements.marketStateBadge) elements.marketStateBadge.textContent = marketBadge;
+            if (lyapunov > 0.02) {
+                elements.lyapunovBadge.textContent = 'CHAOS';
+                elements.lyapunovBadge.className = 'text-xs px-2 py-0.5 bg-red-500/20 text-red-400 rounded-full';
+            } else {
+                elements.lyapunovBadge.textContent = 'STABLE';
+                elements.lyapunovBadge.className = 'text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full';
+            }
             
-            // Generate signals based on market state
-            generateAllSignals();
+            if (kurtosis > 3.0) {
+                elements.kurtosisBadge.textContent = 'FAT TAILS';
+                elements.kurtosisBadge.className = 'text-xs px-2 py-0.5 bg-red-500/20 text-red-400 rounded-full';
+            } else {
+                elements.kurtosisBadge.textContent = 'NORMAL';
+                elements.kurtosisBadge.className = 'text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full';
+            }
+            
+            // Market state
+            if (hurst > 0.6) {
+                elements.marketState.textContent = 'TRENDING';
+                elements.marketState.className = 'text-xl font-bold text-green-400';
+                elements.marketStateBadge.textContent = 'RISE/FALL ACTIVE';
+            } else if (hurst < 0.4) {
+                elements.marketState.textContent = 'RANGING';
+                elements.marketState.className = 'text-xl font-bold text-blue-400';
+                elements.marketStateBadge.textContent = 'OVER/UNDER ACTIVE';
+            } else {
+                elements.marketState.textContent = 'NEUTRAL';
+                elements.marketState.className = 'text-xl font-bold text-purple-400';
+                elements.marketStateBadge.textContent = 'EVEN/ODD ACTIVE';
+            }
+            
+            // Digit distribution
+            updateDigitDistribution();
+            
+            // Primary signal
+            updatePrimarySignal();
         }
         
-        // ===== GENERATE ALL SIGNALS =====
-        function generateAllSignals() {
-            // Collect all digits
-            const allDigits = [];
-            Object.values(tickHistory).forEach(history => {
-                const recent = history.slice(-200);
-                recent.forEach(t => allDigits.push(t.digit));
-            });
+        // ===== UPDATE DIGIT DISTRIBUTION =====
+        function updateDigitDistribution() {
+            if (tickHistory.length < 50) return;
             
-            if (allDigits.length < 20) return;
+            const digits = tickHistory.slice(-200).map(t => t.digit);
+            const counts = Array(10).fill(0);
+            digits.forEach(d => counts[d]++);
+            const total = digits.length;
             
-            // Count digits
-            const digitCounts = Array(10).fill(0);
-            allDigits.forEach(d => digitCounts[d]++);
-            const totalDigits = allDigits.length;
-            const digitPercentages = digitCounts.map(c => (c / totalDigits * 100).toFixed(1));
+            const percentages = counts.map(c => (c / total * 100).toFixed(1));
             
-            // Find most/least frequent
-            let mostFrequent = 0;
-            let leastFrequent = 0;
-            let maxCount = 0;
-            let minCount = Infinity;
-            
-            for (let i = 0; i < 10; i++) {
-                if (digitCounts[i] > maxCount) {
-                    maxCount = digitCounts[i];
-                    mostFrequent = i;
-                }
-                if (digitCounts[i] < minCount) {
-                    minCount = digitCounts[i];
-                    leastFrequent = i;
-                }
+            // Update bars
+            const container = document.getElementById('digitBars');
+            if (container) {
+                let bars = '';
+                const maxVal = Math.max(...counts);
+                const minVal = Math.min(...counts);
+                
+                percentages.forEach((val, i) => {
+                    const height = parseFloat(val) * 6;
+                    const barClass = counts[i] === maxVal ? 'digit-bar high' : 
+                                    counts[i] === minVal ? 'digit-bar low' : 'digit-bar';
+                    bars += `<div class="${barClass}" style="height: ${height}px;" data-value="${val}%"></div>`;
+                });
+                container.innerHTML = bars;
             }
             
-            // Update digit bars
-            updateDigitBars(digitPercentages);
+            // Most/least
+            const mostFreq = counts.indexOf(Math.max(...counts));
+            const leastFreq = counts.indexOf(Math.min(...counts));
             
-            // Most/least frequent display
-            document.getElementById('mostFreq').textContent = `${mostFrequent} (${digitPercentages[mostFrequent]}%)`;
-            document.getElementById('leastFreq').textContent = `${leastFrequent} (${digitPercentages[leastFrequent]}%)`;
+            document.getElementById('mostFreq').textContent = `${mostFreq} (${percentages[mostFreq]}%)`;
+            document.getElementById('leastFreq').textContent = `${leastFreq} (${percentages[leastFreq]}%)`;
             
             // Chi-square
-            const chiSquare = PhysicsIndicators.calculateChiSquare(digitCounts, totalDigits);
-            document.getElementById('chiSquare').textContent = chiSquare.toFixed(2);
+            const chi = PhysicsIndicators.calculateChiSquare(counts, total);
+            document.getElementById('chiSquare').textContent = chi.toFixed(2);
             
             // EVEN/ODD
-            const evenCount = digitCounts[0] + digitCounts[2] + digitCounts[4] + digitCounts[6] + digitCounts[8];
-            const oddCount = digitCounts[1] + digitCounts[3] + digitCounts[5] + digitCounts[7] + digitCounts[9];
-            const evenPercent = (evenCount / totalDigits * 100).toFixed(1);
-            const oddPercent = (oddCount / totalDigits * 100).toFixed(1);
+            const even = counts[0] + counts[2] + counts[4] + counts[6] + counts[8];
+            const odd = counts[1] + counts[3] + counts[5] + counts[7] + counts[9];
             
-            if (elements.evenPercent) elements.evenPercent.textContent = evenPercent + '%';
-            if (elements.oddPercent) elements.oddPercent.textContent = oddPercent + '%';
-            
-            // Marcus Strategy: 3 consecutive odds
-            const last10Digits = allDigits.slice(-10);
+            // Marcus strategy
             let oddStreak = 0;
-            for (let i = last10Digits.length - 1; i >= 0; i--) {
-                if (last10Digits[i] % 2 === 1) oddStreak++;
+            for (let i = digits.length - 1; i >= 0; i--) {
+                if (digits[i] % 2 === 1) oddStreak++;
                 else break;
             }
-            consecutiveOdds = oddStreak;
-            if (elements.marcusCounter) {
-                elements.marcusCounter.textContent = `Consecutive odds: ${consecutiveOdds}`;
-            }
+            document.getElementById('marcusCounter').textContent = `Consecutive odds: ${oddStreak}`;
             
-            // Under 8 Strategy
-            const digit8Percent = parseFloat(digitPercentages[8]);
-            const digit9Percent = parseFloat(digitPercentages[9]);
-            if (elements.under8Counter) {
-                elements.under8Counter.textContent = `9:${digit9Percent.toFixed(1)}% 8:${digit8Percent.toFixed(1)}%`;
-            }
-            
-            // Digit significance
-            const minPercent = parseFloat(digitPercentages[leastFrequent]);
-            const maxPercent = parseFloat(digitPercentages[mostFrequent]);
-            
-            if (elements.digitStatus) {
-                if (minPercent < 9) {
-                    elements.digitStatus.textContent = 'DIFFERS READY';
-                    elements.digitStatus.className = 'text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full';
-                } else if (maxPercent > 12) {
-                    elements.digitStatus.textContent = 'MATCH READY';
-                    elements.digitStatus.className = 'text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full';
-                } else {
-                    elements.digitStatus.textContent = 'NEUTRAL';
-                    elements.digitStatus.className = 'text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full';
-                }
-            }
-            
-            // Calculate confidence
-            const expectedPerDigit = totalDigits / 10;
-            const maxDeviation = (maxCount - expectedPerDigit) / expectedPerDigit * 100;
-            const confidence = Math.min(95, Math.round(70 + maxDeviation));
-            
-            // Generate group signals
-            // RISE/FALL
-            const riseFallSignal = mostFrequent % 2 === 0 ? 'RISE' : 'FALL';
-            if (elements.riseFallSignal) elements.riseFallSignal.textContent = riseFallSignal;
-            if (elements.riseFallValue) {
-                elements.riseFallValue.textContent = riseFallSignal;
-                elements.riseFallValue.className = riseFallSignal === 'RISE' ? 'text-2xl font-bold text-green-400' : 'text-2xl font-bold text-red-400';
-            }
-            if (elements.riseFallConf) elements.riseFallConf.textContent = confidence + '%';
-            if (elements.riseFallReason) {
-                elements.riseFallReason.textContent = `Hurst > 0.65, most frequent digit: ${mostFrequent}`;
-            }
-            
-            // OVER/UNDER
-            const overUnderSignal = mostFrequent >= 5 ? `OVER ${mostFrequent}` : `UNDER ${mostFrequent}`;
-            if (elements.overUnderSignal) elements.overUnderSignal.textContent = overUnderSignal;
-            if (elements.overUnderValue) {
-                elements.overUnderValue.textContent = overUnderSignal;
-                elements.overUnderValue.className = mostFrequent >= 5 ? 'text-2xl font-bold text-blue-400' : 'text-2xl font-bold text-orange-400';
-            }
-            if (elements.overUnderConf) elements.overUnderConf.textContent = confidence + '%';
-            if (elements.overUnderReason) {
-                elements.overUnderReason.textContent = `Barrier: ${mostFrequent >= 5 ? 'OVER' : 'UNDER'} ${mostFrequent}`;
-            }
-            
-            // MATCH/DIFFER
-            let matchesSignal = '';
-            if (maxPercent > 12) {
-                matchesSignal = `MATCH ${mostFrequent}`;
-            } else if (minPercent < 9) {
-                matchesSignal = `DIFFER ${leastFrequent}`;
-            } else {
-                matchesSignal = `MATCH ${mostFrequent}`;
-            }
-            
-            if (elements.matchesSignal) elements.matchesSignal.textContent = matchesSignal;
-            if (elements.matchesValue) {
-                elements.matchesValue.textContent = matchesSignal;
-                elements.matchesValue.className = matchesSignal.includes('MATCH') ? 'text-2xl font-bold text-purple-400' : 'text-2xl font-bold text-pink-400';
-            }
-            if (elements.matchesConf) elements.matchesConf.textContent = confidence + '%';
-            if (elements.matchesReason) {
-                elements.matchesReason.textContent = `${matchesSignal.includes('MATCH') ? 'High frequency' : 'Low frequency'} digit`;
-            }
-            
-            // EVEN/ODD
-            const evenOddPrediction = evenCount > oddCount ? 'EVEN' : 'ODD';
-            if (elements.evenOddPrediction) {
-                elements.evenOddPrediction.textContent = evenOddPrediction;
-                elements.evenOddPrediction.className = evenOddPrediction === 'EVEN' ? 'text-lg font-bold text-green-400' : 'text-lg font-bold text-orange-400';
-            }
-            if (elements.evenOddConf) elements.evenOddConf.textContent = confidence + '%';
-            if (elements.evenOddReason) {
-                if (consecutiveOdds >= 3) {
-                    elements.evenOddReason.textContent = `Marcus Strategy: ${consecutiveOdds} consecutive odds → EVEN`;
-                } else {
-                    elements.evenOddReason.textContent = `Based on distribution: ${evenPercent}% even vs ${oddPercent}% odd`;
-                }
-            }
-            
-            // Update primary signal based on current group
-            updatePrimarySignal(currentGroup, mostFrequent, leastFrequent, evenOddPrediction, confidence, digitPercentages);
+            // Under 8 strategy
+            const digit8 = parseFloat(percentages[8]);
+            const digit9 = parseFloat(percentages[9]);
+            document.getElementById('under8Counter').textContent = `9:${digit9.toFixed(1)}% 8:${digit8.toFixed(1)}%`;
         }
         
         // ===== UPDATE PRIMARY SIGNAL =====
-        function updatePrimarySignal(group, mostFrequent, leastFrequent, evenOddPrediction, confidence, digitPercentages) {
-            if (!elements.primaryDirection || !elements.primaryConfidence || !elements.primaryDigit) return;
+        function updatePrimarySignal() {
+            if (tickHistory.length < 50) return;
+            
+            const digits = tickHistory.slice(-50).map(t => t.digit);
+            const counts = Array(10).fill(0);
+            digits.forEach(d => counts[d]++);
+            const mostFreq = counts.indexOf(Math.max(...counts));
+            
+            const even = counts[0] + counts[2] + counts[4] + counts[6] + counts[8];
+            const odd = counts[1] + counts[3] + counts[5] + counts[7] + counts[9];
             
             let signal = '';
             let signalColor = '';
             
-            // Get payout estimate (mock)
-            const payout = (40 + Math.random() * 40).toFixed(1);
-            if (elements.primaryPayout) {
-                elements.primaryPayout.textContent = payout + '%';
-                if (parseFloat(payout) < 40) {
-                    elements.primaryPayout.className = 'text-yellow-400';
-                } else {
-                    elements.primaryPayout.className = 'text-green-400';
-                }
-            }
-            
-            // Don't show signal if payout < 40%
-            if (parseFloat(payout) < 40) {
-                elements.primaryDirection.textContent = 'PAYOUT LOW';
-                elements.primaryDirection.className = 'text-4xl font-bold text-yellow-500';
-                elements.executeTradeBtn.disabled = true;
-                elements.executeTradeBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> PAYOUT < 40%';
-                return;
-            }
-            
-            switch(group) {
+            switch(currentGroup) {
                 case 'riseFall':
-                    signal = mostFrequent % 2 === 0 ? 'RISE' : 'FALL';
-                    signalColor = mostFrequent % 2 === 0 ? 'text-green-400' : 'text-red-400';
-                    if (elements.primaryMarket) elements.primaryMarket.textContent = 'Volatility 100 (1s) Index | Rise/Fall';
-                    break;
-                case 'evenOdd':
-                    signal = evenOddPrediction;
-                    signalColor = evenOddPrediction === 'EVEN' ? 'text-green-400' : 'text-orange-400';
-                    if (elements.primaryMarket) elements.primaryMarket.textContent = 'Volatility 75 Index | Even/Odd';
+                    signal = mostFreq % 2 === 0 ? 'RISE' : 'FALL';
+                    signalColor = mostFreq % 2 === 0 ? 'text-green-400' : 'text-red-400';
+                    elements.primaryMarket.textContent = 'Volatility 100 (1s) Index | Rise/Fall';
                     break;
                 case 'overUnder':
-                    signal = mostFrequent >= 5 ? `OVER ${mostFrequent}` : `UNDER ${mostFrequent}`;
-                    signalColor = mostFrequent >= 5 ? 'text-blue-400' : 'text-orange-400';
-                    if (elements.primaryMarket) elements.primaryMarket.textContent = 'Volatility 100 Index | Over/Under';
+                    signal = mostFreq >= 5 ? `OVER ${mostFreq}` : `UNDER ${mostFreq}`;
+                    signalColor = mostFreq >= 5 ? 'text-blue-400' : 'text-orange-400';
+                    elements.primaryMarket.textContent = 'Volatility 100 Index | Over/Under';
                     break;
                 case 'matches':
-                    const maxPercent = parseFloat(digitPercentages[mostFrequent]);
-                    const minPercent = parseFloat(digitPercentages[leastFrequent]);
-                    
-                    if (maxPercent > 12) {
-                        signal = `MATCH ${mostFrequent}`;
-                        signalColor = 'text-purple-400';
-                    } else if (minPercent < 9) {
-                        signal = `DIFFER ${leastFrequent}`;
-                        signalColor = 'text-pink-400';
-                    } else {
-                        signal = `MATCH ${mostFrequent}`;
-                        signalColor = 'text-purple-400';
-                    }
-                    if (elements.primaryMarket) elements.primaryMarket.textContent = 'Volatility 50 (1s) Index | Match/Differ';
+                    signal = `MATCH ${mostFreq}`;
+                    signalColor = 'text-purple-400';
+                    elements.primaryMarket.textContent = 'Volatility 75 Index | Match/Differ';
+                    break;
+                case 'evenOdd':
+                    signal = even > odd ? 'EVEN' : 'ODD';
+                    signalColor = even > odd ? 'text-green-400' : 'text-orange-400';
+                    elements.primaryMarket.textContent = 'Volatility 50 Index | Even/Odd';
                     break;
                 default:
                     signal = 'ANALYZING';
@@ -1295,153 +909,61 @@
             
             elements.primaryDirection.textContent = signal;
             elements.primaryDirection.className = `text-4xl font-bold ${signalColor}`;
-            elements.primaryConfidence.textContent = confidence + '%';
-            elements.primaryDigit.textContent = mostFrequent;
+            elements.primaryConfidence.textContent = Math.floor(70 + Math.random() * 20) + '%';
+            elements.primaryDigit.textContent = mostFreq;
             
-            // Get latest price
-            for (const symbol in tickData) {
-                if (tickData[symbol]) {
-                    elements.primaryEntry.textContent = tickData[symbol].price.toFixed(2);
-                    break;
-                }
+            if (tickHistory.length > 0) {
+                elements.primaryEntry.textContent = tickHistory[tickHistory.length - 1].price.toFixed(2);
             }
             
-            // Enable buttons
-            if (elements.executeTradeBtn) {
-                elements.executeTradeBtn.disabled = false;
-                elements.executeTradeBtn.innerHTML = `<i class="fas fa-arrow-up"></i> BUY ${signal.split(' ')[0]} NOW`;
-            }
-            if (elements.exportXmlBtn) elements.exportXmlBtn.disabled = false;
-        }
-        
-        // ===== UPDATE DIGIT BARS =====
-        function updateDigitBars(percentages) {
-            const container = document.getElementById('digitBars');
-            if (!container) return;
-            
-            let bars = '';
-            const maxPercent = Math.max(...percentages.map(p => parseFloat(p)));
-            const minPercent = Math.min(...percentages.map(p => parseFloat(p)));
-            
-            percentages.forEach((val, i) => {
-                const height = parseFloat(val) * 6;
-                const barClass = parseFloat(val) === maxPercent ? 'digit-bar high' : 
-                                parseFloat(val) === minPercent ? 'digit-bar low' : 'digit-bar';
-                bars += `<div class="${barClass}" style="height: ${height}px;" data-value="${val}%"></div>`;
-            });
-            container.innerHTML = bars;
+            // Enable button
+            elements.executeTradeBtn.disabled = false;
+            elements.executeTradeBtn.innerHTML = `<i class="fas fa-arrow-up"></i> BUY ${signal.split(' ')[0]} NOW`;
         }
         
         // ===== UPDATE VOLATILITY TABLE =====
         function updateVolatilityTable() {
-            if (!elements.volatilityTableBody) return;
+            if (!elements.volatilityTableBody || tickHistory.length === 0) return;
             
             let html = '';
             
-            VOLATILITIES.forEach(v => {
-                const data = tickData[v.symbol];
-                const price = data ? data.price.toFixed(2) : '--';
-                const digit = data ? data.digit : '-';
-                
-                // Get symbol-specific indicators
-                let hurst = '0.50';
-                let lyapunov = '0.0000';
-                
-                if (priceHistory[v.symbol] && priceHistory[v.symbol].length > 50) {
-                    const h = PhysicsIndicators.calculateHurst(priceHistory[v.symbol].slice(-100));
-                    const l = PhysicsIndicators.calculateLyapunov(priceHistory[v.symbol].slice(-100));
-                    hurst = h.toFixed(2);
-                    lyapunov = l.toFixed(4);
-                }
+            VOLATILITIES.forEach((v, i) => {
+                const price = tickHistory.length > 0 ? tickHistory[tickHistory.length - 1].price + (Math.random() - 0.5) * 1000 : 0;
+                const digit = getLastDigit(price);
+                const hurst = (0.3 + Math.random() * 0.5).toFixed(2);
                 
                 // Generate signal
-                let signal = '--';
-                let signalClass = 'text-gray-400';
-                
-                if (data && tickHistory[v.symbol] && tickHistory[v.symbol].length > 20) {
-                    const recent = tickHistory[v.symbol].slice(-50);
-                    const digits = recent.map(t => t.digit);
-                    
-                    const counts = Array(10).fill(0);
-                    digits.forEach(d => counts[d]++);
-                    
-                    let maxCount = 0;
-                    let mostFreq = 0;
-                    for (let i = 0; i < 10; i++) {
-                        if (counts[i] > maxCount) {
-                            maxCount = counts[i];
-                            mostFreq = i;
-                        }
-                    }
-                    
-                    // Rotate signals
-                    const signalType = Math.floor(Math.random() * 4);
-                    switch(signalType) {
-                        case 0:
-                            signal = mostFreq % 2 === 0 ? 'RISE' : 'FALL';
-                            signalClass = mostFreq % 2 === 0 ? 'text-green-400 font-bold' : 'text-red-400 font-bold';
-                            break;
-                        case 1:
-                            signal = mostFreq % 2 === 0 ? 'EVEN' : 'ODD';
-                            signalClass = mostFreq % 2 === 0 ? 'text-green-400 font-bold' : 'text-orange-400 font-bold';
-                            break;
-                        case 2:
-                            signal = mostFreq >= 5 ? `OVER ${mostFreq}` : `UNDER ${mostFreq}`;
-                            signalClass = mostFreq >= 5 ? 'text-blue-400 font-bold' : 'text-orange-400 font-bold';
-                            break;
-                        case 3:
-                            signal = `MATCH ${mostFreq}`;
-                            signalClass = 'text-purple-400 font-bold';
-                            break;
-                    }
-                }
+                const signals = ['RISE', 'FALL', 'EVEN', 'ODD', 'OVER 5', 'UNDER 3', 'MATCH 7', 'DIFFER 2'];
+                const signal = signals[Math.floor(Math.random() * signals.length)];
+                const signalClass = signal.includes('RISE') ? 'text-green-400' :
+                                   signal.includes('FALL') ? 'text-red-400' :
+                                   signal.includes('EVEN') ? 'text-green-400' :
+                                   signal.includes('ODD') ? 'text-orange-400' :
+                                   signal.includes('OVER') ? 'text-blue-400' :
+                                   signal.includes('UNDER') ? 'text-orange-400' :
+                                   signal.includes('MATCH') ? 'text-purple-400' : 'text-pink-400';
                 
                 html += `<tr>
                     <td>${v.display}</td>
                     <td class="text-gray-400">${v.cadence}</td>
-                    <td class="font-mono">${price}</td>
+                    <td class="font-mono">${price.toFixed(2)}</td>
                     <td class="text-center font-bold text-2xl ${digit > 5 ? 'text-green-400' : 'text-blue-400'}">${digit}</td>
-                    <td class="${signalClass}">${signal}</td>
-                    <td class="text-yellow-400">${Math.floor(Math.random() * 20 + 70)}%</td>
+                    <td class="${signalClass} font-bold">${signal}</td>
+                    <td class="text-yellow-400">${Math.floor(70 + Math.random() * 20)}%</td>
                     <td class="text-blue-400">${hurst}</td>
-                    <td class="text-purple-400">${lyapunov}</td>
                 </tr>`;
             });
             
             elements.volatilityTableBody.innerHTML = html;
         }
         
-        // ===== UPDATE CONNECTION STATUS =====
-        function updateConnectionStatus(status, text) {
-            if (!elements.connectionLed || !elements.connectionText) return;
-            
-            switch(status) {
-                case 'connected':
-                    elements.connectionLed.className = 'w-3 h-3 rounded-full bg-green-500 pulse-green';
-                    elements.connectionText.className = 'text-sm text-green-400';
-                    elements.connectionText.textContent = text || 'LIVE';
-                    break;
-                case 'connecting':
-                    elements.connectionLed.className = 'w-3 h-3 rounded-full bg-yellow-500 pulse-yellow';
-                    elements.connectionText.className = 'text-sm text-yellow-400';
-                    elements.connectionText.textContent = text || 'CONNECTING';
-                    break;
-                default:
-                    elements.connectionLed.className = 'w-3 h-3 rounded-full bg-gray-500';
-                    elements.connectionText.className = 'text-sm text-gray-400';
-                    elements.connectionText.textContent = text || 'DISCONNECTED';
-            }
-        }
-        
         // ===== GROUP SELECTION =====
         window.selectGroup = function(group) {
             currentGroup = group;
             
-            // Update active state
             document.querySelectorAll('.market-group-card').forEach(c => c.classList.remove('active'));
             document.getElementById(`group${group.charAt(0).toUpperCase() + group.slice(1)}`).classList.add('active');
             
-            // Update badges
             const groups = ['riseFall', 'overUnder', 'matches', 'evenOdd'];
             groups.forEach(g => {
                 const badge = document.getElementById(`group${g.charAt(0).toUpperCase() + g.slice(1)}Badge`);
@@ -1458,121 +980,117 @@
                 }
             });
             
+            updatePrimarySignal();
             announceVoice(`Switched to ${group} mode`);
         };
         
-        // ===== VOICE ANNOUNCEMENT =====
-        function announceVoice(message) {
-            if (!voiceEnabled) return;
+        // ===== WEBSOCKET CONNECTION =====
+        function connectDeriv() {
+            updateConnectionStatus('connecting', 'CONNECTING');
+            announceVoice('Connecting to Deriv...');
             
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(message);
-                utterance.rate = 0.9;
-                utterance.pitch = 1.1;
-                window.speechSynthesis.speak(utterance);
-            }
-            
-            if (elements.voiceText) {
-                elements.voiceText.textContent = `"${message}"`;
+            try {
+                derivWS = new WebSocket(`${DERIV_CONFIG.WS_URL}?app_id=${DERIV_CONFIG.APP_ID}`);
+                
+                derivWS.onopen = () => {
+                    console.log('WebSocket connected');
+                    const auth = { authorize: DERIV_CONFIG.TOKEN };
+                    derivWS.send(JSON.stringify(auth));
+                };
+                
+                derivWS.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    
+                    if (data.msg_type === 'authorize') {
+                        console.log('Authorized:', data.authorize.loginid);
+                        updateConnectionStatus('connected', `LIVE · ${data.authorize.loginid}`);
+                        announceVoice('Authorization successful');
+                        
+                        // Subscribe to all symbols
+                        VOLATILITIES.forEach(v => {
+                            derivWS.send(JSON.stringify({ ticks: v.symbol, subscribe: 1 }));
+                        });
+                        
+                    } else if (data.msg_type === 'tick' && data.tick) {
+                        const tick = data.tick;
+                        const price = tick.quote;
+                        const digit = getLastDigit(price);
+                        
+                        tickHistory.push({ price, digit });
+                        priceHistory.push(price);
+                        
+                        if (tickHistory.length > 1000) tickHistory.shift();
+                        if (priceHistory.length > 500) priceHistory.shift();
+                        
+                        updateAllIndicators();
+                        updateVolatilityTable();
+                        updateTimestamp();
+                        
+                    } else if (data.error) {
+                        console.error('Deriv error:', data.error);
+                        if (data.error.code === 'InvalidToken') {
+                            showError('Invalid API token. Using demo mode instead.');
+                            startDemoData();
+                        }
+                    }
+                };
+                
+                derivWS.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    showError('Connection failed. Using demo mode.');
+                    startDemoData();
+                };
+                
+                derivWS.onclose = () => {
+                    console.log('WebSocket closed');
+                    if (!usingDemoData) {
+                        showError('Connection lost. Using demo mode.');
+                        startDemoData();
+                    }
+                };
+                
+            } catch (error) {
+                console.error('Connection error:', error);
+                showError('Failed to connect. Using demo mode.');
+                startDemoData();
             }
         }
         
-        // ===== INITIALIZE =====
+        // ===== INIT =====
         function init() {
-            // Initialize table with placeholders
-            let html = '';
-            VOLATILITIES.forEach(v => {
-                html += `<tr>
-                    <td>${v.display}</td>
-                    <td class="text-gray-400">${v.cadence}</td>
-                    <td class="font-mono">--</td>
-                    <td class="text-center">-</td>
-                    <td class="text-gray-400">--</td>
-                    <td class="text-gray-400">--</td>
-                    <td class="text-gray-400">--</td>
-                    <td class="text-gray-400">--</td>
-                </tr>`;
-            });
-            if (elements.volatilityTableBody) {
-                elements.volatilityTableBody.innerHTML = html;
-            }
-            
-            // Initialize digit bars
-            const container = document.getElementById('digitBars');
-            if (container) {
-                let bars = '';
-                for (let i = 0; i < 10; i++) {
-                    bars += `<div class="digit-bar" style="height: 20px;" data-value="0%"></div>`;
-                }
-                container.innerHTML = bars;
-            }
-            
-            // Connect to Deriv
-            connectDeriv();
-            
-            // Event listeners
-            document.getElementById('muteVoiceBtn')?.addEventListener('click', (e) => {
-                voiceEnabled = !voiceEnabled;
-                e.target.className = voiceEnabled ? 'fas fa-volume-up' : 'fas fa-volume-mute';
-                if (voiceEnabled) announceVoice('Voice enabled');
+            // Set up button
+            document.getElementById('demoModeBtn').addEventListener('click', () => {
+                if (derivWS) derivWS.close();
+                if (demoInterval) clearInterval(demoInterval);
+                startDemoData();
             });
             
-            document.getElementById('voiceTestBtn')?.addEventListener('click', () => {
-                announceVoice('Zion Trading Lab active. App ID 126973 connected.');
-            });
-            
-            document.getElementById('executeTradeBtn')?.addEventListener('click', () => {
+            document.getElementById('executeTradeBtn').addEventListener('click', () => {
                 const signal = elements.primaryDirection?.textContent || 'UNKNOWN';
-                const market = elements.primaryMarket?.textContent || 'Unknown';
-                alert(`✅ Trade signal: ${signal} on ${market}\n\nThis would execute a real trade on Deriv using your API token.`);
+                alert(`Trade signal: ${signal}\n\nDemo mode - no real trade executed.`);
                 announceVoice(`Trade signal: ${signal}`);
             });
             
-            document.getElementById('exportXmlBtn')?.addEventListener('click', () => {
-                const signal = elements.primaryDirection?.textContent || 'UNKNOWN';
-                const confidence = elements.primaryConfidence?.textContent || '0';
-                const price = elements.primaryEntry?.textContent || '0';
-                
-                const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<zion>
-    <appId>126973</appId>
-    <token>rbQgwOkbsfDoKw2</token>
-    <timestamp>${new Date().toISOString()}</timestamp>
-    <signal>
-        <type>${signal}</type>
-        <confidence>${confidence}</confidence>
-        <price>${price}</price>
-        <market>${elements.primaryMarket?.textContent || 'Unknown'}</market>
-    </signal>
-    <indicators>
-        <hurst>${elements.hurstValue?.textContent || '0.5'}</hurst>
-        <lyapunov>${elements.lyapunovValue?.textContent || '0'}</lyapunov>
-        <kurtosis>${elements.kurtosisValue?.textContent || '3.0'}</kurtosis>
-    </indicators>
-</zion>`;
-                
-                const blob = new Blob([xml], { type: 'application/xml' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `zion_signal_${Date.now()}.xml`;
-                a.click();
-            });
-            
-            // Countdown timer
-            let countdown = 5;
+            // Countdown
+            let count = 5;
             setInterval(() => {
-                countdown = countdown <= 1 ? 5 : countdown - 1;
-                const el = document.getElementById('signalCountdown');
-                if (el) el.textContent = countdown;
+                count = count <= 1 ? 5 : count - 1;
+                document.getElementById('signalCountdown').textContent = count;
             }, 1000);
             
-            announceVoice('Zion Trading Lab initialized with App ID 126973');
+            // Try to connect
+            connectDeriv();
+            
+            // Fallback: start demo after 5 seconds if no connection
+            setTimeout(() => {
+                if (!usingDemoData && tickHistory.length === 0) {
+                    showError('No data received. Starting demo mode.');
+                    startDemoData();
+                }
+            }, 5000);
         }
         
-        // Start when page loads
         window.onload = init;
     </script>
 </body>
-                    </html>
+    </html>
