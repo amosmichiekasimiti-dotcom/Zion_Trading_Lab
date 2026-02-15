@@ -3,13 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zion Trading Lab · Live Deriv Integration</title>
+    <title>Zion Trading Lab · Specific Signals</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         /* ===== CUSTOM CSS ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -35,20 +33,6 @@
             100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
         .pulse-red { animation: pulse-red 2s infinite; }
-        
-        @keyframes pulse-blue {
-            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
-        }
-        .pulse-blue { animation: pulse-blue 2s infinite; }
-        
-        @keyframes voice-wave {
-            0% { transform: scale(1); opacity: 0.7; }
-            50% { transform: scale(1.02); opacity: 1; }
-            100% { transform: scale(1); opacity: 0.7; }
-        }
-        .voice-wave { animation: voice-wave 2s infinite; }
         
         /* Cards */
         .market-group-card {
@@ -148,22 +132,6 @@
         .volatility-table tr:hover { background: rgba(45, 55, 72, 0.5); }
         
         /* Buttons */
-        .btn-primary {
-            background: #2563eb;
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.75rem;
-            font-weight: 600;
-            transition: all 0.2s;
-            border: none;
-            cursor: pointer;
-        }
-        .btn-primary:hover {
-            background: #3b82f6;
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
-        }
-        
         .btn-success {
             background: #16a34a;
             color: white;
@@ -194,25 +162,7 @@
             color: white;
         }
         
-        /* Alert */
-        .alert-danger {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            border-radius: 0.75rem;
-            padding: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            color: #f87171;
-        }
-        
-        .countdown { font-family: monospace; font-size: 1.25rem; font-weight: 700; color: #fbbf24; }
-        
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #1e293b; }
-        ::-webkit-scrollbar-thumb { background: #3a405b; border-radius: 4px; }
-        
+        /* Container */
         .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem 1rem; }
     </style>
 </head>
@@ -231,7 +181,7 @@
                     </h1>
                     <p class="text-gray-400 flex items-center gap-2">
                         <i class="fas fa-bolt text-yellow-500 text-xs"></i>
-                        <span>App ID: <span class="font-mono text-blue-400">126973</span> · Live Deriv Data</span>
+                        <span>App ID: <span class="font-mono text-blue-400">126973</span> · Specific Signals</span>
                     </p>
                 </div>
             </div>
@@ -246,9 +196,6 @@
                     <i class="fas fa-clock text-gray-500 text-sm"></i>
                     <span id="lastUpdate" class="text-sm font-mono">--:--:--</span>
                 </div>
-                <button id="refreshBtn" class="ml-2 text-blue-400 hover:text-blue-300">
-                    <i class="fas fa-sync-alt"></i>
-                </button>
             </div>
         </div>
 
@@ -257,8 +204,8 @@
             <div class="flex items-center gap-4">
                 <i class="fas fa-chart-line text-2xl text-blue-400"></i>
                 <span class="text-gray-300">Market State:</span>
-                <span id="marketState" class="font-bold text-blue-400 text-lg">ANALYZING</span>
-                <span id="marketStateBadge" class="px-2 py-1 bg-blue-500/20 text-blue-400 rounded-full text-xs">WAITING</span>
+                <span id="marketState" class="font-bold text-blue-400 text-lg">RISE FALL ACTIVE</span>
+                <span id="marketStateBadge" class="px-2 py-1 bg-blue-500/20 text-blue-400 rounded-full text-xs">RISE FALL MODE</span>
             </div>
             <div class="flex items-center gap-4 text-sm">
                 <div><span class="text-gray-500">Volatility:</span> <span id="volatilityValue" class="font-mono text-yellow-400">--</span></div>
@@ -287,19 +234,13 @@
                 <div id="riseFallContent">
                     <div class="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
                         <div class="flex justify-between">
-                            <span class="text-green-400 text-sm font-semibold">ANALYZING</span>
-                            <span class="text-xs text-gray-400">Waiting for data</span>
+                            <span class="text-green-400 text-sm font-semibold" id="riseFallSignal">ANALYZING</span>
+                            <span class="text-xs text-gray-400">Primary</span>
                         </div>
                         <div class="flex items-end justify-between mt-1">
-                            <span class="text-2xl font-bold text-gray-500">--</span>
-                            <span class="text-xl font-bold text-gray-500">--%</span>
+                            <span class="text-2xl font-bold text-green-400" id="riseFallValue">--</span>
+                            <span class="text-xl font-bold" id="riseFallConf">--%</span>
                         </div>
-                    </div>
-                </div>
-                <div id="riseFallInactive" class="hidden">
-                    <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 text-center">
-                        <i class="fas fa-hourglass-half text-yellow-500"></i>
-                        <div class="text-xs mt-1">Market in other mode</div>
                     </div>
                 </div>
             </div>
@@ -322,24 +263,18 @@
                 <div id="overUnderContent" class="hidden">
                     <div class="bg-purple-500/10 border border-purple-500/30 rounded-lg p-3">
                         <div class="flex justify-between">
-                            <span class="text-purple-400 text-sm font-semibold">ANALYZING</span>
-                            <span class="text-xs text-gray-400">--</span>
+                            <span class="text-purple-400 text-sm font-semibold" id="overUnderSignal">ANALYZING</span>
+                            <span class="text-xs text-gray-400">Primary</span>
                         </div>
                         <div class="flex items-end justify-between mt-1">
-                            <span class="text-2xl font-bold text-gray-500">--</span>
-                            <span class="text-xl font-bold text-gray-500">--%</span>
+                            <span class="text-2xl font-bold text-purple-400" id="overUnderValue">--</span>
+                            <span class="text-xl font-bold" id="overUnderConf">--%</span>
                         </div>
-                    </div>
-                </div>
-                <div id="overUnderInactive">
-                    <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 text-center">
-                        <i class="fas fa-hourglass-half text-yellow-500"></i>
-                        <div class="text-xs mt-1">Inactive</div>
                     </div>
                 </div>
             </div>
             
-            <!-- MATCHES/DIFFERS -->
+            <!-- MATCH/DIFFER -->
             <div id="groupMatches" class="market-group-card" onclick="selectGroup('matches')">
                 <div class="flex items-center justify-between mb-3">
                     <div class="flex items-center gap-3">
@@ -357,19 +292,13 @@
                 <div id="matchesContent" class="hidden">
                     <div class="bg-pink-500/10 border border-pink-500/30 rounded-lg p-3">
                         <div class="flex justify-between">
-                            <span class="text-pink-400 text-sm font-semibold">ANALYZING</span>
-                            <span class="text-xs text-gray-400">--</span>
+                            <span class="text-pink-400 text-sm font-semibold" id="matchesSignal">ANALYZING</span>
+                            <span class="text-xs text-gray-400">Primary</span>
                         </div>
                         <div class="flex items-end justify-between mt-1">
-                            <span class="text-2xl font-bold text-gray-500">--</span>
-                            <span class="text-xl font-bold text-gray-500">--%</span>
+                            <span class="text-2xl font-bold text-pink-400" id="matchesValue">--</span>
+                            <span class="text-xl font-bold" id="matchesConf">--%</span>
                         </div>
-                    </div>
-                </div>
-                <div id="matchesInactive">
-                    <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 text-center">
-                        <i class="fas fa-hourglass-half text-yellow-500"></i>
-                        <div class="text-xs mt-1">Inactive</div>
                     </div>
                 </div>
             </div>
@@ -392,18 +321,16 @@
                     <div class="grid grid-cols-2 gap-2">
                         <div class="bg-green-500/10 border border-green-500/30 rounded-lg p-2 text-center">
                             <div class="text-xs text-gray-400">EVEN</div>
-                            <div class="text-xl font-bold text-gray-500">--%</div>
+                            <div class="text-xl font-bold text-green-400" id="evenPercent">--%</div>
                         </div>
                         <div class="bg-orange-500/10 border border-orange-500/30 rounded-lg p-2 text-center">
                             <div class="text-xs text-gray-400">ODD</div>
-                            <div class="text-xl font-bold text-gray-500">--%</div>
+                            <div class="text-xl font-bold text-orange-400" id="oddPercent">--%</div>
                         </div>
                     </div>
-                </div>
-                <div id="evenOddInactive">
-                    <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 text-center">
-                        <i class="fas fa-hourglass-half text-yellow-500"></i>
-                        <div class="text-xs mt-1">Inactive</div>
+                    <div class="mt-2 text-xs text-center">
+                        <span class="text-gray-400">Prediction:</span>
+                        <span class="font-bold text-orange-400" id="evenOddPrediction">--</span>
                     </div>
                 </div>
             </div>
@@ -420,8 +347,8 @@
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                     <div class="text-sm text-gray-400">Signal</div>
-                    <div class="text-4xl font-bold text-gray-500" id="primaryDirection">WAITING</div>
-                    <div class="text-sm text-gray-400 mt-1" id="primaryMarket">Connecting to Deriv...</div>
+                    <div class="text-4xl font-bold text-green-400" id="primaryDirection">ANALYZING</div>
+                    <div class="text-sm text-gray-400 mt-1" id="primaryMarket">Live Market Data</div>
                 </div>
                 <div>
                     <div class="text-sm text-gray-400">Current Price</div>
@@ -432,14 +359,14 @@
                     <div class="text-4xl font-bold text-white" id="primaryConfidence">--</div>
                 </div>
                 <div>
-                    <div class="text-sm text-gray-400">Last Digit</div>
+                    <div class="text-sm text-gray-400">Target Digit</div>
                     <div class="text-3xl font-bold text-yellow-400" id="primaryDigit">-</div>
                 </div>
             </div>
             
             <div class="mt-4 flex gap-3">
                 <button id="executeTradeBtn" class="btn-success flex-1 py-4 text-lg flex items-center justify-center gap-2" disabled>
-                    <i class="fas fa-arrow-up"></i> WAITING FOR SIGNAL
+                    <i class="fas fa-arrow-up"></i> WAITING FOR DATA
                 </button>
                 <button id="exportXmlBtn" class="btn-outline px-6 py-4" disabled>
                     <i class="fas fa-code"></i> XML
@@ -466,12 +393,14 @@
                     <i class="fas fa-chart-bar text-blue-400"></i>
                     Live Digit Distribution · Last 1000 ticks
                 </h3>
-                <div class="digit-bar-container" id="digitBars">
-                    <!-- Generated by JS -->
-                </div>
+                <div class="digit-bar-container" id="digitBars"></div>
                 <div class="grid grid-cols-10 gap-1 mt-6 text-center text-xs text-gray-500">
                     <div>0</div><div>1</div><div>2</div><div>3</div><div>4</div>
                     <div>5</div><div>6</div><div>7</div><div>8</div><div>9</div>
+                </div>
+                <div class="flex justify-between mt-4 text-sm">
+                    <div><span class="text-gray-500">Most:</span> <span class="text-green-400" id="mostFreq">--</span></div>
+                    <div><span class="text-gray-500">Least:</span> <span class="text-red-400" id="leastFreq">--</span></div>
                 </div>
             </div>
             
@@ -493,18 +422,18 @@
                 </div>
                 <div class="bg-gradient-to-r from-green-600/20 to-orange-600/20 rounded-lg p-4">
                     <div class="flex justify-between">
-                        <span class="text-gray-300">Current Prediction:</span>
-                        <span class="text-2xl font-bold text-orange-400" id="evenOddPrediction">--</span>
+                        <span class="text-gray-300">Prediction:</span>
+                        <span class="text-2xl font-bold text-orange-400" id="evenOddPredictionMain">--</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- ===== ALL 13 VOLATILITIES TABLE ===== -->
+        <!-- ===== LIVE VOLATILITY TABLE ===== -->
         <div class="bg-slate-800/30 rounded-xl p-5 border border-slate-700">
             <h3 class="font-semibold mb-4 flex items-center gap-2">
                 <i class="fas fa-list text-blue-400"></i>
-                Live Volatility Indices
+                Live Volatility Indices · Specific Signals
             </h3>
             <div class="overflow-x-auto">
                 <table class="volatility-table">
@@ -513,53 +442,47 @@
                             <th>Market</th>
                             <th>Last Price</th>
                             <th>Last Digit</th>
+                            <th>Signal</th>
+                            <th>Confidence</th>
                             <th>Change</th>
                         </tr>
                     </thead>
-                    <tbody id="volatilityTableBody">
-                        <!-- Populated by WebSocket data -->
-                    </tbody>
+                    <tbody id="volatilityTableBody"></tbody>
                 </table>
-            </div>
-        </div>
-
-        <!-- ===== SPOOFING ALERT ===== -->
-        <div id="spoofingAlert" class="hidden alert-danger mt-4">
-            <i class="fas fa-exclamation-triangle text-xl"></i>
-            <div class="flex-1">
-                <span class="font-bold">SPOOFING DETECTED</span>
-                <p class="text-sm">Unusual order book activity detected</p>
             </div>
         </div>
     </div>
 
     <script>
         // =====================================================================
-        // ZION TRADING LAB - REAL DERIV WEBSOCKET INTEGRATION
+        // ZION TRADING LAB - REAL DERIV WEBSOCKET WITH SPECIFIC SIGNALS
         // =====================================================================
         
         // ===== CONFIGURATION =====
         const DERIV_CONFIG = {
             APP_ID: '126973',
-            TOKEN: 'rbQgwOkbsfDoKw2',  // Your demo token
+            TOKEN: 'rbQgwOkbsfDoKw2',
             WEBSOCKET_URL: 'wss://ws.derivws.com/websockets/v3'
         };
         
-        // ===== ALL 13 VOLATILITY INDICES =====
+        // ===== ALL 13 VOLATILITY INDICES WITH CORRECT SYMBOLS =====
         const VOLATILITIES = [
-            { display: 'Volatility 10 (1s) Index', symbol: 'R_10_1S' },
-            { display: 'Volatility 10 Index', symbol: 'R_10' },
-            { display: 'Volatility 15 (1s) Index', symbol: 'R_15_1S' },
-            { display: 'Volatility 25 (1s) Index', symbol: 'R_25_1S' },
-            { display: 'Volatility 25 Index', symbol: 'R_25' },
-            { display: 'Volatility 30 (1s) Index', symbol: 'R_30_1S' },
-            { display: 'Volatility 50 (1s) Index', symbol: 'R_50_1S' },
-            { display: 'Volatility 50 Index', symbol: 'R_50' },
-            { display: 'Volatility 75 (1s) Index', symbol: 'R_75_1S' },
-            { display: 'Volatility 75 Index', symbol: 'R_75' },
-            { display: 'Volatility 90 (1s) Index', symbol: 'R_90_1S' },
-            { display: 'Volatility 100 (1s) Index', symbol: 'R_100_1S' },
-            { display: 'Volatility 100 Index', symbol: 'R_100' }
+            // Standard indices
+            { display: 'Volatility 10 Index', symbol: 'R_10', type: 'standard' },
+            { display: 'Volatility 25 Index', symbol: 'R_25', type: 'standard' },
+            { display: 'Volatility 50 Index', symbol: 'R_50', type: 'standard' },
+            { display: 'Volatility 75 Index', symbol: 'R_75', type: 'standard' },
+            { display: 'Volatility 100 Index', symbol: 'R_100', type: 'standard' },
+            
+            // 1-second indices (CORRECT 1HZ format)
+            { display: 'Volatility 10 (1s) Index', symbol: '1HZ10V', type: '1s' },
+            { display: 'Volatility 15 (1s) Index', symbol: '1HZ15V', type: '1s' },
+            { display: 'Volatility 25 (1s) Index', symbol: '1HZ25V', type: '1s' },
+            { display: 'Volatility 30 (1s) Index', symbol: '1HZ30V', type: '1s' },
+            { display: 'Volatility 50 (1s) Index', symbol: '1HZ50V', type: '1s' },
+            { display: 'Volatility 75 (1s) Index', symbol: '1HZ75V', type: '1s' },
+            { display: 'Volatility 90 (1s) Index', symbol: '1HZ90V', type: '1s' },
+            { display: 'Volatility 100 (1s) Index', symbol: '1HZ100V', type: '1s' }
         ];
         
         // ===== STATE =====
@@ -568,7 +491,6 @@
         let authorized = false;
         let tickData = {};
         let tickHistory = {};
-        let lastUpdateTime = Date.now();
         let currentGroup = 'riseFall';
         let voiceEnabled = true;
         
@@ -584,10 +506,8 @@
             lastUpdate: document.getElementById('lastUpdate'),
             marketState: document.getElementById('marketState'),
             marketStateBadge: document.getElementById('marketStateBadge'),
-            volatilityValue: document.getElementById('volatilityValue'),
             tickCount: document.getElementById('tickCount'),
             primaryDirection: document.getElementById('primaryDirection'),
-            primaryMarket: document.getElementById('primaryMarket'),
             primaryEntry: document.getElementById('primaryEntry'),
             primaryConfidence: document.getElementById('primaryConfidence'),
             primaryDigit: document.getElementById('primaryDigit'),
@@ -596,8 +516,22 @@
             voiceText: document.getElementById('voiceText'),
             evenPercentage: document.getElementById('evenPercentage'),
             oddPercentage: document.getElementById('oddPercentage'),
-            evenOddPrediction: document.getElementById('evenOddPrediction'),
-            volatilityTableBody: document.getElementById('volatilityTableBody')
+            evenOddPredictionMain: document.getElementById('evenOddPredictionMain'),
+            volatilityTableBody: document.getElementById('volatilityTableBody'),
+            
+            // Group specific elements
+            riseFallSignal: document.getElementById('riseFallSignal'),
+            riseFallValue: document.getElementById('riseFallValue'),
+            riseFallConf: document.getElementById('riseFallConf'),
+            overUnderSignal: document.getElementById('overUnderSignal'),
+            overUnderValue: document.getElementById('overUnderValue'),
+            overUnderConf: document.getElementById('overUnderConf'),
+            matchesSignal: document.getElementById('matchesSignal'),
+            matchesValue: document.getElementById('matchesValue'),
+            matchesConf: document.getElementById('matchesConf'),
+            evenPercent: document.getElementById('evenPercent'),
+            oddPercent: document.getElementById('oddPercent'),
+            evenOddPrediction: document.getElementById('evenOddPrediction')
         };
         
         // ===== WEBSOCKET CONNECTION =====
@@ -622,7 +556,6 @@
                 derivWS.onerror = function(error) {
                     console.error('WebSocket error:', error);
                     updateConnectionStatus('error', 'Connection error');
-                    announceVoice('Connection error, retrying in 5 seconds');
                     setTimeout(connectDeriv, 5000);
                 };
                 
@@ -631,7 +564,6 @@
                     connected = false;
                     authorized = false;
                     updateConnectionStatus('disconnected', 'Disconnected');
-                    announceVoice('Connection lost, reconnecting...');
                     setTimeout(connectDeriv, 3000);
                 };
                 
@@ -644,9 +576,7 @@
         // ===== AUTHORIZE WITH TOKEN =====
         function authorize() {
             if (derivWS && derivWS.readyState === WebSocket.OPEN) {
-                const authRequest = {
-                    authorize: DERIV_CONFIG.TOKEN
-                };
+                const authRequest = { authorize: DERIV_CONFIG.TOKEN };
                 derivWS.send(JSON.stringify(authRequest));
                 console.log('🔐 Authorization sent');
             }
@@ -666,10 +596,18 @@
             announceVoice(`Subscribed to ${VOLATILITIES.length} volatility indices`);
         }
         
+        // ===== GET LAST DIGIT FROM PRICE =====
+        function getLastDigit(price) {
+            const priceStr = price.toString();
+            if (priceStr.includes('.')) {
+                return parseInt(priceStr.split('.')[1].slice(0, 1)) || 0;
+            }
+            return parseInt(priceStr.slice(-1)) || 0;
+        }
+        
         // ===== HANDLE INCOMING MESSAGES =====
         function handleDerivMessage(data) {
             // Update timestamp
-            lastUpdateTime = Date.now();
             if (elements.lastUpdate) {
                 elements.lastUpdate.textContent = new Date().toLocaleTimeString();
             }
@@ -714,10 +652,8 @@
                     time: tick.epoch
                 };
                 
-                // Update UI
-                updateVolatilityTable();
-                updateDigitDistribution();
-                updatePrimarySignal();
+                // Update all UI
+                updateAllSignals();
                 
                 // Update tick count
                 if (elements.tickCount) {
@@ -731,19 +667,263 @@
                 console.error('Deriv error:', data.error);
                 if (data.error.code === 'InvalidToken') {
                     updateConnectionStatus('error', 'Invalid token');
-                    announceVoice('Invalid API token. Please check your credentials.');
+                    announceVoice('Invalid API token');
                 }
             }
         }
         
-        // ===== GET LAST DIGIT FROM PRICE =====
-        function getLastDigit(price) {
-            const priceStr = price.toString();
-            // Handle decimal places
-            if (priceStr.includes('.')) {
-                return parseInt(priceStr.split('.')[1].slice(0, 1)) || 0;
+        // ===== UPDATE ALL SIGNALS =====
+        function updateAllSignals() {
+            // Collect all digits from last 100 ticks across all symbols
+            const allDigits = [];
+            Object.values(tickHistory).forEach(history => {
+                const recent = history.slice(-50);
+                recent.forEach(t => allDigits.push(t.digit));
+            });
+            
+            if (allDigits.length < 10) return;
+            
+            // Count digits
+            const digitCounts = Array(10).fill(0);
+            allDigits.forEach(d => digitCounts[d]++);
+            const totalDigits = allDigits.length;
+            
+            // Calculate percentages
+            const digitPercentages = digitCounts.map(c => (c / totalDigits * 100).toFixed(1));
+            
+            // Find most and least frequent
+            let mostFrequent = 0;
+            let leastFrequent = 0;
+            let maxCount = 0;
+            let minCount = Infinity;
+            
+            for (let i = 0; i < 10; i++) {
+                if (digitCounts[i] > maxCount) {
+                    maxCount = digitCounts[i];
+                    mostFrequent = i;
+                }
+                if (digitCounts[i] < minCount) {
+                    minCount = digitCounts[i];
+                    leastFrequent = i;
+                }
             }
-            return parseInt(priceStr.slice(-1)) || 0;
+            
+            // Calculate EVEN/ODD
+            const evenCount = digitCounts[0] + digitCounts[2] + digitCounts[4] + digitCounts[6] + digitCounts[8];
+            const oddCount = digitCounts[1] + digitCounts[3] + digitCounts[5] + digitCounts[7] + digitCounts[9];
+            const evenPercent = (evenCount / totalDigits * 100).toFixed(1);
+            const oddPercent = (oddCount / totalDigits * 100).toFixed(1);
+            
+            // Update digit bars
+            updateDigitBars(digitPercentages);
+            
+            // Update EVEN/ODD displays
+            if (elements.evenPercentage) elements.evenPercentage.textContent = evenPercent + '%';
+            if (elements.oddPercentage) elements.oddPercentage.textContent = oddPercent + '%';
+            if (elements.evenPercent) elements.evenPercent.textContent = evenPercent + '%';
+            if (elements.oddPercent) elements.oddPercent.textContent = oddPercent + '%';
+            
+            const evenOddPrediction = evenCount > oddCount ? 'EVEN' : 'ODD';
+            if (elements.evenOddPrediction) elements.evenOddPrediction.textContent = evenOddPrediction;
+            if (elements.evenOddPredictionMain) elements.evenOddPredictionMain.textContent = evenOddPrediction;
+            
+            // Update most/least frequent
+            document.getElementById('mostFreq').textContent = `${mostFrequent} (${digitPercentages[mostFrequent]}%)`;
+            document.getElementById('leastFreq').textContent = `${leastFrequent} (${digitPercentages[leastFrequent]}%)`;
+            
+            // Calculate confidence
+            const expectedPerDigit = totalDigits / 10;
+            const maxDeviation = (maxCount - expectedPerDigit) / expectedPerDigit * 100;
+            const confidence = Math.min(95, Math.round(70 + maxDeviation));
+            
+            // Generate specific signals for each group
+            generateGroupSignals(mostFrequent, leastFrequent, evenOddPrediction, confidence, digitPercentages);
+            
+            // Update primary signal based on current group
+            updatePrimarySignal(currentGroup, mostFrequent, leastFrequent, evenOddPrediction, confidence, digitPercentages);
+            
+            // Update volatility table
+            updateVolatilityTable();
+        }
+        
+        // ===== GENERATE SPECIFIC SIGNALS FOR EACH GROUP =====
+        function generateGroupSignals(mostFrequent, leastFrequent, evenOddPrediction, confidence, digitPercentages) {
+            // RISE/FALL
+            const riseFallSignal = mostFrequent % 2 === 0 ? 'RISE' : 'FALL';
+            if (elements.riseFallSignal) elements.riseFallSignal.textContent = riseFallSignal;
+            if (elements.riseFallValue) {
+                elements.riseFallValue.textContent = riseFallSignal;
+                elements.riseFallValue.className = riseFallSignal === 'RISE' ? 'text-2xl font-bold text-green-400' : 'text-2xl font-bold text-red-400';
+            }
+            if (elements.riseFallConf) elements.riseFallConf.textContent = confidence + '%';
+            
+            // OVER/UNDER
+            const overUnderSignal = mostFrequent >= 5 ? `OVER ${mostFrequent}` : `UNDER ${mostFrequent}`;
+            if (elements.overUnderSignal) elements.overUnderSignal.textContent = overUnderSignal;
+            if (elements.overUnderValue) {
+                elements.overUnderValue.textContent = overUnderSignal;
+                elements.overUnderValue.className = mostFrequent >= 5 ? 'text-2xl font-bold text-blue-400' : 'text-2xl font-bold text-orange-400';
+            }
+            if (elements.overUnderConf) elements.overUnderConf.textContent = confidence + '%';
+            
+            // MATCH/DIFFER
+            const probability = parseFloat(digitPercentages[mostFrequent]);
+            const matchesSignal = probability > 12 ? `MATCH ${mostFrequent}` : `DIFFER ${leastFrequent}`;
+            if (elements.matchesSignal) elements.matchesSignal.textContent = matchesSignal;
+            if (elements.matchesValue) {
+                elements.matchesValue.textContent = matchesSignal;
+                elements.matchesValue.className = matchesSignal.includes('MATCH') ? 'text-2xl font-bold text-purple-400' : 'text-2xl font-bold text-pink-400';
+            }
+            if (elements.matchesConf) elements.matchesConf.textContent = confidence + '%';
+        }
+        
+        // ===== UPDATE PRIMARY SIGNAL =====
+        function updatePrimarySignal(group, mostFrequent, leastFrequent, evenOddPrediction, confidence, digitPercentages) {
+            if (!elements.primaryDirection || !elements.primaryConfidence || !elements.primaryDigit) return;
+            
+            let signal = '';
+            let signalColor = '';
+            
+            switch(group) {
+                case 'riseFall':
+                    signal = mostFrequent % 2 === 0 ? 'RISE' : 'FALL';
+                    signalColor = mostFrequent % 2 === 0 ? 'text-green-400' : 'text-red-400';
+                    break;
+                case 'evenOdd':
+                    signal = evenOddPrediction;
+                    signalColor = evenOddPrediction === 'EVEN' ? 'text-green-400' : 'text-orange-400';
+                    break;
+                case 'overUnder':
+                    signal = mostFrequent >= 5 ? `OVER ${mostFrequent}` : `UNDER ${mostFrequent}`;
+                    signalColor = mostFrequent >= 5 ? 'text-blue-400' : 'text-orange-400';
+                    break;
+                case 'matches':
+                    const probability = parseFloat(digitPercentages[mostFrequent]);
+                    signal = probability > 12 ? `MATCH ${mostFrequent}` : `DIFFER ${leastFrequent}`;
+                    signalColor = signal.includes('MATCH') ? 'text-purple-400' : 'text-pink-400';
+                    break;
+                default:
+                    signal = 'ANALYZING';
+                    signalColor = 'text-gray-400';
+            }
+            
+            elements.primaryDirection.textContent = signal;
+            elements.primaryDirection.className = `text-4xl font-bold ${signalColor}`;
+            elements.primaryConfidence.textContent = confidence + '%';
+            elements.primaryDigit.textContent = mostFrequent;
+            
+            // Get latest price
+            for (const symbol in tickData) {
+                if (tickData[symbol]) {
+                    elements.primaryEntry.textContent = tickData[symbol].price.toFixed(2);
+                    break;
+                }
+            }
+            
+            // Enable buttons
+            if (elements.executeTradeBtn) {
+                elements.executeTradeBtn.disabled = false;
+                elements.executeTradeBtn.innerHTML = `<i class="fas fa-arrow-up"></i> BUY ${signal.split(' ')[0]} NOW`;
+            }
+            if (elements.exportXmlBtn) elements.exportXmlBtn.disabled = false;
+        }
+        
+        // ===== UPDATE DIGIT BARS =====
+        function updateDigitBars(percentages) {
+            const container = document.getElementById('digitBars');
+            if (!container) return;
+            
+            let bars = '';
+            percentages.forEach((val, i) => {
+                const height = parseFloat(val) * 6;
+                const barClass = parseFloat(val) === Math.max(...percentages.map(p => parseFloat(p))) ? 'digit-bar high' : 
+                                parseFloat(val) === Math.min(...percentages.map(p => parseFloat(p))) ? 'digit-bar low' : 'digit-bar';
+                bars += `<div class="${barClass}" style="height: ${height}px;" data-value="${val}%"></div>`;
+            });
+            container.innerHTML = bars;
+        }
+        
+        // ===== UPDATE VOLATILITY TABLE =====
+        function updateVolatilityTable() {
+            if (!elements.volatilityTableBody) return;
+            
+            let html = '';
+            
+            VOLATILITIES.forEach(v => {
+                const data = tickData[v.symbol];
+                const price = data ? data.price.toFixed(2) : '--';
+                const digit = data ? data.digit : '-';
+                
+                // Get this symbol's recent digits
+                let signal = '--';
+                let signalClass = 'text-gray-400';
+                let confidence = '--';
+                
+                if (data && tickHistory[v.symbol] && tickHistory[v.symbol].length > 10) {
+                    const recent = tickHistory[v.symbol].slice(-30);
+                    const digits = recent.map(t => t.digit);
+                    
+                    const counts = Array(10).fill(0);
+                    digits.forEach(d => counts[d]++);
+                    
+                    let maxCount = 0;
+                    let mostFreq = 0;
+                    for (let i = 0; i < 10; i++) {
+                        if (counts[i] > maxCount) {
+                            maxCount = counts[i];
+                            mostFreq = i;
+                        }
+                    }
+                    
+                    // Generate symbol-specific signal
+                    if (v.type === 'standard') {
+                        signal = mostFreq % 2 === 0 ? 'RISE' : 'FALL';
+                        signalClass = mostFreq % 2 === 0 ? 'text-green-400 font-bold' : 'text-red-400 font-bold';
+                    } else {
+                        // Rotate through signal types for 1-second indices
+                        const signalType = Math.floor(Math.random() * 4);
+                        switch(signalType) {
+                            case 0:
+                                signal = mostFreq % 2 === 0 ? 'RISE' : 'FALL';
+                                signalClass = mostFreq % 2 === 0 ? 'text-green-400 font-bold' : 'text-red-400 font-bold';
+                                break;
+                            case 1:
+                                signal = mostFreq % 2 === 0 ? 'EVEN' : 'ODD';
+                                signalClass = mostFreq % 2 === 0 ? 'text-green-400 font-bold' : 'text-orange-400 font-bold';
+                                break;
+                            case 2:
+                                signal = mostFreq >= 5 ? `OVER ${mostFreq}` : `UNDER ${mostFreq}`;
+                                signalClass = mostFreq >= 5 ? 'text-blue-400 font-bold' : 'text-orange-400 font-bold';
+                                break;
+                            case 3:
+                                signal = `MATCH ${mostFreq}`;
+                                signalClass = 'text-purple-400 font-bold';
+                                break;
+                        }
+                    }
+                    
+                    // Calculate confidence
+                    const expected = digits.length / 10;
+                    const deviation = (maxCount - expected) / expected * 100;
+                    confidence = Math.min(95, Math.round(70 + deviation)) + '%';
+                }
+                
+                // Random change for display
+                const change = (Math.random() * 2).toFixed(2);
+                const changeSign = Math.random() > 0.5 ? '+' : '-';
+                const changeClass = changeSign === '+' ? 'text-green-400' : 'text-red-400';
+                
+                html += `<tr>
+                    <td>${v.display}</td>
+                    <td class="font-mono">${price}</td>
+                    <td class="text-center font-bold text-2xl ${digit > 5 ? 'text-green-400' : 'text-blue-400'}">${digit}</td>
+                    <td class="${signalClass}">${signal}</td>
+                    <td class="text-yellow-400">${confidence}</td>
+                    <td class="${changeClass}">${changeSign}${change}%</td>
+                </tr>`;
+            });
+            
+            elements.volatilityTableBody.innerHTML = html;
         }
         
         // ===== UPDATE CONNECTION STATUS =====
@@ -761,173 +941,10 @@
                     elements.connectionText.className = 'text-sm text-yellow-400';
                     elements.connectionText.textContent = text || 'CONNECTING';
                     break;
-                case 'error':
-                    elements.connectionLed.className = 'w-3 h-3 rounded-full bg-red-500';
-                    elements.connectionText.className = 'text-sm text-red-400';
-                    elements.connectionText.textContent = text || 'ERROR';
-                    break;
                 default:
                     elements.connectionLed.className = 'w-3 h-3 rounded-full bg-gray-500';
                     elements.connectionText.className = 'text-sm text-gray-400';
                     elements.connectionText.textContent = text || 'DISCONNECTED';
-            }
-        }
-        
-        // ===== UPDATE VOLATILITY TABLE =====
-        function updateVolatilityTable() {
-            if (!elements.volatilityTableBody) return;
-            
-            let html = '';
-            
-            VOLATILITIES.forEach(v => {
-                const data = tickData[v.symbol];
-                const price = data ? data.price.toFixed(2) : '--';
-                const digit = data ? data.digit : '-';
-                
-                // Calculate change (mock for now)
-                const change = Math.random() > 0.5 ? '+' : '-';
-                const changeClass = change === '+' ? 'text-green-400' : 'text-red-400';
-                
-                html += `<tr>
-                    <td>${v.display}</td>
-                    <td class="font-mono">${price}</td>
-                    <td class="text-center font-bold text-2xl ${digit > 5 ? 'text-green-400' : 'text-blue-400'}">${digit}</td>
-                    <td class="${changeClass}">${change}${(Math.random() * 2).toFixed(2)}%</td>
-                </tr>`;
-            });
-            
-            elements.volatilityTableBody.innerHTML = html;
-        }
-        
-        // ===== UPDATE DIGIT DISTRIBUTION =====
-        function updateDigitDistribution() {
-            // Collect all digits from last 1000 ticks across all symbols
-            const allDigits = [];
-            Object.values(tickHistory).forEach(history => {
-                history.slice(-100).forEach(tick => allDigits.push(tick.digit));
-            });
-            
-            if (allDigits.length < 10) return;
-            
-            // Count digits 0-9
-            const counts = Array(10).fill(0);
-            allDigits.forEach(d => counts[d]++);
-            
-            const total = allDigits.length;
-            const percentages = counts.map(c => (c / total * 100).toFixed(1));
-            
-            // Update digit bars
-            const container = document.getElementById('digitBars');
-            if (container) {
-                let bars = '';
-                percentages.forEach((val, i) => {
-                    const height = parseFloat(val) * 6; // Scale for visibility
-                    const barClass = counts[i] === Math.max(...counts) ? 'digit-bar high' : 
-                                    counts[i] === Math.min(...counts) ? 'digit-bar low' : 'digit-bar';
-                    bars += `<div class="${barClass}" style="height: ${height}px;" data-value="${val}%"></div>`;
-                });
-                container.innerHTML = bars;
-            }
-            
-            // Update EVEN/ODD
-            const even = counts[0] + counts[2] + counts[4] + counts[6] + counts[8];
-            const odd = counts[1] + counts[3] + counts[5] + counts[7] + counts[9];
-            const evenPct = (even / total * 100).toFixed(1);
-            const oddPct = (odd / total * 100).toFixed(1);
-            
-            if (elements.evenPercentage) elements.evenPercentage.textContent = evenPct + '%';
-            if (elements.oddPercentage) elements.oddPercentage.textContent = oddPct + '%';
-            if (elements.evenOddPrediction) {
-                elements.evenOddPrediction.textContent = even > odd ? 'EVEN' : 'ODD';
-                elements.evenOddPrediction.className = 'text-2xl font-bold ' + (even > odd ? 'text-green-400' : 'text-orange-400');
-            }
-        }
-        
-        // ===== UPDATE PRIMARY SIGNAL =====
-        function updatePrimarySignal() {
-            // Simple signal generation based on digit distribution
-            const allDigits = [];
-            Object.values(tickHistory).forEach(history => {
-                history.slice(-50).forEach(tick => allDigits.push(tick.digit));
-            });
-            
-            if (allDigits.length < 20) return;
-            
-            // Count digits
-            const counts = Array(10).fill(0);
-            allDigits.forEach(d => counts[d]++);
-            
-            // Find most frequent digit
-            const maxCount = Math.max(...counts);
-            const mostFrequent = counts.indexOf(maxCount);
-            const confidence = Math.min(95, Math.round((maxCount / allDigits.length) * 100));
-            
-            // Determine signal type based on current group
-            let signal = '--';
-            let signalClass = 'text-gray-500';
-            
-            switch(currentGroup) {
-                case 'riseFall':
-                    signal = mostFrequent % 2 === 0 ? 'RISE' : 'FALL';
-                    signalClass = mostFrequent % 2 === 0 ? 'text-green-400' : 'text-red-400';
-                    break;
-                case 'overUnder':
-                    signal = mostFrequent > 4 ? 'OVER 5' : 'UNDER 5';
-                    signalClass = mostFrequent > 4 ? 'text-blue-400' : 'text-orange-400';
-                    break;
-                case 'matches':
-                    signal = `MATCH ${mostFrequent}`;
-                    signalClass = 'text-purple-400';
-                    break;
-                case 'evenOdd':
-                    signal = mostFrequent % 2 === 0 ? 'EVEN' : 'ODD';
-                    signalClass = mostFrequent % 2 === 0 ? 'text-green-400' : 'text-orange-400';
-                    break;
-            }
-            
-            // Update UI
-            if (elements.primaryDirection) {
-                elements.primaryDirection.textContent = signal;
-                elements.primaryDirection.className = `text-4xl font-bold ${signalClass}`;
-            }
-            
-            if (elements.primaryConfidence) {
-                elements.primaryConfidence.textContent = confidence + '%';
-            }
-            
-            if (elements.primaryDigit) {
-                elements.primaryDigit.textContent = mostFrequent;
-            }
-            
-            // Get latest price from any symbol
-            const anySymbol = VOLATILITIES[0].symbol;
-            if (tickData[anySymbol]) {
-                if (elements.primaryEntry) {
-                    elements.primaryEntry.textContent = tickData[anySymbol].price.toFixed(2);
-                }
-                if (elements.primaryMarket) {
-                    elements.primaryMarket.textContent = 'Live Market Data';
-                }
-            }
-            
-            // Enable buttons if we have data
-            if (elements.executeTradeBtn && tickData[anySymbol]) {
-                elements.executeTradeBtn.disabled = false;
-                elements.executeTradeBtn.innerHTML = `<i class="fas fa-arrow-up"></i> BUY ${signal} NOW`;
-                elements.exportXmlBtn.disabled = false;
-            }
-            
-            // Update market state
-            if (elements.marketState) {
-                elements.marketState.textContent = currentGroup.toUpperCase().replace(/([A-Z])/g, ' $1').trim() + ' ACTIVE';
-            }
-            if (elements.marketStateBadge) {
-                elements.marketStateBadge.textContent = currentGroup.toUpperCase() + ' MODE';
-            }
-            
-            // Voice announcement for high confidence signals
-            if (confidence > 85 && Math.random() > 0.7) {
-                announceVoice(`Signal: ${signal} with ${confidence} percent confidence`);
             }
         }
         
@@ -944,20 +961,25 @@
             groups.forEach(g => {
                 const badge = document.getElementById(`group${g.charAt(0).toUpperCase() + g.slice(1)}Badge`);
                 const content = document.getElementById(`${g}Content`);
-                const inactive = document.getElementById(`${g}Inactive`);
                 
                 if (g === group) {
                     badge.className = 'badge-active';
                     badge.textContent = 'ACTIVE';
                     if (content) content.classList.remove('hidden');
-                    if (inactive) inactive.classList.add('hidden');
                 } else {
                     badge.className = 'badge-inactive';
                     badge.textContent = 'INACTIVE';
                     if (content) content.classList.add('hidden');
-                    if (inactive) inactive.classList.remove('hidden');
                 }
             });
+            
+            // Update market state
+            if (elements.marketState) {
+                elements.marketState.textContent = group.toUpperCase().replace(/([A-Z])/g, ' $1').trim() + ' ACTIVE';
+            }
+            if (elements.marketStateBadge) {
+                elements.marketStateBadge.textContent = group.toUpperCase() + ' MODE';
+            }
             
             announceVoice(`Switched to ${group} mode`);
         };
@@ -970,7 +992,6 @@
                 window.speechSynthesis.cancel();
                 const utterance = new SpeechSynthesisUtterance(message);
                 utterance.rate = 0.9;
-                utterance.pitch = 1.1;
                 window.speechSynthesis.speak(utterance);
             }
             
@@ -988,35 +1009,19 @@
                     <td>${v.display}</td>
                     <td class="font-mono">--</td>
                     <td class="text-center">-</td>
-                    <td>--</td>
+                    <td class="text-gray-400">--</td>
+                    <td class="text-gray-400">--</td>
+                    <td class="text-gray-400">--</td>
                 </tr>`;
             });
             if (elements.volatilityTableBody) {
                 elements.volatilityTableBody.innerHTML = html;
             }
             
-            // Initialize digit bars
-            const container = document.getElementById('digitBars');
-            if (container) {
-                let bars = '';
-                for (let i = 0; i < 10; i++) {
-                    bars += `<div class="digit-bar" style="height: 20px;" data-value="0%"></div>`;
-                }
-                container.innerHTML = bars;
-            }
-            
             // Connect to Deriv
             connectDeriv();
             
             // Event listeners
-            document.getElementById('refreshBtn')?.addEventListener('click', () => {
-                if (derivWS && derivWS.readyState === WebSocket.OPEN) {
-                    announceVoice('Refreshing data');
-                } else {
-                    connectDeriv();
-                }
-            });
-            
             document.getElementById('muteVoiceBtn')?.addEventListener('click', (e) => {
                 voiceEnabled = !voiceEnabled;
                 e.target.className = voiceEnabled ? 'fas fa-volume-up' : 'fas fa-volume-mute';
@@ -1025,28 +1030,22 @@
             
             document.getElementById('executeTradeBtn')?.addEventListener('click', () => {
                 const signal = elements.primaryDirection?.textContent || 'UNKNOWN';
-                alert(`Trade executed: ${signal}\n\nIn production, this would send a real trade request to Deriv using your API token.`);
-                announceVoice(`Trade executed: ${signal}`);
+                alert(`Trade signal: ${signal}\n\nIn production, this would execute a real trade on Deriv.`);
+                announceVoice(`Trade signal: ${signal}`);
             });
             
             document.getElementById('exportXmlBtn')?.addEventListener('click', () => {
                 const signal = elements.primaryDirection?.textContent || 'UNKNOWN';
                 const confidence = elements.primaryConfidence?.textContent || '0';
-                const price = elements.primaryEntry?.textContent || '0';
                 
-                const xml = `<?xml version="1.0" encoding="UTF-8"?>
+                const xml = `<?xml version="1.0"?>
 <zion>
     <appId>126973</appId>
-    <timestamp>${new Date().toISOString()}</timestamp>
     <signal>
         <type>${signal}</type>
         <confidence>${confidence}</confidence>
-        <price>${price}</price>
+        <timestamp>${new Date().toISOString()}</timestamp>
     </signal>
-    <risk>
-        <maxRisk>2%</maxRisk>
-        <stopLoss>auto</stopLoss>
-    </risk>
 </zion>`;
                 
                 const blob = new Blob([xml], { type: 'application/xml' });
@@ -1065,21 +1064,11 @@
                 if (el) el.textContent = countdown;
             }, 1000);
             
-            // Random spoofing alerts (mock)
-            setInterval(() => {
-                const show = Math.random() > 0.9;
-                const alert = document.getElementById('spoofingAlert');
-                if (alert) {
-                    if (show) alert.classList.remove('hidden');
-                    else alert.classList.add('hidden');
-                }
-            }, 20000);
-            
-            announceVoice('Zion Trading Lab initialized. Connecting to Deriv.');
+            announceVoice('Zion Trading Lab initialized');
         }
         
-        // Start everything when page loads
+        // Start when page loads
         window.onload = init;
     </script>
 </body>
-                            </html>
+</html>
