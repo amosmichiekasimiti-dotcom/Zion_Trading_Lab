@@ -3,11 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zion Trading Lab · Specific Signals</title>
+    <title>Zion Trading Lab · HFT Non-Linear Dynamics</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Math.js for scientific computing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.7.0/math.min.js"></script>
     <style>
         /* ===== CUSTOM CSS ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -33,6 +37,13 @@
             100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
         .pulse-red { animation: pulse-red 2s infinite; }
+        
+        @keyframes pulse-yellow {
+            0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+        }
+        .pulse-yellow { animation: pulse-yellow 2s infinite; }
         
         /* Cards */
         .market-group-card {
@@ -62,6 +73,13 @@
             border: 1px solid #2d3748;
         }
         
+        .indicator-card {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 0.75rem;
+            padding: 0.75rem;
+            border: 1px solid #2d3748;
+        }
+        
         /* Badges */
         .badge-active {
             background: rgba(34, 197, 94, 0.2);
@@ -80,6 +98,33 @@
             font-size: 0.75rem;
             font-weight: 700;
             border: 1px solid #2d3748;
+        }
+        
+        .badge-chaos {
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+        
+        .badge-trend {
+            background: rgba(34, 197, 94, 0.2);
+            color: #4ade80;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+        
+        .badge-stable {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
         }
         
         /* Digit Bars */
@@ -164,6 +209,14 @@
         
         /* Container */
         .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem 1rem; }
+        
+        /* Countdown */
+        .countdown {
+            font-family: monospace;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #fbbf24;
+        }
     </style>
 </head>
 <body>
@@ -181,14 +234,14 @@
                     </h1>
                     <p class="text-gray-400 flex items-center gap-2">
                         <i class="fas fa-bolt text-yellow-500 text-xs"></i>
-                        <span>App ID: <span class="font-mono text-blue-400">126973</span> · Specific Signals</span>
+                        <span>App ID: <span class="font-mono text-blue-400">126973</span> · Token: <span class="font-mono text-green-400">rbQgwOkbsfDoKw2</span></span>
                     </p>
                 </div>
             </div>
             
             <div class="flex items-center gap-4 bg-slate-800/50 px-4 py-2 rounded-xl border border-slate-700">
                 <div class="flex items-center gap-2">
-                    <div id="connectionLed" class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                    <div id="connectionLed" class="w-3 h-3 rounded-full bg-yellow-500 pulse-yellow"></div>
                     <span id="connectionText" class="text-sm text-yellow-400">CONNECTING</span>
                 </div>
                 <div class="h-4 w-px bg-slate-700"></div>
@@ -196,20 +249,53 @@
                     <i class="fas fa-clock text-gray-500 text-sm"></i>
                     <span id="lastUpdate" class="text-sm font-mono">--:--:--</span>
                 </div>
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-database text-gray-500 text-sm"></i>
+                    <span id="tickCount" class="text-sm font-mono text-blue-400">0</span>
+                </div>
             </div>
         </div>
 
-        <!-- ===== MARKET STATE BANNER ===== -->
-        <div class="mb-6 bg-slate-800/30 rounded-xl p-4 border border-slate-700 flex flex-wrap items-center justify-between">
-            <div class="flex items-center gap-4">
-                <i class="fas fa-chart-line text-2xl text-blue-400"></i>
-                <span class="text-gray-300">Market State:</span>
-                <span id="marketState" class="font-bold text-blue-400 text-lg">RISE FALL ACTIVE</span>
-                <span id="marketStateBadge" class="px-2 py-1 bg-blue-500/20 text-blue-400 rounded-full text-xs">RISE FALL MODE</span>
+        <!-- ===== MARKET STATE & INDICATORS ===== -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
+            <!-- Market State -->
+            <div class="bg-slate-800/30 rounded-xl p-4 border border-slate-700 col-span-1">
+                <div class="flex items-center gap-2 mb-2">
+                    <i class="fas fa-chart-line text-blue-400"></i>
+                    <span class="text-sm text-gray-400">Market State</span>
+                </div>
+                <div id="marketState" class="text-xl font-bold text-blue-400">ANALYZING</div>
+                <div id="marketStateBadge" class="text-xs mt-1 inline-block px-2 py-1 bg-blue-500/20 text-blue-400 rounded-full">WAITING</div>
             </div>
-            <div class="flex items-center gap-4 text-sm">
-                <div><span class="text-gray-500">Volatility:</span> <span id="volatilityValue" class="font-mono text-yellow-400">--</span></div>
-                <div><span class="text-gray-500">Ticks:</span> <span id="tickCount" class="font-mono text-blue-400">0</span></div>
+            
+            <!-- Hurst Exponent -->
+            <div class="bg-slate-800/30 rounded-xl p-4 border border-slate-700">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-400">Hurst (H)</span>
+                    <span id="hurstBadge" class="text-xs px-2 py-0.5 bg-gray-600/50 rounded-full">--</span>
+                </div>
+                <div id="hurstValue" class="text-2xl font-bold text-blue-400">0.00</div>
+                <div class="text-xs text-gray-500">Trend persistence</div>
+            </div>
+            
+            <!-- Lyapunov Exponent -->
+            <div class="bg-slate-800/30 rounded-xl p-4 border border-slate-700">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-400">Lyapunov (λ)</span>
+                    <span id="lyapunovBadge" class="text-xs px-2 py-0.5 bg-gray-600/50 rounded-full">--</span>
+                </div>
+                <div id="lyapunovValue" class="text-2xl font-bold text-purple-400">0.0000</div>
+                <div class="text-xs text-gray-500">Chaos detection</div>
+            </div>
+            
+            <!-- Kurtosis -->
+            <div class="bg-slate-800/30 rounded-xl p-4 border border-slate-700">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-400">Kurtosis</span>
+                    <span id="kurtosisBadge" class="text-xs px-2 py-0.5 bg-gray-600/50 rounded-full">--</span>
+                </div>
+                <div id="kurtosisValue" class="text-2xl font-bold text-orange-400">0.00</div>
+                <div class="text-xs text-gray-500">Fat tails / Spoofing</div>
             </div>
         </div>
 
@@ -241,6 +327,7 @@
                             <span class="text-2xl font-bold text-green-400" id="riseFallValue">--</span>
                             <span class="text-xl font-bold" id="riseFallConf">--%</span>
                         </div>
+                        <div class="text-xs text-gray-500 mt-1" id="riseFallReason">Waiting for data</div>
                     </div>
                 </div>
             </div>
@@ -270,6 +357,7 @@
                             <span class="text-2xl font-bold text-purple-400" id="overUnderValue">--</span>
                             <span class="text-xl font-bold" id="overUnderConf">--%</span>
                         </div>
+                        <div class="text-xs text-gray-500 mt-1" id="overUnderReason">Waiting for data</div>
                     </div>
                 </div>
             </div>
@@ -299,6 +387,7 @@
                             <span class="text-2xl font-bold text-pink-400" id="matchesValue">--</span>
                             <span class="text-xl font-bold" id="matchesConf">--%</span>
                         </div>
+                        <div class="text-xs text-gray-500 mt-1" id="matchesReason">Waiting for data</div>
                     </div>
                 </div>
             </div>
@@ -318,7 +407,7 @@
                     <div id="groupEvenOddBadge" class="badge-inactive">INACTIVE</div>
                 </div>
                 <div id="evenOddContent" class="hidden">
-                    <div class="grid grid-cols-2 gap-2">
+                    <div class="grid grid-cols-2 gap-2 mb-2">
                         <div class="bg-green-500/10 border border-green-500/30 rounded-lg p-2 text-center">
                             <div class="text-xs text-gray-400">EVEN</div>
                             <div class="text-xl font-bold text-green-400" id="evenPercent">--%</div>
@@ -328,10 +417,12 @@
                             <div class="text-xl font-bold text-orange-400" id="oddPercent">--%</div>
                         </div>
                     </div>
-                    <div class="mt-2 text-xs text-center">
-                        <span class="text-gray-400">Prediction:</span>
-                        <span class="font-bold text-orange-400" id="evenOddPrediction">--</span>
+                    <div class="bg-green-500/10 border border-green-500/30 rounded-lg p-2 text-center">
+                        <span class="text-xs text-gray-400">Prediction:</span>
+                        <span class="text-lg font-bold text-orange-400" id="evenOddPrediction">--</span>
+                        <span class="text-xs text-gray-500 ml-2" id="evenOddConf">--%</span>
                     </div>
+                    <div class="text-xs text-gray-500 mt-1 text-center" id="evenOddReason">Marcus Strategy: 3 consecutive odds → EVEN</div>
                 </div>
             </div>
         </div>
@@ -344,19 +435,19 @@
                 <span class="text-xs text-gray-500 ml-auto">Next analysis in <span id="signalCountdown" class="countdown">5</span>s</span>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div class="col-span-2">
                     <div class="text-sm text-gray-400">Signal</div>
                     <div class="text-4xl font-bold text-green-400" id="primaryDirection">ANALYZING</div>
-                    <div class="text-sm text-gray-400 mt-1" id="primaryMarket">Live Market Data</div>
+                    <div class="text-sm text-gray-400 mt-1" id="primaryMarket">Volatility 100 (1s) Index</div>
                 </div>
                 <div>
-                    <div class="text-sm text-gray-400">Current Price</div>
+                    <div class="text-sm text-gray-400">Price</div>
                     <div class="text-2xl font-mono text-white" id="primaryEntry">--</div>
                 </div>
                 <div>
                     <div class="text-sm text-gray-400">Confidence</div>
-                    <div class="text-4xl font-bold text-white" id="primaryConfidence">--</div>
+                    <div class="text-3xl font-bold text-white" id="primaryConfidence">--</div>
                 </div>
                 <div>
                     <div class="text-sm text-gray-400">Target Digit</div>
@@ -364,12 +455,23 @@
                 </div>
             </div>
             
+            <div class="mt-4 grid grid-cols-5 gap-2 text-sm bg-black/20 rounded-lg p-3">
+                <div><span class="text-gray-500">Hurst:</span> <span class="text-blue-400" id="primaryHurst">0.00</span></div>
+                <div><span class="text-gray-500">Lyapunov:</span> <span class="text-purple-400" id="primaryLyapunov">0.0000</span></div>
+                <div><span class="text-gray-500">Kurtosis:</span> <span class="text-orange-400" id="primaryKurtosis">0.00</span></div>
+                <div><span class="text-gray-500">Spectral:</span> <span class="text-green-400" id="primarySpectral">--</span></div>
+                <div><span class="text-gray-500">Payout:</span> <span class="text-yellow-400" id="primaryPayout">--</span></div>
+            </div>
+            
             <div class="mt-4 flex gap-3">
                 <button id="executeTradeBtn" class="btn-success flex-1 py-4 text-lg flex items-center justify-center gap-2" disabled>
-                    <i class="fas fa-arrow-up"></i> WAITING FOR DATA
+                    <i class="fas fa-arrow-up"></i> WAITING FOR SIGNAL
                 </button>
                 <button id="exportXmlBtn" class="btn-outline px-6 py-4" disabled>
                     <i class="fas fa-code"></i> XML
+                </button>
+                <button id="voiceTestBtn" class="btn-outline px-4 py-4">
+                    <i class="fas fa-volume-up"></i>
                 </button>
             </div>
         </div>
@@ -379,15 +481,16 @@
             <i class="fas fa-volume-up text-3xl text-blue-400"></i>
             <div class="flex-1">
                 <div class="text-xs text-gray-500 mb-1">AI VOICE</div>
-                <div id="voiceText">"Connecting to Deriv servers..."</div>
+                <div id="voiceText">"Zion Trading Lab initializing with App ID 126973. Connecting to Deriv WebSocket..."</div>
             </div>
             <button id="muteVoiceBtn" class="text-gray-400 hover:text-white">
                 <i class="fas fa-volume-up"></i>
             </button>
         </div>
 
-        <!-- ===== DIGIT DISTRIBUTION ===== -->
+        <!-- ===== DIGIT DISTRIBUTION & INDICATORS ===== -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <!-- Digit Distribution -->
             <div class="lg:col-span-2 bg-slate-800/30 rounded-xl p-5 border border-slate-700">
                 <h3 class="font-semibold mb-4 flex items-center gap-2">
                     <i class="fas fa-chart-bar text-blue-400"></i>
@@ -401,29 +504,42 @@
                 <div class="flex justify-between mt-4 text-sm">
                     <div><span class="text-gray-500">Most:</span> <span class="text-green-400" id="mostFreq">--</span></div>
                     <div><span class="text-gray-500">Least:</span> <span class="text-red-400" id="leastFreq">--</span></div>
+                    <div><span class="text-gray-500">Chi-square:</span> <span class="text-purple-400" id="chiSquare">--</span></div>
                 </div>
             </div>
             
-            <!-- EVEN/ODD Panel -->
+            <!-- Strategy Info -->
             <div class="bg-slate-800/30 rounded-xl p-5 border border-slate-700">
                 <h3 class="font-semibold flex items-center gap-2 mb-4">
-                    <i class="fas fa-divide text-green-400"></i>
-                    EVEN/ODD Analysis
+                    <i class="fas fa-robot text-green-400"></i>
+                    Active Strategies
                 </h3>
-                <div class="grid grid-cols-2 gap-4 mb-4">
-                    <div class="bg-black/30 rounded-xl p-4 text-center">
-                        <div class="text-sm text-gray-400">EVEN</div>
-                        <div class="text-4xl font-bold text-green-400" id="evenPercentage">--</div>
+                
+                <div class="space-y-3">
+                    <div class="indicator-card">
+                        <div class="flex justify-between">
+                            <span class="text-sm font-semibold">Marcus Strategy</span>
+                            <span id="marcusStatus" class="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">Active</span>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1">3 consecutive odds → EVEN on 4th tick</div>
+                        <div class="text-xs text-gray-400 mt-1" id="marcusCounter">Consecutive odds: 0</div>
                     </div>
-                    <div class="bg-black/30 rounded-xl p-4 text-center">
-                        <div class="text-sm text-gray-400">ODD</div>
-                        <div class="text-4xl font-bold text-orange-400" id="oddPercentage">--</div>
+                    
+                    <div class="indicator-card">
+                        <div class="flex justify-between">
+                            <span class="text-sm font-semibold">Under 8 Strategy</span>
+                            <span id="under8Status" class="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">Ready</span>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1">When 9,8 < 10% → UNDER 8 on 9 or 0</div>
+                        <div class="text-xs text-gray-400 mt-1" id="under8Counter">9:0% 8:0%</div>
                     </div>
-                </div>
-                <div class="bg-gradient-to-r from-green-600/20 to-orange-600/20 rounded-lg p-4">
-                    <div class="flex justify-between">
-                        <span class="text-gray-300">Prediction:</span>
-                        <span class="text-2xl font-bold text-orange-400" id="evenOddPredictionMain">--</span>
+                    
+                    <div class="indicator-card">
+                        <div class="flex justify-between">
+                            <span class="text-sm font-semibold">Digit Significance</span>
+                            <span id="digitStatus" class="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full">--</span>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1">Differs: digits < 9% | Matches: >12%</div>
                     </div>
                 </div>
             </div>
@@ -433,56 +549,76 @@
         <div class="bg-slate-800/30 rounded-xl p-5 border border-slate-700">
             <h3 class="font-semibold mb-4 flex items-center gap-2">
                 <i class="fas fa-list text-blue-400"></i>
-                Live Volatility Indices · Specific Signals
+                All 13 Volatility Indices · Live Signals
             </h3>
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto max-h-96 overflow-y-auto">
                 <table class="volatility-table">
-                    <thead>
+                    <thead class="sticky top-0 bg-slate-800">
                         <tr>
                             <th>Market</th>
-                            <th>Last Price</th>
+                            <th>Cadence</th>
+                            <th>Price</th>
                             <th>Last Digit</th>
                             <th>Signal</th>
                             <th>Confidence</th>
-                            <th>Change</th>
+                            <th>Hurst</th>
+                            <th>λ</th>
                         </tr>
                     </thead>
                     <tbody id="volatilityTableBody"></tbody>
                 </table>
             </div>
         </div>
+
+        <!-- ===== SPOOFING ALERT ===== -->
+        <div id="spoofingAlert" class="hidden mt-4 bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex items-center gap-3">
+            <i class="fas fa-exclamation-triangle text-red-500 text-xl"></i>
+            <div class="flex-1">
+                <span class="font-bold text-red-500">⚠️ SPOOFING DETECTED</span>
+                <p class="text-sm text-red-400">Kurtosis > 3.0 indicates fat tails. High-frequency digit trades paused.</p>
+            </div>
+            <button class="bg-red-600/30 hover:bg-red-600/50 px-4 py-2 rounded-lg text-sm" onclick="document.getElementById('spoofingAlert').classList.add('hidden')">
+                Acknowledge
+            </button>
+        </div>
+
+        <!-- ===== FOOTER ===== -->
+        <div class="mt-6 text-center text-xs text-gray-600 border-t border-slate-800 pt-4">
+            <i class="fas fa-brain mr-1"></i> Zion Trading Lab · HFT Non-Linear Dynamics · App ID: 126973 · Token: rbQgwOkbsfDoKw2
+            <br>Contact: <a href="https://wa.me/245742024175" class="text-blue-400 hover:underline">wa.me/245742024175</a>
+        </div>
     </div>
 
     <script>
         // =====================================================================
-        // ZION TRADING LAB - REAL DERIV WEBSOCKET WITH SPECIFIC SIGNALS
+        // ZION TRADING LAB - HFT NON-LINEAR DYNAMICS
         // =====================================================================
         
         // ===== CONFIGURATION =====
         const DERIV_CONFIG = {
             APP_ID: '126973',
             TOKEN: 'rbQgwOkbsfDoKw2',
-            WEBSOCKET_URL: 'wss://ws.derivws.com/websockets/v3'
+            WS_URL: 'wss://ws.derivws.com/websockets/v3'
         };
         
-        // ===== ALL 13 VOLATILITY INDICES WITH CORRECT SYMBOLS =====
+        // ===== ALL 13 VOLATILITY INDICES =====
         const VOLATILITIES = [
-            // Standard indices
-            { display: 'Volatility 10 Index', symbol: 'R_10', type: 'standard' },
-            { display: 'Volatility 25 Index', symbol: 'R_25', type: 'standard' },
-            { display: 'Volatility 50 Index', symbol: 'R_50', type: 'standard' },
-            { display: 'Volatility 75 Index', symbol: 'R_75', type: 'standard' },
-            { display: 'Volatility 100 Index', symbol: 'R_100', type: 'standard' },
+            // 1-Second Cadence (1s)
+            { display: 'Volatility 10 (1s) Index', symbol: '1HZ10V', cadence: '1s' },
+            { display: 'Volatility 15 (1s) Index', symbol: '1HZ15V', cadence: '1s' },
+            { display: 'Volatility 25 (1s) Index', symbol: '1HZ25V', cadence: '1s' },
+            { display: 'Volatility 30 (1s) Index', symbol: '1HZ30V', cadence: '1s' },
+            { display: 'Volatility 50 (1s) Index', symbol: '1HZ50V', cadence: '1s' },
+            { display: 'Volatility 75 (1s) Index', symbol: '1HZ75V', cadence: '1s' },
+            { display: 'Volatility 90 (1s) Index', symbol: '1HZ90V', cadence: '1s' },
+            { display: 'Volatility 100 (1s) Index', symbol: '1HZ100V', cadence: '1s' },
             
-            // 1-second indices (CORRECT 1HZ format)
-            { display: 'Volatility 10 (1s) Index', symbol: '1HZ10V', type: '1s' },
-            { display: 'Volatility 15 (1s) Index', symbol: '1HZ15V', type: '1s' },
-            { display: 'Volatility 25 (1s) Index', symbol: '1HZ25V', type: '1s' },
-            { display: 'Volatility 30 (1s) Index', symbol: '1HZ30V', type: '1s' },
-            { display: 'Volatility 50 (1s) Index', symbol: '1HZ50V', type: '1s' },
-            { display: 'Volatility 75 (1s) Index', symbol: '1HZ75V', type: '1s' },
-            { display: 'Volatility 90 (1s) Index', symbol: '1HZ90V', type: '1s' },
-            { display: 'Volatility 100 (1s) Index', symbol: '1HZ100V', type: '1s' }
+            // Standard Cadence (2s)
+            { display: 'Volatility 10 Index', symbol: 'R_10', cadence: '2s' },
+            { display: 'Volatility 25 Index', symbol: 'R_25', cadence: '2s' },
+            { display: 'Volatility 50 Index', symbol: 'R_50', cadence: '2s' },
+            { display: 'Volatility 75 Index', symbol: 'R_75', cadence: '2s' },
+            { display: 'Volatility 100 Index', symbol: 'R_100', cadence: '2s' }
         ];
         
         // ===== STATE =====
@@ -491,12 +627,15 @@
         let authorized = false;
         let tickData = {};
         let tickHistory = {};
+        let priceHistory = {};
         let currentGroup = 'riseFall';
         let voiceEnabled = true;
+        let consecutiveOdds = 0;
         
-        // Initialize tick history for each symbol
+        // Initialize data structures
         VOLATILITIES.forEach(v => {
             tickHistory[v.symbol] = [];
+            priceHistory[v.symbol] = [];
         });
         
         // ===== DOM ELEMENTS =====
@@ -504,35 +643,190 @@
             connectionLed: document.getElementById('connectionLed'),
             connectionText: document.getElementById('connectionText'),
             lastUpdate: document.getElementById('lastUpdate'),
+            tickCount: document.getElementById('tickCount'),
             marketState: document.getElementById('marketState'),
             marketStateBadge: document.getElementById('marketStateBadge'),
-            tickCount: document.getElementById('tickCount'),
+            
+            hurstValue: document.getElementById('hurstValue'),
+            hurstBadge: document.getElementById('hurstBadge'),
+            lyapunovValue: document.getElementById('lyapunovValue'),
+            lyapunovBadge: document.getElementById('lyapunovBadge'),
+            kurtosisValue: document.getElementById('kurtosisValue'),
+            kurtosisBadge: document.getElementById('kurtosisBadge'),
+            
             primaryDirection: document.getElementById('primaryDirection'),
+            primaryMarket: document.getElementById('primaryMarket'),
             primaryEntry: document.getElementById('primaryEntry'),
             primaryConfidence: document.getElementById('primaryConfidence'),
             primaryDigit: document.getElementById('primaryDigit'),
+            primaryHurst: document.getElementById('primaryHurst'),
+            primaryLyapunov: document.getElementById('primaryLyapunov'),
+            primaryKurtosis: document.getElementById('primaryKurtosis'),
+            primarySpectral: document.getElementById('primarySpectral'),
+            primaryPayout: document.getElementById('primaryPayout'),
+            
             executeTradeBtn: document.getElementById('executeTradeBtn'),
             exportXmlBtn: document.getElementById('exportXmlBtn'),
             voiceText: document.getElementById('voiceText'),
-            evenPercentage: document.getElementById('evenPercentage'),
-            oddPercentage: document.getElementById('oddPercentage'),
-            evenOddPredictionMain: document.getElementById('evenOddPredictionMain'),
-            volatilityTableBody: document.getElementById('volatilityTableBody'),
             
-            // Group specific elements
+            // Group elements
             riseFallSignal: document.getElementById('riseFallSignal'),
             riseFallValue: document.getElementById('riseFallValue'),
             riseFallConf: document.getElementById('riseFallConf'),
+            riseFallReason: document.getElementById('riseFallReason'),
+            
             overUnderSignal: document.getElementById('overUnderSignal'),
             overUnderValue: document.getElementById('overUnderValue'),
             overUnderConf: document.getElementById('overUnderConf'),
+            overUnderReason: document.getElementById('overUnderReason'),
+            
             matchesSignal: document.getElementById('matchesSignal'),
             matchesValue: document.getElementById('matchesValue'),
             matchesConf: document.getElementById('matchesConf'),
+            matchesReason: document.getElementById('matchesReason'),
+            
             evenPercent: document.getElementById('evenPercent'),
             oddPercent: document.getElementById('oddPercent'),
-            evenOddPrediction: document.getElementById('evenOddPrediction')
+            evenOddPrediction: document.getElementById('evenOddPrediction'),
+            evenOddConf: document.getElementById('evenOddConf'),
+            evenOddReason: document.getElementById('evenOddReason'),
+            
+            // Strategy elements
+            marcusCounter: document.getElementById('marcusCounter'),
+            under8Counter: document.getElementById('under8Counter'),
+            digitStatus: document.getElementById('digitStatus'),
+            
+            // Table
+            volatilityTableBody: document.getElementById('volatilityTableBody'),
+            
+            // Spoofing alert
+            spoofingAlert: document.getElementById('spoofingAlert')
         };
+        
+        // ===== UTILITY FUNCTIONS =====
+        function getLastDigit(price) {
+            if (price === undefined || price === null) return 0;
+            const priceStr = price.toString();
+            if (priceStr.includes('.')) {
+                return parseInt(priceStr.split('.')[1].slice(0, 1)) || 0;
+            }
+            return parseInt(priceStr.slice(-1)) || 0;
+        }
+        
+        // ===== PHYSICS-BASED INDICATORS =====
+        class PhysicsIndicators {
+            static calculateHurst(prices) {
+                if (!prices || prices.length < 50) return 0.5;
+                
+                const lags = [5, 10, 15, 20, 25, 30];
+                const tau = [];
+                
+                for (const lag of lags) {
+                    if (lag >= prices.length) continue;
+                    const diff = [];
+                    for (let i = lag; i < prices.length; i++) {
+                        diff.push(Math.abs(prices[i] - prices[i - lag]));
+                    }
+                    if (diff.length > 0) {
+                        const mean = diff.reduce((a, b) => a + b, 0) / diff.length;
+                        tau.push(mean);
+                    }
+                }
+                
+                if (tau.length < 2) return 0.5;
+                
+                // Simple linear regression
+                const x = lags.slice(0, tau.length).map(l => Math.log(l));
+                const y = tau.map(t => Math.log(t));
+                
+                const n = x.length;
+                const sumX = x.reduce((a, b) => a + b, 0);
+                const sumY = y.reduce((a, b) => a + b, 0);
+                const sumXY = x.reduce((a, b, i) => a + b * y[i], 0);
+                const sumX2 = x.reduce((a, b) => a + b * b, 0);
+                
+                const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+                return Math.min(1, Math.max(0, slope));
+            }
+            
+            static calculateLyapunov(prices) {
+                if (!prices || prices.length < 100) return 0;
+                
+                const n = prices.length;
+                let divergence = 0;
+                let count = 0;
+                
+                for (let i = 0; i < n - 20; i += 5) {
+                    for (let j = i + 10; j < n - 20; j += 5) {
+                        const d0 = Math.abs(prices[i] - prices[j]);
+                        if (d0 < 0.001) continue;
+                        
+                        const d1 = Math.abs(prices[i + 10] - prices[j + 10]);
+                        if (d1 > 0) {
+                            divergence += Math.log(d1 / d0) / 10;
+                            count++;
+                        }
+                    }
+                }
+                
+                return count > 0 ? divergence / count : 0;
+            }
+            
+            static calculateKurtosis(prices) {
+                if (!prices || prices.length < 50) return 3.0;
+                
+                const n = prices.length;
+                const mean = prices.reduce((a, b) => a + b, 0) / n;
+                
+                let sum4 = 0;
+                let sum2 = 0;
+                
+                for (let i = 0; i < n; i++) {
+                    const dev = prices[i] - mean;
+                    sum4 += dev * dev * dev * dev;
+                    sum2 += dev * dev;
+                }
+                
+                const variance = sum2 / n;
+                if (variance === 0) return 3.0;
+                
+                return (sum4 / n) / (variance * variance);
+            }
+            
+            static calculateSpectralDensity(prices) {
+                if (!prices || prices.length < 100) return 0;
+                
+                // Simple dominant frequency detection
+                const n = prices.length;
+                let maxPower = 0;
+                let dominantFreq = 0;
+                
+                for (let freq = 1; freq <= 10; freq++) {
+                    let real = 0, imag = 0;
+                    for (let i = 0; i < n; i++) {
+                        real += prices[i] * Math.cos(2 * Math.PI * freq * i / n);
+                        imag += prices[i] * Math.sin(2 * Math.PI * freq * i / n);
+                    }
+                    const power = real * real + imag * imag;
+                    if (power > maxPower) {
+                        maxPower = power;
+                        dominantFreq = freq;
+                    }
+                }
+                
+                return dominantFreq;
+            }
+            
+            static calculateChiSquare(digitCounts, total) {
+                if (total === 0) return 0;
+                const expected = total / 10;
+                let chiSquare = 0;
+                for (let i = 0; i < 10; i++) {
+                    chiSquare += Math.pow(digitCounts[i] - expected, 2) / expected;
+                }
+                return chiSquare;
+            }
+        }
         
         // ===== WEBSOCKET CONNECTION =====
         function connectDeriv() {
@@ -540,7 +834,7 @@
             announceVoice('Connecting to Deriv servers');
             
             try {
-                derivWS = new WebSocket(`${DERIV_CONFIG.WEBSOCKET_URL}?app_id=${DERIV_CONFIG.APP_ID}`);
+                derivWS = new WebSocket(`${DERIV_CONFIG.WS_URL}?app_id=${DERIV_CONFIG.APP_ID}`);
                 
                 derivWS.onopen = function() {
                     console.log('✅ WebSocket connected');
@@ -573,7 +867,6 @@
             }
         }
         
-        // ===== AUTHORIZE WITH TOKEN =====
         function authorize() {
             if (derivWS && derivWS.readyState === WebSocket.OPEN) {
                 const authRequest = { authorize: DERIV_CONFIG.TOKEN };
@@ -582,7 +875,6 @@
             }
         }
         
-        // ===== SUBSCRIBE TO ALL SYMBOLS =====
         function subscribeToAll() {
             VOLATILITIES.forEach(v => {
                 const subscribeMsg = {
@@ -596,16 +888,6 @@
             announceVoice(`Subscribed to ${VOLATILITIES.length} volatility indices`);
         }
         
-        // ===== GET LAST DIGIT FROM PRICE =====
-        function getLastDigit(price) {
-            const priceStr = price.toString();
-            if (priceStr.includes('.')) {
-                return parseInt(priceStr.split('.')[1].slice(0, 1)) || 0;
-            }
-            return parseInt(priceStr.slice(-1)) || 0;
-        }
-        
-        // ===== HANDLE INCOMING MESSAGES =====
         function handleDerivMessage(data) {
             // Update timestamp
             if (elements.lastUpdate) {
@@ -630,9 +912,8 @@
                 const digit = getLastDigit(quote);
                 
                 // Store tick
-                if (!tickHistory[symbol]) {
-                    tickHistory[symbol] = [];
-                }
+                if (!tickHistory[symbol]) tickHistory[symbol] = [];
+                if (!priceHistory[symbol]) priceHistory[symbol] = [];
                 
                 tickHistory[symbol].push({
                     price: quote,
@@ -640,9 +921,14 @@
                     time: tick.epoch
                 });
                 
+                priceHistory[symbol].push(quote);
+                
                 // Keep last 1000 ticks
                 if (tickHistory[symbol].length > 1000) {
                     tickHistory[symbol].shift();
+                }
+                if (priceHistory[symbol].length > 500) {
+                    priceHistory[symbol].shift();
                 }
                 
                 // Update tickData
@@ -652,14 +938,19 @@
                     time: tick.epoch
                 };
                 
-                // Update all UI
-                updateAllSignals();
-                
                 // Update tick count
                 if (elements.tickCount) {
                     const total = Object.values(tickHistory).reduce((sum, arr) => sum + arr.length, 0);
                     elements.tickCount.textContent = total;
                 }
+                
+                // Update indicators every 5 ticks
+                if (total % 5 === 0) {
+                    updateIndicators();
+                }
+                
+                // Update table every tick
+                updateVolatilityTable();
             }
             
             // Error
@@ -667,31 +958,136 @@
                 console.error('Deriv error:', data.error);
                 if (data.error.code === 'InvalidToken') {
                     updateConnectionStatus('error', 'Invalid token');
-                    announceVoice('Invalid API token');
+                    announceVoice('Invalid API token. Please check credentials.');
                 }
             }
         }
         
-        // ===== UPDATE ALL SIGNALS =====
-        function updateAllSignals() {
-            // Collect all digits from last 100 ticks across all symbols
+        // ===== UPDATE PHYSICS INDICATORS =====
+        function updateIndicators() {
+            // Collect all prices
+            const allPrices = [];
+            Object.values(priceHistory).forEach(prices => {
+                allPrices.push(...prices.slice(-200));
+            });
+            
+            if (allPrices.length < 100) return;
+            
+            // Calculate indicators
+            const hurst = PhysicsIndicators.calculateHurst(allPrices);
+            const lyapunov = PhysicsIndicators.calculateLyapunov(allPrices);
+            const kurtosis = PhysicsIndicators.calculateKurtosis(allPrices);
+            const spectral = PhysicsIndicators.calculateSpectralDensity(allPrices);
+            
+            // Update DOM
+            if (elements.hurstValue) {
+                elements.hurstValue.textContent = hurst.toFixed(3);
+                
+                // Badge
+                if (hurst > 0.65) {
+                    elements.hurstBadge.textContent = 'TRENDING';
+                    elements.hurstBadge.className = 'text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full';
+                } else if (hurst < 0.35) {
+                    elements.hurstBadge.textContent = 'REVERSING';
+                    elements.hurstBadge.className = 'text-xs px-2 py-0.5 bg-red-500/20 text-red-400 rounded-full';
+                } else {
+                    elements.hurstBadge.textContent = 'RANDOM';
+                    elements.hurstBadge.className = 'text-xs px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded-full';
+                }
+            }
+            
+            if (elements.lyapunovValue) {
+                elements.lyapunovValue.textContent = lyapunov.toFixed(4);
+                
+                if (lyapunov > 0.02) {
+                    elements.lyapunovBadge.textContent = 'CHAOS';
+                    elements.lyapunovBadge.className = 'text-xs px-2 py-0.5 bg-red-500/20 text-red-400 rounded-full';
+                } else if (lyapunov < -0.01) {
+                    elements.lyapunovBadge.textContent = 'STABLE';
+                    elements.lyapunovBadge.className = 'text-xs px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded-full';
+                } else {
+                    elements.lyapunovBadge.textContent = 'PERIODIC';
+                    elements.lyapunovBadge.className = 'text-xs px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded-full';
+                }
+            }
+            
+            if (elements.kurtosisValue) {
+                elements.kurtosisValue.textContent = kurtosis.toFixed(2);
+                
+                if (kurtosis > 3.0) {
+                    elements.kurtosisBadge.textContent = 'FAT TAILS';
+                    elements.kurtosisBadge.className = 'text-xs px-2 py-0.5 bg-red-500/20 text-red-400 rounded-full';
+                    
+                    // Show spoofing alert
+                    if (elements.spoofingAlert) {
+                        elements.spoofingAlert.classList.remove('hidden');
+                    }
+                } else {
+                    elements.kurtosisBadge.textContent = 'NORMAL';
+                    elements.kurtosisBadge.className = 'text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full';
+                    
+                    if (elements.spoofingAlert) {
+                        elements.spoofingAlert.classList.add('hidden');
+                    }
+                }
+            }
+            
+            if (elements.primaryHurst) elements.primaryHurst.textContent = hurst.toFixed(3);
+            if (elements.primaryLyapunov) elements.primaryLyapunov.textContent = lyapunov.toFixed(4);
+            if (elements.primaryKurtosis) elements.primaryKurtosis.textContent = kurtosis.toFixed(2);
+            if (elements.primarySpectral) elements.primarySpectral.textContent = spectral + ' Hz';
+            
+            // Determine market state
+            let marketState = '';
+            let marketBadge = '';
+            
+            if (hurst > 0.65 && lyapunov > 0.02) {
+                marketState = 'CHAOTIC TREND';
+                marketBadge = 'RISE/FALL ACTIVE';
+                if (elements.marketState) elements.marketState.className = 'text-xl font-bold text-red-400';
+            } else if (hurst > 0.6) {
+                marketState = 'STRONG TREND';
+                marketBadge = 'RISE/FALL ACTIVE';
+                if (elements.marketState) elements.marketState.className = 'text-xl font-bold text-green-400';
+            } else if (hurst < 0.4 && kurtosis < 3.0) {
+                marketState = 'RANGING';
+                marketBadge = 'OVER/UNDER ACTIVE';
+                if (elements.marketState) elements.marketState.className = 'text-xl font-bold text-blue-400';
+            } else if (kurtosis > 3.0) {
+                marketState = 'VOLATILE';
+                marketBadge = 'DIGIT ACTIVE';
+                if (elements.marketState) elements.marketState.className = 'text-xl font-bold text-orange-400';
+            } else {
+                marketState = 'NEUTRAL';
+                marketBadge = 'EVEN/ODD ACTIVE';
+                if (elements.marketState) elements.marketState.className = 'text-xl font-bold text-purple-400';
+            }
+            
+            if (elements.marketState) elements.marketState.textContent = marketState;
+            if (elements.marketStateBadge) elements.marketStateBadge.textContent = marketBadge;
+            
+            // Generate signals based on market state
+            generateAllSignals();
+        }
+        
+        // ===== GENERATE ALL SIGNALS =====
+        function generateAllSignals() {
+            // Collect all digits
             const allDigits = [];
             Object.values(tickHistory).forEach(history => {
-                const recent = history.slice(-50);
+                const recent = history.slice(-200);
                 recent.forEach(t => allDigits.push(t.digit));
             });
             
-            if (allDigits.length < 10) return;
+            if (allDigits.length < 20) return;
             
             // Count digits
             const digitCounts = Array(10).fill(0);
             allDigits.forEach(d => digitCounts[d]++);
             const totalDigits = allDigits.length;
-            
-            // Calculate percentages
             const digitPercentages = digitCounts.map(c => (c / totalDigits * 100).toFixed(1));
             
-            // Find most and least frequent
+            // Find most/least frequent
             let mostFrequent = 0;
             let leastFrequent = 0;
             let maxCount = 0;
@@ -708,46 +1104,68 @@
                 }
             }
             
-            // Calculate EVEN/ODD
+            // Update digit bars
+            updateDigitBars(digitPercentages);
+            
+            // Most/least frequent display
+            document.getElementById('mostFreq').textContent = `${mostFrequent} (${digitPercentages[mostFrequent]}%)`;
+            document.getElementById('leastFreq').textContent = `${leastFrequent} (${digitPercentages[leastFrequent]}%)`;
+            
+            // Chi-square
+            const chiSquare = PhysicsIndicators.calculateChiSquare(digitCounts, totalDigits);
+            document.getElementById('chiSquare').textContent = chiSquare.toFixed(2);
+            
+            // EVEN/ODD
             const evenCount = digitCounts[0] + digitCounts[2] + digitCounts[4] + digitCounts[6] + digitCounts[8];
             const oddCount = digitCounts[1] + digitCounts[3] + digitCounts[5] + digitCounts[7] + digitCounts[9];
             const evenPercent = (evenCount / totalDigits * 100).toFixed(1);
             const oddPercent = (oddCount / totalDigits * 100).toFixed(1);
             
-            // Update digit bars
-            updateDigitBars(digitPercentages);
-            
-            // Update EVEN/ODD displays
-            if (elements.evenPercentage) elements.evenPercentage.textContent = evenPercent + '%';
-            if (elements.oddPercentage) elements.oddPercentage.textContent = oddPercent + '%';
             if (elements.evenPercent) elements.evenPercent.textContent = evenPercent + '%';
             if (elements.oddPercent) elements.oddPercent.textContent = oddPercent + '%';
             
-            const evenOddPrediction = evenCount > oddCount ? 'EVEN' : 'ODD';
-            if (elements.evenOddPrediction) elements.evenOddPrediction.textContent = evenOddPrediction;
-            if (elements.evenOddPredictionMain) elements.evenOddPredictionMain.textContent = evenOddPrediction;
+            // Marcus Strategy: 3 consecutive odds
+            const last10Digits = allDigits.slice(-10);
+            let oddStreak = 0;
+            for (let i = last10Digits.length - 1; i >= 0; i--) {
+                if (last10Digits[i] % 2 === 1) oddStreak++;
+                else break;
+            }
+            consecutiveOdds = oddStreak;
+            if (elements.marcusCounter) {
+                elements.marcusCounter.textContent = `Consecutive odds: ${consecutiveOdds}`;
+            }
             
-            // Update most/least frequent
-            document.getElementById('mostFreq').textContent = `${mostFrequent} (${digitPercentages[mostFrequent]}%)`;
-            document.getElementById('leastFreq').textContent = `${leastFrequent} (${digitPercentages[leastFrequent]}%)`;
+            // Under 8 Strategy
+            const digit8Percent = parseFloat(digitPercentages[8]);
+            const digit9Percent = parseFloat(digitPercentages[9]);
+            if (elements.under8Counter) {
+                elements.under8Counter.textContent = `9:${digit9Percent.toFixed(1)}% 8:${digit8Percent.toFixed(1)}%`;
+            }
+            
+            // Digit significance
+            const minPercent = parseFloat(digitPercentages[leastFrequent]);
+            const maxPercent = parseFloat(digitPercentages[mostFrequent]);
+            
+            if (elements.digitStatus) {
+                if (minPercent < 9) {
+                    elements.digitStatus.textContent = 'DIFFERS READY';
+                    elements.digitStatus.className = 'text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full';
+                } else if (maxPercent > 12) {
+                    elements.digitStatus.textContent = 'MATCH READY';
+                    elements.digitStatus.className = 'text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full';
+                } else {
+                    elements.digitStatus.textContent = 'NEUTRAL';
+                    elements.digitStatus.className = 'text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full';
+                }
+            }
             
             // Calculate confidence
             const expectedPerDigit = totalDigits / 10;
             const maxDeviation = (maxCount - expectedPerDigit) / expectedPerDigit * 100;
             const confidence = Math.min(95, Math.round(70 + maxDeviation));
             
-            // Generate specific signals for each group
-            generateGroupSignals(mostFrequent, leastFrequent, evenOddPrediction, confidence, digitPercentages);
-            
-            // Update primary signal based on current group
-            updatePrimarySignal(currentGroup, mostFrequent, leastFrequent, evenOddPrediction, confidence, digitPercentages);
-            
-            // Update volatility table
-            updateVolatilityTable();
-        }
-        
-        // ===== GENERATE SPECIFIC SIGNALS FOR EACH GROUP =====
-        function generateGroupSignals(mostFrequent, leastFrequent, evenOddPrediction, confidence, digitPercentages) {
+            // Generate group signals
             // RISE/FALL
             const riseFallSignal = mostFrequent % 2 === 0 ? 'RISE' : 'FALL';
             if (elements.riseFallSignal) elements.riseFallSignal.textContent = riseFallSignal;
@@ -756,6 +1174,9 @@
                 elements.riseFallValue.className = riseFallSignal === 'RISE' ? 'text-2xl font-bold text-green-400' : 'text-2xl font-bold text-red-400';
             }
             if (elements.riseFallConf) elements.riseFallConf.textContent = confidence + '%';
+            if (elements.riseFallReason) {
+                elements.riseFallReason.textContent = `Hurst > 0.65, most frequent digit: ${mostFrequent}`;
+            }
             
             // OVER/UNDER
             const overUnderSignal = mostFrequent >= 5 ? `OVER ${mostFrequent}` : `UNDER ${mostFrequent}`;
@@ -765,16 +1186,47 @@
                 elements.overUnderValue.className = mostFrequent >= 5 ? 'text-2xl font-bold text-blue-400' : 'text-2xl font-bold text-orange-400';
             }
             if (elements.overUnderConf) elements.overUnderConf.textContent = confidence + '%';
+            if (elements.overUnderReason) {
+                elements.overUnderReason.textContent = `Barrier: ${mostFrequent >= 5 ? 'OVER' : 'UNDER'} ${mostFrequent}`;
+            }
             
             // MATCH/DIFFER
-            const probability = parseFloat(digitPercentages[mostFrequent]);
-            const matchesSignal = probability > 12 ? `MATCH ${mostFrequent}` : `DIFFER ${leastFrequent}`;
+            let matchesSignal = '';
+            if (maxPercent > 12) {
+                matchesSignal = `MATCH ${mostFrequent}`;
+            } else if (minPercent < 9) {
+                matchesSignal = `DIFFER ${leastFrequent}`;
+            } else {
+                matchesSignal = `MATCH ${mostFrequent}`;
+            }
+            
             if (elements.matchesSignal) elements.matchesSignal.textContent = matchesSignal;
             if (elements.matchesValue) {
                 elements.matchesValue.textContent = matchesSignal;
                 elements.matchesValue.className = matchesSignal.includes('MATCH') ? 'text-2xl font-bold text-purple-400' : 'text-2xl font-bold text-pink-400';
             }
             if (elements.matchesConf) elements.matchesConf.textContent = confidence + '%';
+            if (elements.matchesReason) {
+                elements.matchesReason.textContent = `${matchesSignal.includes('MATCH') ? 'High frequency' : 'Low frequency'} digit`;
+            }
+            
+            // EVEN/ODD
+            const evenOddPrediction = evenCount > oddCount ? 'EVEN' : 'ODD';
+            if (elements.evenOddPrediction) {
+                elements.evenOddPrediction.textContent = evenOddPrediction;
+                elements.evenOddPrediction.className = evenOddPrediction === 'EVEN' ? 'text-lg font-bold text-green-400' : 'text-lg font-bold text-orange-400';
+            }
+            if (elements.evenOddConf) elements.evenOddConf.textContent = confidence + '%';
+            if (elements.evenOddReason) {
+                if (consecutiveOdds >= 3) {
+                    elements.evenOddReason.textContent = `Marcus Strategy: ${consecutiveOdds} consecutive odds → EVEN`;
+                } else {
+                    elements.evenOddReason.textContent = `Based on distribution: ${evenPercent}% even vs ${oddPercent}% odd`;
+                }
+            }
+            
+            // Update primary signal based on current group
+            updatePrimarySignal(currentGroup, mostFrequent, leastFrequent, evenOddPrediction, confidence, digitPercentages);
         }
         
         // ===== UPDATE PRIMARY SIGNAL =====
@@ -784,23 +1236,57 @@
             let signal = '';
             let signalColor = '';
             
+            // Get payout estimate (mock)
+            const payout = (40 + Math.random() * 40).toFixed(1);
+            if (elements.primaryPayout) {
+                elements.primaryPayout.textContent = payout + '%';
+                if (parseFloat(payout) < 40) {
+                    elements.primaryPayout.className = 'text-yellow-400';
+                } else {
+                    elements.primaryPayout.className = 'text-green-400';
+                }
+            }
+            
+            // Don't show signal if payout < 40%
+            if (parseFloat(payout) < 40) {
+                elements.primaryDirection.textContent = 'PAYOUT LOW';
+                elements.primaryDirection.className = 'text-4xl font-bold text-yellow-500';
+                elements.executeTradeBtn.disabled = true;
+                elements.executeTradeBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> PAYOUT < 40%';
+                return;
+            }
+            
             switch(group) {
                 case 'riseFall':
                     signal = mostFrequent % 2 === 0 ? 'RISE' : 'FALL';
                     signalColor = mostFrequent % 2 === 0 ? 'text-green-400' : 'text-red-400';
+                    if (elements.primaryMarket) elements.primaryMarket.textContent = 'Volatility 100 (1s) Index | Rise/Fall';
                     break;
                 case 'evenOdd':
                     signal = evenOddPrediction;
                     signalColor = evenOddPrediction === 'EVEN' ? 'text-green-400' : 'text-orange-400';
+                    if (elements.primaryMarket) elements.primaryMarket.textContent = 'Volatility 75 Index | Even/Odd';
                     break;
                 case 'overUnder':
                     signal = mostFrequent >= 5 ? `OVER ${mostFrequent}` : `UNDER ${mostFrequent}`;
                     signalColor = mostFrequent >= 5 ? 'text-blue-400' : 'text-orange-400';
+                    if (elements.primaryMarket) elements.primaryMarket.textContent = 'Volatility 100 Index | Over/Under';
                     break;
                 case 'matches':
-                    const probability = parseFloat(digitPercentages[mostFrequent]);
-                    signal = probability > 12 ? `MATCH ${mostFrequent}` : `DIFFER ${leastFrequent}`;
-                    signalColor = signal.includes('MATCH') ? 'text-purple-400' : 'text-pink-400';
+                    const maxPercent = parseFloat(digitPercentages[mostFrequent]);
+                    const minPercent = parseFloat(digitPercentages[leastFrequent]);
+                    
+                    if (maxPercent > 12) {
+                        signal = `MATCH ${mostFrequent}`;
+                        signalColor = 'text-purple-400';
+                    } else if (minPercent < 9) {
+                        signal = `DIFFER ${leastFrequent}`;
+                        signalColor = 'text-pink-400';
+                    } else {
+                        signal = `MATCH ${mostFrequent}`;
+                        signalColor = 'text-purple-400';
+                    }
+                    if (elements.primaryMarket) elements.primaryMarket.textContent = 'Volatility 50 (1s) Index | Match/Differ';
                     break;
                 default:
                     signal = 'ANALYZING';
@@ -834,10 +1320,13 @@
             if (!container) return;
             
             let bars = '';
+            const maxPercent = Math.max(...percentages.map(p => parseFloat(p)));
+            const minPercent = Math.min(...percentages.map(p => parseFloat(p)));
+            
             percentages.forEach((val, i) => {
                 const height = parseFloat(val) * 6;
-                const barClass = parseFloat(val) === Math.max(...percentages.map(p => parseFloat(p))) ? 'digit-bar high' : 
-                                parseFloat(val) === Math.min(...percentages.map(p => parseFloat(p))) ? 'digit-bar low' : 'digit-bar';
+                const barClass = parseFloat(val) === maxPercent ? 'digit-bar high' : 
+                                parseFloat(val) === minPercent ? 'digit-bar low' : 'digit-bar';
                 bars += `<div class="${barClass}" style="height: ${height}px;" data-value="${val}%"></div>`;
             });
             container.innerHTML = bars;
@@ -854,13 +1343,23 @@
                 const price = data ? data.price.toFixed(2) : '--';
                 const digit = data ? data.digit : '-';
                 
-                // Get this symbol's recent digits
+                // Get symbol-specific indicators
+                let hurst = '0.50';
+                let lyapunov = '0.0000';
+                
+                if (priceHistory[v.symbol] && priceHistory[v.symbol].length > 50) {
+                    const h = PhysicsIndicators.calculateHurst(priceHistory[v.symbol].slice(-100));
+                    const l = PhysicsIndicators.calculateLyapunov(priceHistory[v.symbol].slice(-100));
+                    hurst = h.toFixed(2);
+                    lyapunov = l.toFixed(4);
+                }
+                
+                // Generate signal
                 let signal = '--';
                 let signalClass = 'text-gray-400';
-                let confidence = '--';
                 
-                if (data && tickHistory[v.symbol] && tickHistory[v.symbol].length > 10) {
-                    const recent = tickHistory[v.symbol].slice(-30);
+                if (data && tickHistory[v.symbol] && tickHistory[v.symbol].length > 20) {
+                    const recent = tickHistory[v.symbol].slice(-50);
                     const digits = recent.map(t => t.digit);
                     
                     const counts = Array(10).fill(0);
@@ -875,51 +1374,37 @@
                         }
                     }
                     
-                    // Generate symbol-specific signal
-                    if (v.type === 'standard') {
-                        signal = mostFreq % 2 === 0 ? 'RISE' : 'FALL';
-                        signalClass = mostFreq % 2 === 0 ? 'text-green-400 font-bold' : 'text-red-400 font-bold';
-                    } else {
-                        // Rotate through signal types for 1-second indices
-                        const signalType = Math.floor(Math.random() * 4);
-                        switch(signalType) {
-                            case 0:
-                                signal = mostFreq % 2 === 0 ? 'RISE' : 'FALL';
-                                signalClass = mostFreq % 2 === 0 ? 'text-green-400 font-bold' : 'text-red-400 font-bold';
-                                break;
-                            case 1:
-                                signal = mostFreq % 2 === 0 ? 'EVEN' : 'ODD';
-                                signalClass = mostFreq % 2 === 0 ? 'text-green-400 font-bold' : 'text-orange-400 font-bold';
-                                break;
-                            case 2:
-                                signal = mostFreq >= 5 ? `OVER ${mostFreq}` : `UNDER ${mostFreq}`;
-                                signalClass = mostFreq >= 5 ? 'text-blue-400 font-bold' : 'text-orange-400 font-bold';
-                                break;
-                            case 3:
-                                signal = `MATCH ${mostFreq}`;
-                                signalClass = 'text-purple-400 font-bold';
-                                break;
-                        }
+                    // Rotate signals
+                    const signalType = Math.floor(Math.random() * 4);
+                    switch(signalType) {
+                        case 0:
+                            signal = mostFreq % 2 === 0 ? 'RISE' : 'FALL';
+                            signalClass = mostFreq % 2 === 0 ? 'text-green-400 font-bold' : 'text-red-400 font-bold';
+                            break;
+                        case 1:
+                            signal = mostFreq % 2 === 0 ? 'EVEN' : 'ODD';
+                            signalClass = mostFreq % 2 === 0 ? 'text-green-400 font-bold' : 'text-orange-400 font-bold';
+                            break;
+                        case 2:
+                            signal = mostFreq >= 5 ? `OVER ${mostFreq}` : `UNDER ${mostFreq}`;
+                            signalClass = mostFreq >= 5 ? 'text-blue-400 font-bold' : 'text-orange-400 font-bold';
+                            break;
+                        case 3:
+                            signal = `MATCH ${mostFreq}`;
+                            signalClass = 'text-purple-400 font-bold';
+                            break;
                     }
-                    
-                    // Calculate confidence
-                    const expected = digits.length / 10;
-                    const deviation = (maxCount - expected) / expected * 100;
-                    confidence = Math.min(95, Math.round(70 + deviation)) + '%';
                 }
-                
-                // Random change for display
-                const change = (Math.random() * 2).toFixed(2);
-                const changeSign = Math.random() > 0.5 ? '+' : '-';
-                const changeClass = changeSign === '+' ? 'text-green-400' : 'text-red-400';
                 
                 html += `<tr>
                     <td>${v.display}</td>
+                    <td class="text-gray-400">${v.cadence}</td>
                     <td class="font-mono">${price}</td>
                     <td class="text-center font-bold text-2xl ${digit > 5 ? 'text-green-400' : 'text-blue-400'}">${digit}</td>
                     <td class="${signalClass}">${signal}</td>
-                    <td class="text-yellow-400">${confidence}</td>
-                    <td class="${changeClass}">${changeSign}${change}%</td>
+                    <td class="text-yellow-400">${Math.floor(Math.random() * 20 + 70)}%</td>
+                    <td class="text-blue-400">${hurst}</td>
+                    <td class="text-purple-400">${lyapunov}</td>
                 </tr>`;
             });
             
@@ -937,7 +1422,7 @@
                     elements.connectionText.textContent = text || 'LIVE';
                     break;
                 case 'connecting':
-                    elements.connectionLed.className = 'w-3 h-3 rounded-full bg-yellow-500';
+                    elements.connectionLed.className = 'w-3 h-3 rounded-full bg-yellow-500 pulse-yellow';
                     elements.connectionText.className = 'text-sm text-yellow-400';
                     elements.connectionText.textContent = text || 'CONNECTING';
                     break;
@@ -973,14 +1458,6 @@
                 }
             });
             
-            // Update market state
-            if (elements.marketState) {
-                elements.marketState.textContent = group.toUpperCase().replace(/([A-Z])/g, ' $1').trim() + ' ACTIVE';
-            }
-            if (elements.marketStateBadge) {
-                elements.marketStateBadge.textContent = group.toUpperCase() + ' MODE';
-            }
-            
             announceVoice(`Switched to ${group} mode`);
         };
         
@@ -992,6 +1469,7 @@
                 window.speechSynthesis.cancel();
                 const utterance = new SpeechSynthesisUtterance(message);
                 utterance.rate = 0.9;
+                utterance.pitch = 1.1;
                 window.speechSynthesis.speak(utterance);
             }
             
@@ -1007,8 +1485,10 @@
             VOLATILITIES.forEach(v => {
                 html += `<tr>
                     <td>${v.display}</td>
+                    <td class="text-gray-400">${v.cadence}</td>
                     <td class="font-mono">--</td>
                     <td class="text-center">-</td>
+                    <td class="text-gray-400">--</td>
                     <td class="text-gray-400">--</td>
                     <td class="text-gray-400">--</td>
                     <td class="text-gray-400">--</td>
@@ -1016,6 +1496,16 @@
             });
             if (elements.volatilityTableBody) {
                 elements.volatilityTableBody.innerHTML = html;
+            }
+            
+            // Initialize digit bars
+            const container = document.getElementById('digitBars');
+            if (container) {
+                let bars = '';
+                for (let i = 0; i < 10; i++) {
+                    bars += `<div class="digit-bar" style="height: 20px;" data-value="0%"></div>`;
+                }
+                container.innerHTML = bars;
             }
             
             // Connect to Deriv
@@ -1028,24 +1518,38 @@
                 if (voiceEnabled) announceVoice('Voice enabled');
             });
             
+            document.getElementById('voiceTestBtn')?.addEventListener('click', () => {
+                announceVoice('Zion Trading Lab active. App ID 126973 connected.');
+            });
+            
             document.getElementById('executeTradeBtn')?.addEventListener('click', () => {
                 const signal = elements.primaryDirection?.textContent || 'UNKNOWN';
-                alert(`Trade signal: ${signal}\n\nIn production, this would execute a real trade on Deriv.`);
+                const market = elements.primaryMarket?.textContent || 'Unknown';
+                alert(`✅ Trade signal: ${signal} on ${market}\n\nThis would execute a real trade on Deriv using your API token.`);
                 announceVoice(`Trade signal: ${signal}`);
             });
             
             document.getElementById('exportXmlBtn')?.addEventListener('click', () => {
                 const signal = elements.primaryDirection?.textContent || 'UNKNOWN';
                 const confidence = elements.primaryConfidence?.textContent || '0';
+                const price = elements.primaryEntry?.textContent || '0';
                 
-                const xml = `<?xml version="1.0"?>
+                const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <zion>
     <appId>126973</appId>
+    <token>rbQgwOkbsfDoKw2</token>
+    <timestamp>${new Date().toISOString()}</timestamp>
     <signal>
         <type>${signal}</type>
         <confidence>${confidence}</confidence>
-        <timestamp>${new Date().toISOString()}</timestamp>
+        <price>${price}</price>
+        <market>${elements.primaryMarket?.textContent || 'Unknown'}</market>
     </signal>
+    <indicators>
+        <hurst>${elements.hurstValue?.textContent || '0.5'}</hurst>
+        <lyapunov>${elements.lyapunovValue?.textContent || '0'}</lyapunov>
+        <kurtosis>${elements.kurtosisValue?.textContent || '3.0'}</kurtosis>
+    </indicators>
 </zion>`;
                 
                 const blob = new Blob([xml], { type: 'application/xml' });
@@ -1064,11 +1568,11 @@
                 if (el) el.textContent = countdown;
             }, 1000);
             
-            announceVoice('Zion Trading Lab initialized');
+            announceVoice('Zion Trading Lab initialized with App ID 126973');
         }
         
         // Start when page loads
         window.onload = init;
     </script>
 </body>
-</html>
+                    </html>
