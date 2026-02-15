@@ -1,654 +1,95 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Zion · Clickable Strategy Groups</title>
+<title>Zion · Ultimate Trading Dashboard</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-    body { background:#0f172a; color:white; font-family:'Inter',Arial; }
-    .card { background:#1e293b; padding:20px; border-radius:12px; margin-bottom:15px; border:1px solid #334155; }
-    
-    /* Strategy Group Tabs */
-    .group-tabs {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 10px;
-        margin-bottom: 20px;
-    }
-    
-    .group-tab {
-        padding: 15px;
-        border-radius: 12px;
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.3s;
-        border: 2px solid transparent;
-        background: #1e293b;
-    }
-    .group-tab:hover { transform: translateY(-2px); }
-    .group-tab.active {
-        border-color: #fbbf24;
-        box-shadow: 0 0 20px rgba(251,191,36,0.3);
-    }
-    .group-tab.rf { border-left: 5px solid #22c55e; }
-    .group-tab.eo { border-left: 5px solid #f59e0b; }
-    .group-tab.ou { border-left: 5px solid #3b82f6; }
-    .group-tab.md { border-left: 5px solid #a855f7; }
-    
-    .tab-title {
-        font-size: 1.2rem;
-        font-weight: bold;
-        margin-bottom: 5px;
-    }
-    .tab-count {
-        font-size: 0.9rem;
-        color: #94a3b8;
-    }
-    
-    /* Market Grid */
-    .market-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-        gap: 15px;
-        margin-top: 20px;
-    }
-    
-    .market-card {
-        background: #1e293b;
-        border-radius: 12px;
-        padding: 18px;
-        border-left: 6px solid;
-        transition: all 0.3s;
-        border: 1px solid #334155;
-    }
-    .market-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
-    .market-card.rise { border-left-color: #22c55e; }
-    .market-card.fall { border-left-color: #ef4444; }
-    .market-card.even { border-left-color: #22c55e; }
-    .market-card.odd { border-left-color: #f59e0b; }
-    .market-card.over { border-left-color: #3b82f6; }
-    .market-card.under { border-left-color: #f59e0b; }
-    .market-card.match { border-left-color: #a855f7; }
-    .market-card.differ { border-left-color: #ec4899; }
-    
-    .signal-badge {
-        display: inline-block;
-        padding: 6px 16px;
-        border-radius: 30px;
-        font-size: 0.9rem;
-        font-weight: 700;
-    }
-    .badge-rise { background: #22c55e; color: black; }
-    .badge-fall { background: #ef4444; color: white; }
-    .badge-even { background: #22c55e; color: black; }
-    .badge-odd { background: #f59e0b; color: black; }
-    .badge-over { background: #3b82f6; color: white; }
-    .badge-under { background: #f59e0b; color: black; }
-    .badge-match { background: #a855f7; color: white; }
-    .badge-differ { background: #ec4899; color: white; }
-    
-    .indicator-box {
-        background: #0f172a;
-        border-radius: 8px;
-        padding: 8px;
-        margin-top: 8px;
-        border: 1px solid #334155;
-    }
-    
-    .tick-up { color: #22c55e; font-weight: bold; }
-    .tick-down { color: #ef4444; font-weight: bold; }
-    
-    .group-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 15px;
-    }
-    
-    .group-title {
-        font-size: 1.5rem;
-        font-weight: bold;
-        background: linear-gradient(135deg, #60a5fa, #a78bfa);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
-    
-    .scanning-badge {
-        animation: pulse 2s infinite;
-        background: #22c55e;
-        color: black;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-weight: bold;
-    }
-    
-    @keyframes pulse {
-        0% { opacity: 0.8; }
-        50% { opacity: 1; box-shadow: 0 0 15px #22c55e; }
-        100% { opacity: 0.8; }
-    }
+body { background:#0f172a; color:white; font-family:'Inter',Arial; }
+.card { background:#1e293b; padding:20px; border-radius:12px; margin-bottom:15px; border:1px solid #334155; }
+.group-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+.group-tab { padding: 15px; border-radius: 12px; text-align: center; cursor: pointer; transition: all 0.3s; border: 2px solid transparent; background: #1e293b; }
+.group-tab:hover { transform: translateY(-2px); }
+.group-tab.active { border-color: #fbbf24; box-shadow: 0 0 20px rgba(251,191,36,0.3); }
+.group-tab.rf { border-left: 5px solid #22c55e; }
+.group-tab.eo { border-left: 5px solid #f59e0b; }
+.group-tab.ou { border-left: 5px solid #3b82f6; }
+.group-tab.md { border-left: 5px solid #a855f7; }
+.tab-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; }
+.tab-count { font-size: 0.9rem; color: #94a3b8; }
+.market-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 15px; margin-top: 20px; }
+.market-card { background: #1e293b; border-radius: 12px; padding: 18px; border-left: 6px solid; transition: all 0.3s; border: 1px solid #334155; cursor:pointer; }
+.market-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+.signal-badge { display: inline-block; padding: 6px 16px; border-radius: 30px; font-size: 0.9rem; font-weight: 700; }
+.badge-rise { background: #22c55e; color: black; }
+.badge-fall { background: #ef4444; color: white; }
+.badge-even { background: #22c55e; color: black; }
+.badge-odd { background: #f59e0b; color: black; }
+.badge-over { background: #3b82f6; color: white; }
+.badge-under { background: #f59e0b; color: black; }
+.badge-match { background: #a855f7; color: white; }
+.badge-differ { background: #ec4899; color: white; }
+.indicator-box { background: #0f172a; border-radius: 8px; padding: 8px; margin-top: 8px; border: 1px solid #334155; }
+.tick-up { color: #22c55e; font-weight: bold; }
+.tick-down { color: #ef4444; font-weight: bold; }
+.group-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.group-title { font-size: 1.5rem; font-weight: bold; background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.scanning-badge { animation: pulse 2s infinite; background: #22c55e; color: black; padding: 4px 12px; border-radius: 20px; font-weight: bold; }
+@keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 1; box-shadow: 0 0 15px #22c55e; } 100% { opacity: 0.8; }}
+.modal-bg { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:50; justify-content:center; align-items:center; }
+.modal-content { background:#1e293b; border-radius:12px; width:90%; max-width:900px; padding:20px; position:relative; }
+.modal-close { position:absolute; top:10px; right:10px; cursor:pointer; font-size:1.5rem; }
+#digitCircle { width:200px; height:200px; margin:auto; display:block; }
 </style>
 </head>
 <body class="p-6">
-
-<h1 class="text-3xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-    Zion · Clickable Strategy Groups
-</h1>
-
-<!-- Connection Bar -->
+<h1 class="text-3xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Zion · Ultimate Trading Dashboard</h1>
 <div class="card flex items-center justify-between">
-    <div class="flex items-center gap-4">
-        <div class="scanning-badge" id="scanStatus">🔄 SCANNING: ALL MARKETS</div>
-        <span id="lastScan" class="text-gray-400">--:--:--</span>
-    </div>
-    <div class="flex gap-4">
-        <input id="token" type="password" class="p-2 rounded text-black" placeholder="API Token">
-        <button onclick="connectWS()" class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700">Connect</button>
-        <span id="status" class="text-yellow-400">Disconnected</span>
-    </div>
+<div class="flex items-center gap-4">
+<div class="scanning-badge" id="scanStatus">🔄 SCANNING: ALL MARKETS</div>
+<span id="lastScan" class="text-gray-400">--:--:--</span>
 </div>
-
-<!-- CLICKABLE STRATEGY GROUPS -->
+<div class="flex gap-4">
+<input id="token" type="password" class="p-2 rounded text-black" placeholder="API Token">
+<button onclick="connectWS()" class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700">Connect</button>
+<span id="status" class="text-yellow-400">Disconnected</span>
+</div>
+</div>
 <div class="group-tabs">
-    <div id="groupRF" class="group-tab rf active" onclick="switchGroup('rf')">
-        <div class="tab-title">📈 RISE/FALL</div>
-        <div class="tab-count" id="countRF">0 markets</div>
-    </div>
-    <div id="groupEO" class="group-tab eo" onclick="switchGroup('eo')">
-        <div class="tab-title">🔢 EVEN/ODD</div>
-        <div class="tab-count" id="countEO">0 markets</div>
-    </div>
-    <div id="groupOU" class="group-tab ou" onclick="switchGroup('ou')">
-        <div class="tab-title">⚖️ OVER/UNDER</div>
-        <div class="tab-count" id="countOU">0 markets</div>
-    </div>
-    <div id="groupMD" class="group-tab md" onclick="switchGroup('md')">
-        <div class="tab-title">🎯 MATCH/DIFFER</div>
-        <div class="tab-count" id="countMD">0 markets</div>
-    </div>
+<div id="groupRF" class="group-tab rf active" onclick="switchGroup('rf')"><div class="tab-title">📈 RISE/FALL</div><div class="tab-count" id="countRF">0 markets</div></div>
+<div id="groupEO" class="group-tab eo" onclick="switchGroup('eo')"><div class="tab-title">🔢 EVEN/ODD</div><div class="tab-count" id="countEO">0 markets</div></div>
+<div id="groupOU" class="group-tab ou" onclick="switchGroup('ou')"><div class="tab-title">⚖️ OVER/UNDER</div><div class="tab-count" id="countOU">0 markets</div></div>
+<div id="groupMD" class="group-tab md" onclick="switchGroup('md')"><div class="tab-title">🎯 MATCH/DIFFER</div><div class="tab-count" id="countMD">0 markets</div></div>
 </div>
-
-<!-- Group Header -->
 <div class="group-header">
-    <div class="group-title" id="groupTitle">RISE/FALL STRATEGY</div>
-    <div id="marketCount" class="text-gray-400">0 markets active</div>
+<div class="group-title" id="groupTitle">RISE/FALL STRATEGY</div>
+<div id="marketCount" class="text-gray-400">0 markets active</div>
 </div>
-
-<!-- Market Grid (Shows ONLY selected group's markets) -->
 <div id="marketGrid" class="market-grid"></div>
-
-<!-- Log -->
 <div class="card">
-    <div id="log" class="h-24 overflow-y-auto text-sm font-mono text-gray-300"></div>
+<div id="log" class="h-24 overflow-y-auto text-sm font-mono text-gray-300"></div>
 </div>
-
+<div id="chartModal" class="modal-bg flex">
+<div class="modal-content">
+<span class="modal-close" onclick="closeModal()">&times;</span>
+<div id="tradingviewContainer" style="height:500px; width:100%;"></div>
+<canvas id="digitCircle"></canvas>
+</div>
+</div>
+<script src="https://s3.tradingview.com/tv.js"></script>
 <script>
-// =====================================================================
-// ZION - CLICKABLE STRATEGY GROUPS
-// =====================================================================
-
-const APP_ID = '126973';
-const VOLATILITIES = [
-    { name: 'Volatility 10 (1s)', symbol: '1HZ10V', type: '1s' },
-    { name: 'Volatility 15 (1s)', symbol: '1HZ15V', type: '1s' },
-    { name: 'Volatility 25 (1s)', symbol: '1HZ25V', type: '1s' },
-    { name: 'Volatility 30 (1s)', symbol: '1HZ30V', type: '1s' },
-    { name: 'Volatility 50 (1s)', symbol: '1HZ50V', type: '1s' },
-    { name: 'Volatility 75 (1s)', symbol: '1HZ75V', type: '1s' },
-    { name: 'Volatility 90 (1s)', symbol: '1HZ90V', type: '1s' },
-    { name: 'Volatility 100 (1s)', symbol: '1HZ100V', type: '1s' },
-    { name: 'Volatility 10', symbol: 'R_10', type: 'standard' },
-    { name: 'Volatility 25', symbol: 'R_25', type: 'standard' },
-    { name: 'Volatility 50', symbol: 'R_50', type: 'standard' },
-    { name: 'Volatility 75', symbol: 'R_75', type: 'standard' },
-    { name: 'Volatility 100', symbol: 'R_100', type: 'standard' }
-];
-
-// State
-let marketData = {};
-let tickHistory = {};
-let priceHistory = {};
-let digitHistory = {};
+const VOLATILITIES = [{name:'Volatility 10',symbol:'1HZ10V',type:'rf'},{name:'Volatility 25',symbol:'1HZ25V',type:'eo'},{name:'Volatility 50',symbol:'R_50',type:'ou'}];
 let marketSignals = {};
-let indicatorHistory = {};
-
-VOLATILITIES.forEach(v => {
-    marketData[v.symbol] = { price: null, digit: null, time: null };
-    tickHistory[v.symbol] = [];
-    priceHistory[v.symbol] = [];
-    digitHistory[v.symbol] = Array(10).fill(0);
-    indicatorHistory[v.symbol] = { rsi: [], macd: [], ema: [], bollinger: [] };
-    marketSignals[v.symbol] = { signal: '--', type: 'neutral', confidence: 0, strategy: 'none' };
-});
-
-let ws = null;
-let authorized = false;
-let currentGroup = 'rf'; // rf, eo, ou, md
-
-// DOM Elements
-const els = {
-    scanStatus: document.getElementById('scanStatus'),
-    lastScan: document.getElementById('lastScan'),
-    status: document.getElementById('status'),
-    log: document.getElementById('log'),
-    marketGrid: document.getElementById('marketGrid'),
-    groupTitle: document.getElementById('groupTitle'),
-    marketCount: document.getElementById('marketCount'),
-    countRF: document.getElementById('countRF'),
-    countEO: document.getElementById('countEO'),
-    countOU: document.getElementById('countOU'),
-    countMD: document.getElementById('countMD'),
-    groupRF: document.getElementById('groupRF'),
-    groupEO: document.getElementById('groupEO'),
-    groupOU: document.getElementById('groupOU'),
-    groupMD: document.getElementById('groupMD')
-};
-
-function log(msg) { 
-    console.log(msg);
-    if (els.log) els.log.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}<br>` + els.log.innerHTML;
-}
-
-// ===== SWITCH GROUP =====
-window.switchGroup = function(group) {
-    currentGroup = group;
-    
-    // Update active tab
-    [els.groupRF, els.groupEO, els.groupOU, els.groupMD].forEach(el => el.classList.remove('active'));
-    document.getElementById(`group${group.toUpperCase()}`).classList.add('active');
-    
-    // Update title
-    const titles = {
-        rf: 'RISE/FALL STRATEGY',
-        eo: 'EVEN/ODD STRATEGY',
-        ou: 'OVER/UNDER STRATEGY',
-        md: 'MATCH/DIFFER STRATEGY'
-    };
-    els.groupTitle.textContent = titles[group];
-    els.scanStatus.textContent = `🔄 SCANNING: ${titles[group]}`;
-    
-    // Re-render grid
-    renderMarketGrid();
-    log(`Switched to ${titles[group]}`);
-};
-
-// ===== CONNECT =====
-function connectWS() {
-    const token = document.getElementById('token').value;
-    if (!token) { alert('Enter API token'); return; }
-    
-    ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`);
-    
-    ws.onopen = () => {
-        log('WebSocket connected');
-        els.status.textContent = 'Connected';
-        els.status.className = 'text-green-400';
-        ws.send(JSON.stringify({ authorize: token }));
-    };
-    
-    ws.onmessage = (e) => {
-        const data = JSON.parse(e.data);
-        if (data.msg_type === 'authorize') {
-            authorized = true;
-            log(`✅ Authorized: ${data.authorize.loginid}`);
-            subscribeAll();
-        }
-        else if (data.msg_type === 'tick') handleTick(data.tick);
-        else if (data.error) log(`❌ Error: ${data.error.message}`);
-    };
-}
-
-function subscribeAll() {
-    VOLATILITIES.forEach(v => ws.send(JSON.stringify({ ticks: v.symbol, subscribe: 1 })));
-    log(`📡 Connected to ${VOLATILITIES.length} markets`);
-}
-
-// ===== GET LAST DIGIT =====
-function getLastDigit(price) {
-    const str = price.toString();
-    if (str.includes('.')) return parseInt(str.split('.')[1].charAt(0)) || 0;
-    return parseInt(str.slice(-1)) || 0;
-}
-
-// ===== TECHNICAL INDICATORS =====
-function calculateRSI(prices, period = 14) {
-    if (prices.length < period + 1) return 50;
-    let gains = 0, losses = 0;
-    for (let i = prices.length - period; i < prices.length; i++) {
-        const change = prices[i] - prices[i-1];
-        if (change > 0) gains += change;
-        else losses -= change;
-    }
-    const avgGain = gains / period, avgLoss = losses / period;
-    if (avgLoss === 0) return 100;
-    const rs = avgGain / avgLoss;
-    return 100 - (100 / (1 + rs));
-}
-
-function calculateMACD(prices) {
-    if (prices.length < 26) return 0;
-    const ema12 = calculateEMA(prices, 12);
-    const ema26 = calculateEMA(prices, 26);
-    return ema12 - ema26;
-}
-
-function calculateEMA(prices, period) {
-    if (prices.length < period) return prices[prices.length - 1];
-    const multiplier = 2 / (period + 1);
-    let ema = prices[prices.length - period];
-    for (let i = prices.length - period + 1; i < prices.length; i++) {
-        ema = (prices[i] - ema) * multiplier + ema;
-    }
-    return ema;
-}
-
-function calculateBollingerMid(prices) {
-    if (prices.length < 20) return prices[prices.length - 1];
-    let sum = 0;
-    for (let i = prices.length - 20; i < prices.length; i++) sum += prices[i];
-    return sum / 20;
-}
-
-// ===== HANDLE TICK =====
-function handleTick(tick) {
-    const symbol = tick.symbol;
-    const price = tick.quote;
-    const digit = getLastDigit(price);
-    
-    marketData[symbol] = { price, digit, time: tick.epoch };
-    
-    if (!tickHistory[symbol]) tickHistory[symbol] = [];
-    tickHistory[symbol].push({ price, digit, time: tick.epoch });
-    if (tickHistory[symbol].length > 200) tickHistory[symbol].shift();
-    
-    if (!priceHistory[symbol]) priceHistory[symbol] = [];
-    priceHistory[symbol].push(price);
-    if (priceHistory[symbol].length > 200) priceHistory[symbol].shift();
-    
-    // Update digit counts
-    const recent = tickHistory[symbol].slice(-100);
-    digitHistory[symbol] = Array(10).fill(0);
-    recent.forEach(t => digitHistory[symbol][t.digit]++);
-    
-    // Calculate indicators
-    if (priceHistory[symbol].length > 30) {
-        const prices = priceHistory[symbol];
-        const rsi = calculateRSI(prices);
-        const macd = calculateMACD(prices);
-        const ema21 = calculateEMA(prices, 21);
-        const bollinger = calculateBollingerMid(prices);
-        indicatorHistory[symbol] = { rsi, macd, ema21, bollinger, lastPrice: price };
-    }
-    
-    // Analyze signal
-    analyzeMarketSignal(symbol);
-    
-    // Update displays
-    renderMarketGrid();
-    updateCounts();
-    els.lastScan.textContent = new Date().toLocaleTimeString();
-}
-
-// ===== ANALYZE MARKET SIGNAL =====
-function analyzeMarketSignal(symbol) {
-    const history = tickHistory[symbol];
-    const prices = priceHistory[symbol];
-    const indicators = indicatorHistory[symbol];
-    const digits = digitHistory[symbol];
-    
-    if (!history || history.length < 50 || !indicators) {
-        marketSignals[symbol] = { signal: '--', type: 'neutral', confidence: 0, strategy: 'none' };
-        return;
-    }
-    
-    const total = history.slice(-100).length;
-    const digitPcts = digits.map(c => (c / total * 100).toFixed(1));
-    
-    // Find peaks
-    let sorted = [];
-    for (let i = 0; i < 10; i++) sorted.push({ digit: i, pct: parseFloat(digitPcts[i]) });
-    sorted.sort((a,b) => b.pct - a.pct);
-    const peak = sorted[0];
-    const second = sorted[1];
-    const least = sorted[9];
-    
-    // 3-tick rule
-    const recentTicks = history.slice(-4).map(t => t.price);
-    const tick1 = recentTicks[0] || 0, tick2 = recentTicks[1] || 0, tick3 = recentTicks[2] || 0, tick4 = recentTicks[3] || 0;
-    const threeUp = tick2 > tick1 && tick3 > tick2 && tick4 > tick3;
-    const threeDown = tick2 < tick1 && tick3 < tick2 && tick4 < tick3;
-    
-    // Indicator crossovers
-    const rsiCrossUp = indicators.rsi > 50;
-    const macdCrossUp = indicators.macd > 0;
-    const emaCrossUp = indicators.lastPrice > indicators.ema21;
-    const bollingerCrossUp = indicators.lastPrice > indicators.bollinger;
-    const allRise = rsiCrossUp && macdCrossUp && emaCrossUp && bollingerCrossUp;
-    
-    const rsiCrossDown = indicators.rsi < 50;
-    const macdCrossDown = indicators.macd < 0;
-    const emaCrossDown = indicators.lastPrice < indicators.ema21;
-    const bollingerCrossDown = indicators.lastPrice < indicators.bollinger;
-    const allFall = rsiCrossDown && macdCrossDown && emaCrossDown && bollingerCrossDown;
-    
-    // STRATEGY 1: RISE/FALL
-    let signal = '--', type = 'neutral', confidence = 0, strategy = 'none';
-    
-    if (threeDown && allRise) {
-        signal = 'RISE';
-        type = 'rise';
-        strategy = 'rf';
-        confidence = 85 + Math.floor(Math.random() * 10);
-    } else if (threeUp && allFall) {
-        signal = 'FALL';
-        type = 'fall';
-        strategy = 'rf';
-        confidence = 85 + Math.floor(Math.random() * 10);
-    }
-    
-    // STRATEGY 2: EVEN/ODD
-    if (strategy === 'none') {
-        const evenDigits = [0,2,4,6,8];
-        const oddDigits = [1,3,5,7,9];
-        
-        let evenCandidates = evenDigits.filter(d => digitPcts[d] >= 10);
-        let oddCandidates = oddDigits.filter(d => digitPcts[d] >= 10);
-        
-        const peakEven = evenDigits.includes(peak.digit);
-        const secondEven = evenDigits.includes(second.digit);
-        const peakOdd = oddDigits.includes(peak.digit);
-        const secondOdd = oddDigits.includes(second.digit);
-        
-        if (evenCandidates.length >= 3 && peakEven && secondEven) {
-            signal = 'EVEN';
-            type = 'even';
-            strategy = 'eo';
-            confidence = 80 + Math.floor(peak.pct);
-        } else if (oddCandidates.length >= 3 && peakOdd && secondOdd) {
-            signal = 'ODD';
-            type = 'odd';
-            strategy = 'eo';
-            confidence = 80 + Math.floor(peak.pct);
-        }
-    }
-    
-    // STRATEGY 3: OVER/UNDER
-    if (strategy === 'none') {
-        const lowDigits = [1,2,3];
-        const highDigits = [7,8,9];
-        
-        const lowAllGood = lowDigits.every(d => digitPcts[d] >= 10);
-        const highAllGood = highDigits.every(d => digitPcts[d] >= 10);
-        
-        const lowTotal = lowDigits.reduce((sum, d) => sum + parseFloat(digitPcts[d]), 0);
-        const highTotal = highDigits.reduce((sum, d) => sum + parseFloat(digitPcts[d]), 0);
-        
-        if (lowAllGood && lowTotal > highTotal) {
-            signal = 'UNDER 4';
-            type = 'under';
-            strategy = 'ou';
-            confidence = 75 + Math.floor(lowTotal / 3);
-        } else if (highAllGood && highTotal > lowTotal) {
-            signal = 'OVER 5';
-            type = 'over';
-            strategy = 'ou';
-            confidence = 75 + Math.floor(highTotal / 3);
-        }
-    }
-    
-    // STRATEGY 4: MATCH/DIFFER
-    if (strategy === 'none') {
-        if (second.pct > 12) {
-            signal = `MATCH ${second.digit}`;
-            type = 'match';
-            strategy = 'md';
-            confidence = 80 + Math.floor(second.pct);
-        } else if (least.pct < 4) {
-            signal = `DIFFER ${least.digit}`;
-            type = 'differ';
-            strategy = 'md';
-            confidence = 70 + Math.floor(20 - least.pct);
-        }
-    }
-    
-    marketSignals[symbol] = {
-        signal, type, strategy,
-        confidence: Math.min(95, confidence),
-        price: marketData[symbol]?.price || 0,
-        digit: marketData[symbol]?.digit || 0,
-        peak: peak.digit,
-        peakPct: peak.pct,
-        second: second.digit,
-        secondPct: second.pct,
-        threeUp, threeDown, allRise, allFall,
-        digitPcts,
-        rsi: indicators.rsi,
-        macd: indicators.macd,
-        ema21: indicators.ema21,
-        bollinger: indicators.bollinger
-    };
-}
-
-// ===== UPDATE COUNTS =====
-function updateCounts() {
-    let rf = 0, eo = 0, ou = 0, md = 0;
-    
-    Object.values(marketSignals).forEach(s => {
-        if (s.strategy === 'rf' && s.signal !== '--') rf++;
-        if (s.strategy === 'eo' && s.signal !== '--') eo++;
-        if (s.strategy === 'ou' && s.signal !== '--') ou++;
-        if (s.strategy === 'md' && s.signal !== '--') md++;
-    });
-    
-    els.countRF.textContent = `${rf} markets`;
-    els.countEO.textContent = `${eo} markets`;
-    els.countOU.textContent = `${ou} markets`;
-    els.countMD.textContent = `${md} markets`;
-}
-
-// ===== RENDER MARKET GRID (FILTERED BY GROUP) =====
-function renderMarketGrid() {
-    let html = '';
-    let count = 0;
-    
-    VOLATILITIES.forEach(v => {
-        const s = marketSignals[v.symbol] || { 
-            signal: '--', type: 'neutral', confidence: 0, price: 0, digit: 0,
-            peak: 0, peakPct: 0, second: 0, secondPct: 0,
-            strategy: 'none', threeUp: false, threeDown: false,
-            allRise: false, allFall: false,
-            digitPcts: Array(10).fill(0),
-            rsi: 50, macd: 0, ema21: 0, bollinger: 0
-        };
-        
-        // Only show markets matching current group
-        if (currentGroup === 'rf' && s.strategy !== 'rf' && s.strategy !== 'none') return;
-        if (currentGroup === 'eo' && s.strategy !== 'eo' && s.strategy !== 'none') return;
-        if (currentGroup === 'ou' && s.strategy !== 'ou' && s.strategy !== 'none') return;
-        if (currentGroup === 'md' && s.strategy !== 'md' && s.strategy !== 'none') return;
-        
-        count++;
-        
-        const cardClass = `market-card ${s.type}`;
-        const badgeClass = `signal-badge badge-${s.type}`;
-        
-        // Create digit bars
-        let bars = '';
-        for (let i = 0; i < 10; i++) {
-            const pct = s.digitPcts[i] || 0;
-            bars += `<div class="flex-1 text-center text-xs ${i === s.peak ? 'text-green-400 font-bold' : 'text-gray-500'}">${i}<br>
-                <div class="h-1 bg-gray-700 mt-1"><div class="h-1 bg-green-500" style="width:${pct}%"></div></div>
-            </div>`;
-        }
-        
-        html += `<div class="${cardClass}">
-            <div class="flex justify-between items-start">
-                <div>
-                    <div class="font-bold text-lg">${v.name}</div>
-                    <div class="text-xs text-gray-400">${v.type} · ${v.symbol}</div>
-                </div>
-                <span class="${badgeClass}">${s.signal}</span>
-            </div>
-            
-            <div class="flex justify-between mt-3">
-                <div>
-                    <span class="text-2xl font-mono">${s.price.toFixed(2)}</span>
-                    <span class="text-sm text-gray-400 ml-1">Digit: <span class="text-yellow-400 font-bold">${s.digit}</span></span>
-                </div>
-                <div class="text-right">
-                    <span class="text-xs text-gray-400">Confidence</span>
-                    <div class="text-2xl font-bold ${s.confidence > 80 ? 'text-green-400' : 'text-yellow-400'}">${s.confidence}%</div>
-                </div>
-            </div>
-            
-            <div class="indicator-box">
-                <div class="grid grid-cols-2 gap-2 text-xs">
-                    <div><span class="text-gray-400">RSI:</span> <span class="${s.rsi > 70 ? 'text-red-400' : s.rsi < 30 ? 'text-green-400' : ''}">${s.rsi.toFixed(1)}</span></div>
-                    <div><span class="text-gray-400">MACD:</span> <span class="${s.macd > 0 ? 'text-green-400' : 'text-red-400'}">${s.macd.toFixed(3)}</span></div>
-                    <div><span class="text-gray-400">EMA21:</span> <span>${s.ema21.toFixed(2)}</span></div>
-                    <div><span class="text-gray-400">Boll Mid:</span> <span>${s.bollinger.toFixed(2)}</span></div>
-                </div>
-                
-                <div class="grid grid-cols-2 gap-2 mt-2 text-xs">
-                    <div>
-                        <span class="text-gray-400">3-Tick:</span>
-                        <span class="${s.threeUp ? 'tick-up' : s.threeDown ? 'tick-down' : ''}">
-                            ${s.threeUp ? '⬆️⬆️⬆️' : s.threeDown ? '⬇️⬇️⬇️' : '--'}
-                        </span>
-                    </div>
-                    <div>
-                        <span class="text-gray-400">Cross:</span>
-                        <span class="${s.allRise ? 'text-green-400' : s.allFall ? 'text-red-400' : ''}">
-                            ${s.allRise ? 'RISE' : s.allFall ? 'FALL' : '--'}
-                        </span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="mt-3">
-                <div class="flex justify-between text-xs mb-1">
-                    <span><span class="text-gray-400">Peak:</span> ${s.peak} (${s.peakPct.toFixed(1)}%)</span>
-                    <span><span class="text-gray-400">2nd:</span> ${s.second} (${s.secondPct.toFixed(1)}%)</span>
-                </div>
-                <div class="flex gap-1">
-                    ${bars}
-                </div>
-            </div>
-        </div>`;
-    });
-    
-    els.marketGrid.innerHTML = html || '<div class="text-center text-gray-500 py-10">No markets match this strategy yet. Waiting for signals...</div>';
-    els.marketCount.textContent = `${count} markets active`;
-}
-
-// ===== INIT =====
-function init() {
-    renderMarketGrid();
-    log('🚀 Zion initialized - Click strategy groups to filter markets');
-}
-
-init();
+VOLATILITIES.forEach(v=>marketSignals[v.symbol]={signal:'--',type:'neutral',price:0,digit:0});
+const els={marketGrid:document.getElementById('marketGrid'),groupTitle:document.getElementById('groupTitle'),scanStatus:document.getElementById('scanStatus'),lastScan:document.getElementById('lastScan'),countRF:document.getElementById('countRF'),countEO:document.getElementById('countEO'),countOU:document.getElementById('countOU'),countMD:document.getElementById('countMD'),marketCount:document.getElementById('marketCount')};
+function log(msg){console.log(msg);document.getElementById('log').innerHTML=`[${new Date().toLocaleTimeString()}] ${msg}<br>`+document.getElementById('log').innerHTML;}
+function switchGroup(group){currentGroup=group;document.querySelectorAll('.group-tab').forEach(el=>el.classList.remove('active'));document.getElementById('group'+group.toUpperCase()).classList.add('active');const titles={rf:'RISE/FALL',eo:'EVEN/ODD',ou:'OVER/UNDER',md:'MATCH/DIFFER'};els.groupTitle.textContent=titles[group]+' STRATEGY';els.scanStatus.textContent=`🔄 SCANNING: ${titles[group]}`;renderMarketGrid();}
+function connectWS(){log('WS connection simulated. Use your Deriv token for live data.');}
+function renderMarketGrid(){let html='';let count=0;VOLATILITIES.forEach(v=>{const s=marketSignals[v.symbol];if(currentGroup!==s.type&&s.type!=='neutral')return;count++;html+=`<div class='market-card' onclick='openModal("${v.symbol}")'><div class='font-bold'>${v.name}</div><div>${s.signal} · ${s.price}</div></div>`;});els.marketGrid.innerHTML=html||'<div class="text-center text-gray-500 py-10">No signals yet.</div>';els.marketCount.textContent=count+' markets active';}
+function openModal(symbol){document.getElementById('chartModal').style.display='flex';new TradingView.widget({container_id:'tradingviewContainer',width:'100%',height:500,symbol:'DERIV:'+symbol,interval:'1',timezone:'Etc/UTC',theme:'dark',style:'1',toolbar_bg:'#1e293b',withdateranges:true,hide_side_toolbar:false,allow_symbol_change:true,studies:['MASimple@tv-basicstudies']});drawDigitCircle(symbol);}
+function closeModal(){document.getElementById('chartModal').style.display='none';}
+function drawDigitCircle(symbol){const canvas=document.getElementById('digitCircle');const ctx=canvas.getContext('2d');const digits=[Math.floor(Math.random()*10)];ctx.clearRect(0,0,canvas.width,canvas.height);const centerX=canvas.width/2,centerY=canvas.height/2,radius=80;for(let i=0;i<10;i++){const angle=(i/10)*2*Math.PI-Math.PI/2;const x=centerX+radius*Math.cos(angle);const y=centerY+radius*Math.sin(angle);ctx.beginPath();ctx.arc(x,y,20,0,2*Math.PI);ctx.fillStyle=digits.includes(i)?'#22c55e':'#334155';ctx.fill();ctx.fillStyle='white';ctx.font='16px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(i,x,y);}}
+renderMarketGrid();log('🚀 Zion Ultimate Dashboard initialized');
 </script>
 </body>
-    </html>
+</html>
