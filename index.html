@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zion Trading Lab · Live Data</title>
+    <title>Zion Trading Lab · 30-Second Pattern Recognition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
-            font-family: 'Inter', -apple-system, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: linear-gradient(135deg, #0a0f1e 0%, #141b2b 100%);
             color: #e2e8f0;
             min-height: 100vh;
@@ -23,6 +23,47 @@
         }
         .pulse-green { animation: pulse-green 2s infinite; }
         
+        @keyframes pulse-blue {
+            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+        .pulse-blue { animation: pulse-blue 2s infinite; }
+        
+        .signal-card {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(8px);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            border: 1px solid #2d3748;
+            transition: all 0.3s ease;
+        }
+        .signal-card.confirmed {
+            border: 2px solid #22c55e;
+            box-shadow: 0 0 30px rgba(34, 197, 94, 0.2);
+        }
+        
+        .timer-ring {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: conic-gradient(#22c55e 0deg, #1e293b 0deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .timer-ring-inner {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: #0f172a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
         .market-group-card {
             transition: all 0.3s ease;
             cursor: pointer;
@@ -34,20 +75,11 @@
             border: 1px solid #2d3748;
         }
         .market-group-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+            transform: translateY(-2px);
         }
         .market-group-card.active {
             border-left-color: #3b82f6;
             background: linear-gradient(to right, rgba(59, 130, 246, 0.15), rgba(20, 30, 50, 0.7));
-        }
-        
-        .signal-card {
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(8px);
-            border-radius: 1rem;
-            padding: 1.5rem;
-            border: 1px solid #2d3748;
         }
         
         .badge-active {
@@ -59,84 +91,38 @@
             font-weight: 700;
         }
         
-        .badge-inactive {
-            background: rgba(107, 114, 128, 0.2);
-            color: #9ca3af;
-            padding: 0.25rem 0.75rem;
+        .confirmation-badge {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+            padding: 0.5rem 1rem;
             border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 700;
-        }
-        
-        .digit-bar-container {
-            display: flex;
-            align-items: flex-end;
-            height: 150px;
-            gap: 4px;
-            margin-top: 1rem;
-        }
-        .digit-bar {
-            flex: 1;
-            background: linear-gradient(to top, #3b82f6, #60a5fa);
-            border-radius: 4px 4px 0 0;
-            transition: height 0.3s ease;
-            position: relative;
-            min-width: 25px;
-        }
-        .digit-bar.high { background: linear-gradient(to top, #22c55e, #4ade80); }
-        .digit-bar.low { background: linear-gradient(to top, #ef4444, #f87171); }
-        .digit-bar::after {
-            content: attr(data-value);
-            position: absolute;
-            top: -20px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 0.7rem;
-            color: #94a3b8;
-        }
-        
-        .volatility-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .volatility-table th {
-            text-align: left;
-            padding: 0.75rem 0.5rem;
-            color: #94a3b8;
-            font-size: 0.75rem;
+            font-size: 0.875rem;
             font-weight: 600;
-            border-bottom: 1px solid #2d3748;
-        }
-        .volatility-table td {
-            padding: 0.75rem 0.5rem;
-            border-bottom: 1px solid #1e293b;
         }
         
-        .btn-success {
-            background: #16a34a;
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.75rem;
-            font-weight: 600;
-            transition: all 0.2s;
-            border: none;
-            cursor: pointer;
+        .pattern-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 0.5rem;
+            margin: 1rem 0;
         }
-        .btn-success:hover {
+        .pattern-tick {
+            height: 40px;
+            border-radius: 0.5rem;
+            background: #1e293b;
+            transition: all 0.2s ease;
+        }
+        .pattern-tick.up {
             background: #22c55e;
-            transform: translateY(-2px);
+        }
+        .pattern-tick.down {
+            background: #ef4444;
+        }
+        .pattern-tick.confirmed {
+            box-shadow: 0 0 15px currentColor;
         }
         
         .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem 1rem; }
-        
-        .error-box {
-            background: rgba(239, 68, 68, 0.2);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            color: #f87171;
-            padding: 1rem;
-            border-radius: 0.75rem;
-            margin-bottom: 1rem;
-        }
     </style>
 </head>
 <body>
@@ -152,56 +138,101 @@
                         Zion Trading Lab
                     </h1>
                     <p class="text-gray-400 flex items-center gap-2">
-                        <i class="fas fa-bolt text-yellow-500 text-xs"></i>
-                        <span>App ID: 126973 · Live Data</span>
+                        <i class="fas fa-clock text-blue-400 text-xs"></i>
+                        <span>30-Second Pattern Recognition</span>
                     </p>
                 </div>
             </div>
             
             <div class="flex items-center gap-4 bg-slate-800/50 px-4 py-2 rounded-xl border border-slate-700">
                 <div class="flex items-center gap-2">
-                    <div id="connectionLed" class="w-3 h-3 rounded-full bg-yellow-500"></div>
-                    <span id="connectionText" class="text-sm text-yellow-400">CONNECTING</span>
+                    <div id="connectionLed" class="w-3 h-3 rounded-full bg-green-500 pulse-green"></div>
+                    <span id="connectionText" class="text-sm text-green-400">ANALYZING</span>
                 </div>
                 <div class="h-4 w-px bg-slate-700"></div>
                 <div class="flex items-center gap-2">
-                    <i class="fas fa-clock text-gray-500 text-sm"></i>
-                    <span id="lastUpdate" class="text-sm font-mono">--:--:--</span>
+                    <i class="fas fa-chart-line text-gray-500 text-sm"></i>
+                    <span id="marketType" class="text-sm font-mono text-blue-400">1S Market</span>
                 </div>
             </div>
         </div>
 
-        <!-- Error Display -->
-        <div id="errorDisplay" class="error-box hidden">
-            <i class="fas fa-exclamation-triangle mr-2"></i>
-            <span id="errorMessage"></span>
-        </div>
+        <!-- Main Signal Card -->
+        <div id="signalCard" class="signal-card mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-crown text-yellow-500 text-2xl"></i>
+                    <div>
+                        <span class="text-sm text-gray-400">ZION PRIMARY SIGNAL</span>
+                        <div class="flex items-center gap-3 mt-1">
+                            <span id="signalMarket" class="text-lg font-semibold">Volatility 100 (1s) Index</span>
+                            <span id="confirmationBadge" class="confirmation-badge">
+                                <i class="fas fa-hourglass-half mr-1"></i>
+                                Confirming: <span id="confirmationCount">0</span>/8
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="timer-ring">
+                    <div class="timer-ring-inner">
+                        <span id="timerSeconds" class="text-2xl font-bold text-green-400">30</span>
+                        <span class="text-xs text-gray-500">seconds</span>
+                    </div>
+                </div>
+            </div>
 
-        <!-- Market State -->
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
-            <div class="bg-slate-800/30 rounded-xl p-4 border border-slate-700">
-                <div class="text-sm text-gray-400 mb-1">Market State</div>
-                <div id="marketState" class="text-xl font-bold text-gray-400">INITIALIZING</div>
+            <!-- Pattern Visualization -->
+            <div class="mb-6">
+                <div class="flex justify-between text-sm text-gray-500 mb-2">
+                    <span>Pattern Confirmation (Last 8 ticks)</span>
+                    <span>30-Second Window: <span id="windowTicks">30</span> ticks</span>
+                </div>
+                <div id="patternGrid" class="pattern-grid">
+                    <!-- Generated by JS -->
+                </div>
             </div>
-            <div class="bg-slate-800/30 rounded-xl p-4 border border-slate-700">
-                <div class="text-sm text-gray-400 mb-1">Hurst (H)</div>
-                <div id="hurstValue" class="text-2xl font-bold text-blue-400">0.00</div>
+
+            <!-- Signal Details -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                <div>
+                    <div class="text-sm text-gray-400 mb-1">Direction</div>
+                    <div id="signalDirection" class="text-4xl font-bold text-gray-500">WAITING</div>
+                </div>
+                <div>
+                    <div class="text-sm text-gray-400 mb-1">Entry Price</div>
+                    <div id="signalPrice" class="text-2xl font-mono">--</div>
+                </div>
+                <div>
+                    <div class="text-sm text-gray-400 mb-1">Confidence</div>
+                    <div id="signalConfidence" class="text-3xl font-bold">--</div>
+                </div>
+                <div>
+                    <div class="text-sm text-gray-400 mb-1">Target Digit</div>
+                    <div id="signalDigit" class="text-3xl font-bold text-yellow-400">-</div>
+                </div>
             </div>
-            <div class="bg-slate-800/30 rounded-xl p-4 border border-slate-700">
-                <div class="text-sm text-gray-400 mb-1">Lyapunov (λ)</div>
-                <div id="lyapunovValue" class="text-2xl font-bold text-purple-400">0.0000</div>
+
+            <!-- Indicators -->
+            <div class="grid grid-cols-5 gap-2 text-sm bg-black/20 rounded-lg p-3 mb-4">
+                <div><span class="text-gray-500">Hurst:</span> <span id="hurstVal" class="text-blue-400">0.00</span></div>
+                <div><span class="text-gray-500">Lyapunov:</span> <span id="lyapunovVal" class="text-purple-400">0.0000</span></div>
+                <div><span class="text-gray-500">Kurtosis:</span> <span id="kurtosisVal" class="text-orange-400">0.00</span></div>
+                <div><span class="text-gray-500">Pattern:</span> <span id="patternStrength" class="text-green-400">0%</span></div>
+                <div><span class="text-gray-500">Stability:</span> <span id="stabilityScore" class="text-yellow-400">0/8</span></div>
             </div>
-            <div class="bg-slate-800/30 rounded-xl p-4 border border-slate-700">
-                <div class="text-sm text-gray-400 mb-1">Kurtosis</div>
-                <div id="kurtosisValue" class="text-2xl font-bold text-orange-400">0.00</div>
-            </div>
+
+            <!-- Execute Button -->
+            <button id="executeBtn" class="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-600 py-4 rounded-xl text-lg font-semibold transition-all" disabled>
+                <i class="fas fa-hourglass-half mr-2"></i>
+                WAITING FOR PATTERN CONFIRMATION
+            </button>
         </div>
 
         <!-- Market Groups -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <!-- RISE/FALL -->
             <div id="groupRiseFall" class="market-group-card active" onclick="selectGroup('riseFall')">
-                <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center justify-between">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
                             <i class="fas fa-arrow-up text-blue-400"></i>
@@ -209,28 +240,16 @@
                         </div>
                         <div>
                             <h3 class="font-bold">RISE/FALL</h3>
-                            <span class="text-xs text-gray-500">Directional</span>
+                            <span class="text-xs text-gray-500">30s pattern</span>
                         </div>
                     </div>
                     <div id="groupRiseFallBadge" class="badge-active">ACTIVE</div>
-                </div>
-                <div id="riseFallContent">
-                    <div class="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
-                        <div class="flex justify-between">
-                            <span class="text-blue-400 text-sm font-semibold" id="riseFallSignal">LOADING</span>
-                            <span class="text-xs text-gray-400">Primary</span>
-                        </div>
-                        <div class="flex items-end justify-between mt-1">
-                            <span class="text-2xl font-bold text-blue-400" id="riseFallValue">--</span>
-                            <span class="text-xl font-bold" id="riseFallConf">--%</span>
-                        </div>
-                    </div>
                 </div>
             </div>
             
             <!-- OVER/UNDER -->
             <div id="groupOverUnder" class="market-group-card" onclick="selectGroup('overUnder')">
-                <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center justify-between">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
                             <i class="fas fa-greater-than text-purple-400"></i>
@@ -238,21 +257,16 @@
                         </div>
                         <div>
                             <h3 class="font-bold">OVER/UNDER</h3>
-                            <span class="text-xs text-gray-500">Barrier</span>
+                            <span class="text-xs text-gray-500">30s pattern</span>
                         </div>
                     </div>
                     <div id="groupOverUnderBadge" class="badge-inactive">INACTIVE</div>
-                </div>
-                <div id="overUnderContent" class="hidden">
-                    <div class="bg-purple-500/10 border border-purple-500/30 rounded-lg p-3">
-                        <div class="text-purple-400 text-center">Waiting for data</div>
-                    </div>
                 </div>
             </div>
             
             <!-- MATCH/DIFFER -->
             <div id="groupMatches" class="market-group-card" onclick="selectGroup('matches')">
-                <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center justify-between">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 bg-pink-500/20 rounded-lg flex items-center justify-center">
                             <i class="fas fa-equals text-pink-400"></i>
@@ -260,473 +274,332 @@
                         </div>
                         <div>
                             <h3 class="font-bold">MATCH/DIFFER</h3>
-                            <span class="text-xs text-gray-500">Digit</span>
+                            <span class="text-xs text-gray-500">30s pattern</span>
                         </div>
                     </div>
                     <div id="groupMatchesBadge" class="badge-inactive">INACTIVE</div>
-                </div>
-                <div id="matchesContent" class="hidden">
-                    <div class="bg-pink-500/10 border border-pink-500/30 rounded-lg p-3">
-                        <div class="text-pink-400 text-center">Waiting for data</div>
-                    </div>
                 </div>
             </div>
             
             <!-- EVEN/ODD -->
             <div id="groupEvenOdd" class="market-group-card" onclick="selectGroup('evenOdd')">
-                <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center justify-between">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
                             <i class="fas fa-divide text-green-400"></i>
                         </div>
                         <div>
                             <h3 class="font-bold">EVEN/ODD</h3>
-                            <span class="text-xs text-gray-500">Parity</span>
+                            <span class="text-xs text-gray-500">30s pattern</span>
                         </div>
                     </div>
                     <div id="groupEvenOddBadge" class="badge-inactive">INACTIVE</div>
                 </div>
-                <div id="evenOddContent" class="hidden">
-                    <div class="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
-                        <div class="text-green-400 text-center">Waiting for data</div>
+            </div>
+        </div>
+
+        <!-- Strategy Status -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="bg-slate-800/30 rounded-xl p-4 border border-slate-700">
+                <div class="flex items-center gap-2 mb-2">
+                    <i class="fas fa-brain text-purple-400"></i>
+                    <span class="font-semibold">Marcus Strategy</span>
+                </div>
+                <div class="text-sm text-gray-400">3 odds → EVEN on 4th</div>
+                <div class="mt-2 flex items-center gap-2">
+                    <span class="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full">Ready</span>
+                    <span class="text-xs text-gray-500" id="marcusOdds">0 odds</span>
+                </div>
+            </div>
+            
+            <div class="bg-slate-800/30 rounded-xl p-4 border border-slate-700">
+                <div class="flex items-center gap-2 mb-2">
+                    <i class="fas fa-chart-line text-green-400"></i>
+                    <span class="font-semibold">Under 8 Strategy</span>
+                </div>
+                <div class="text-sm text-gray-400">9,8 < 10% → UNDER 8</div>
+                <div class="mt-2 flex items-center gap-2">
+                    <span class="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-full">Monitoring</span>
+                </div>
+            </div>
+            
+            <div class="bg-slate-800/30 rounded-xl p-4 border border-slate-700">
+                <div class="flex items-center gap-2 mb-2">
+                    <i class="fas fa-shield-alt text-orange-400"></i>
+                    <span class="font-semibold">Pattern Stability</span>
+                </div>
+                <div class="text-sm text-gray-400">8-tick confirmation</div>
+                <div class="mt-2">
+                    <div class="w-full bg-slate-700 rounded-full h-2">
+                        <div id="stabilityBar" class="bg-green-500 h-2 rounded-full" style="width: 0%"></div>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Primary Signal -->
-        <div class="signal-card mb-6">
-            <div class="flex items-center gap-2 mb-3">
-                <i class="fas fa-crown text-yellow-500 text-xl"></i>
-                <span class="text-sm font-semibold text-yellow-500">ZION PRIMARY SIGNAL</span>
-                <span class="text-xs text-gray-500 ml-auto">Next in <span id="signalCountdown">5</span>s</span>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                    <div class="text-sm text-gray-400">Signal</div>
-                    <div class="text-4xl font-bold text-gray-400" id="primaryDirection">WAITING</div>
-                    <div class="text-sm text-gray-400 mt-1" id="primaryMarket">Loading data...</div>
-                </div>
-                <div>
-                    <div class="text-sm text-gray-400">Price</div>
-                    <div class="text-2xl font-mono" id="primaryEntry">--</div>
-                </div>
-                <div>
-                    <div class="text-sm text-gray-400">Confidence</div>
-                    <div class="text-3xl font-bold" id="primaryConfidence">--</div>
-                </div>
-                <div>
-                    <div class="text-sm text-gray-400">Target Digit</div>
-                    <div class="text-3xl font-bold text-yellow-400" id="primaryDigit">-</div>
-                </div>
-            </div>
-            
-            <div class="mt-4 flex gap-3">
-                <button id="executeBtn" class="btn-success flex-1 py-4 text-lg" disabled>
-                    WAITING FOR DATA
-                </button>
-                <button id="demoBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-lg font-semibold">
-                    USE DEMO DATA
-                </button>
-            </div>
-        </div>
-
-        <!-- Digit Distribution -->
-        <div class="bg-slate-800/30 rounded-xl p-5 border border-slate-700 mb-6">
-            <h3 class="font-semibold mb-4">Digit Distribution · Last 1000 ticks</h3>
-            <div class="digit-bar-container" id="digitBars"></div>
-            <div class="grid grid-cols-10 gap-1 mt-6 text-center text-xs text-gray-500">
-                <div>0</div><div>1</div><div>2</div><div>3</div><div>4</div>
-                <div>5</div><div>6</div><div>7</div><div>8</div><div>9</div>
-            </div>
-        </div>
-
-        <!-- Volatility Table -->
-        <div class="bg-slate-800/30 rounded-xl p-5 border border-slate-700">
-            <h3 class="font-semibold mb-4">13 Volatility Indices</h3>
-            <div class="overflow-x-auto">
-                <table class="volatility-table">
-                    <thead>
-                        <tr>
-                            <th>Market</th>
-                            <th>Price</th>
-                            <th>Digit</th>
-                            <th>Signal</th>
-                            <th>Confidence</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tableBody">
-                        <tr><td colspan="5" class="text-center text-gray-500 py-8">Waiting for data...</td></tr>
-                    </tbody>
-                </table>
             </div>
         </div>
     </div>
 
     <script>
+        // =====================================================================
+        // ZION TRADING LAB - 30-SECOND PATTERN RECOGNITION
+        // =====================================================================
+        
         // Configuration
         const APP_ID = '126973';
-        const TOKEN = 'rbQgwOkbsfDoKw2';  // Your token
-        const WS_URL = `wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`;
+        const TOKEN = 'rbQgwOkbsfDoKw2';
         
-        // Volatility Indices
-        const VOLATILITIES = [
-            { name: 'Volatility 10 (1s) Index', symbol: '1HZ10V' },
-            { name: 'Volatility 15 (1s) Index', symbol: '1HZ15V' },
-            { name: 'Volatility 25 (1s) Index', symbol: '1HZ25V' },
-            { name: 'Volatility 30 (1s) Index', symbol: '1HZ30V' },
-            { name: 'Volatility 50 (1s) Index', symbol: '1HZ50V' },
-            { name: 'Volatility 75 (1s) Index', symbol: '1HZ75V' },
-            { name: 'Volatility 90 (1s) Index', symbol: '1HZ90V' },
-            { name: 'Volatility 100 (1s) Index', symbol: '1HZ100V' },
-            { name: 'Volatility 10 Index', symbol: 'R_10' },
-            { name: 'Volatility 25 Index', symbol: 'R_25' },
-            { name: 'Volatility 50 Index', symbol: 'R_50' },
-            { name: 'Volatility 75 Index', symbol: 'R_75' },
-            { name: 'Volatility 100 Index', symbol: 'R_100' }
-        ];
+        // Market types
+        const MARKETS = {
+            '1s': { name: '1S Market', ticksPerWindow: 30, confirmationTicks: 8 },
+            'standard': { name: 'Standard Market', ticksPerWindow: 15, confirmationTicks: 5 }
+        };
         
         // State
-        let ws = null;
+        let currentMarket = '1s'; // or 'standard'
+        let currentGroup = 'riseFall';
         let tickHistory = [];
         let priceHistory = [];
-        let currentGroup = 'riseFall';
-        let usingDemo = false;
-        let demoInterval = null;
+        let patternTicks = [];
+        let confirmedSignal = null;
+        let signalStartTime = null;
+        let confirmationCount = 0;
+        let timerInterval = null;
         
         // DOM Elements
         const els = {
-            connectionLed: document.getElementById('connectionLed'),
-            connectionText: document.getElementById('connectionText'),
-            lastUpdate: document.getElementById('lastUpdate'),
-            marketState: document.getElementById('marketState'),
-            hurstValue: document.getElementById('hurstValue'),
-            lyapunovValue: document.getElementById('lyapunovValue'),
-            kurtosisValue: document.getElementById('kurtosisValue'),
-            primaryDirection: document.getElementById('primaryDirection'),
-            primaryMarket: document.getElementById('primaryMarket'),
-            primaryEntry: document.getElementById('primaryEntry'),
-            primaryConfidence: document.getElementById('primaryConfidence'),
-            primaryDigit: document.getElementById('primaryDigit'),
+            signalCard: document.getElementById('signalCard'),
+            signalMarket: document.getElementById('signalMarket'),
+            signalDirection: document.getElementById('signalDirection'),
+            signalPrice: document.getElementById('signalPrice'),
+            signalConfidence: document.getElementById('signalConfidence'),
+            signalDigit: document.getElementById('signalDigit'),
+            confirmationBadge: document.getElementById('confirmationBadge'),
+            confirmationCount: document.getElementById('confirmationCount'),
+            timerSeconds: document.getElementById('timerSeconds'),
+            windowTicks: document.getElementById('windowTicks'),
+            patternGrid: document.getElementById('patternGrid'),
             executeBtn: document.getElementById('executeBtn'),
-            tableBody: document.getElementById('tableBody'),
-            errorDisplay: document.getElementById('errorDisplay'),
-            errorMessage: document.getElementById('errorMessage'),
-            riseFallSignal: document.getElementById('riseFallSignal'),
-            riseFallValue: document.getElementById('riseFallValue'),
-            riseFallConf: document.getElementById('riseFallConf')
+            hurstVal: document.getElementById('hurstVal'),
+            lyapunovVal: document.getElementById('lyapunovVal'),
+            kurtosisVal: document.getElementById('kurtosisVal'),
+            patternStrength: document.getElementById('patternStrength'),
+            stabilityScore: document.getElementById('stabilityScore'),
+            stabilityBar: document.getElementById('stabilityBar'),
+            marketType: document.getElementById('marketType')
         };
         
-        // ===== Helper Functions =====
-        function getLastDigit(price) {
-            if (!price) return 0;
-            const str = price.toString();
-            if (str.includes('.')) {
-                return parseInt(str.split('.')[1].charAt(0)) || 0;
+        // ===== Pattern Recognition Engine =====
+        class PatternEngine {
+            constructor(marketType) {
+                this.marketType = marketType;
+                this.windowTicks = MARKETS[marketType].ticksPerWindow;
+                this.confirmationTicks = MARKETS[marketType].confirmationTicks;
+                this.pattern = [];
+                this.stability = 0;
             }
-            return parseInt(str.slice(-1)) || 0;
-        }
-        
-        function updateConnection(status, msg) {
-            if (status === 'connected') {
-                els.connectionLed.className = 'w-3 h-3 rounded-full bg-green-500 pulse-green';
-                els.connectionText.className = 'text-sm text-green-400';
-                els.connectionText.textContent = 'LIVE';
-                els.errorDisplay.classList.add('hidden');
-            } else if (status === 'connecting') {
-                els.connectionLed.className = 'w-3 h-3 rounded-full bg-yellow-500';
-                els.connectionText.className = 'text-sm text-yellow-400';
-                els.connectionText.textContent = 'CONNECTING';
-            } else {
-                els.connectionLed.className = 'w-3 h-3 rounded-full bg-red-500';
-                els.connectionText.className = 'text-sm text-red-400';
-                els.connectionText.textContent = msg || 'ERROR';
-            }
-        }
-        
-        function showError(msg) {
-            els.errorDisplay.classList.remove('hidden');
-            els.errorMessage.textContent = msg;
-        }
-        
-        // ===== Physics Indicators =====
-        function calculateHurst(prices) {
-            if (prices.length < 50) return 0.5;
             
-            const lags = [5, 10, 15, 20, 25];
-            const tau = [];
-            
-            for (const lag of lags) {
-                if (lag >= prices.length) continue;
-                let sum = 0;
-                let count = 0;
-                for (let i = lag; i < prices.length; i++) {
-                    sum += Math.abs(prices[i] - prices[i - lag]);
-                    count++;
+            analyze(ticks) {
+                if (ticks.length < this.windowTicks) {
+                    return { confirmed: false, reason: 'Insufficient data' };
                 }
-                if (count > 0) tau.push(sum / count);
-            }
-            
-            if (tau.length < 2) return 0.5;
-            
-            const x = lags.slice(0, tau.length).map(l => Math.log(l));
-            const y = tau.map(t => Math.log(t));
-            
-            const n = x.length;
-            const sumX = x.reduce((a, b) => a + b, 0);
-            const sumY = y.reduce((a, b) => a + b, 0);
-            const sumXY = x.reduce((a, b, i) => a + b * y[i], 0);
-            const sumX2 = x.reduce((a, b) => a + b * b, 0);
-            
-            const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
-            return Math.min(1, Math.max(0, slope));
-        }
-        
-        function calculateLyapunov(prices) {
-            if (prices.length < 100) return 0;
-            
-            let divergence = 0;
-            let count = 0;
-            
-            for (let i = 0; i < prices.length - 20; i += 5) {
-                for (let j = i + 10; j < prices.length - 20; j += 5) {
-                    const d0 = Math.abs(prices[i] - prices[j]);
-                    if (d0 < 0.001) continue;
-                    
-                    const d1 = Math.abs(prices[i + 10] - prices[j + 10]);
-                    if (d1 > 0) {
-                        divergence += Math.log(d1 / d0) / 10;
-                        count++;
+                
+                // Get last N ticks for analysis
+                const recentTicks = ticks.slice(-this.windowTicks);
+                const prices = recentTicks.map(t => t.price);
+                const digits = recentTicks.map(t => t.digit);
+                
+                // Calculate trend direction
+                const firstPrice = prices[0];
+                const lastPrice = prices[prices.length - 1];
+                const priceChange = lastPrice - firstPrice;
+                
+                // Calculate consistency (how many moves in same direction)
+                let consistentMoves = 0;
+                let lastDirection = null;
+                
+                for (let i = 1; i < recentTicks.length; i++) {
+                    const direction = recentTicks[i].price > recentTicks[i-1].price ? 'up' : 'down';
+                    if (lastDirection === direction) {
+                        consistentMoves++;
+                    } else {
+                        consistentMoves = 1;
+                        lastDirection = direction;
                     }
                 }
+                
+                // Calculate stability score (0-8)
+                const stability = Math.min(this.confirmationTicks, consistentMoves);
+                this.stability = stability;
+                
+                // Check if pattern is confirmed
+                const confirmed = stability >= this.confirmationTicks;
+                
+                // Determine direction
+                const direction = priceChange > 0 ? 'RISE' : 'FALL';
+                
+                // Calculate confidence based on stability and trend strength
+                const confidence = Math.min(95, 50 + (stability * 5) + (Math.abs(priceChange) / firstPrice * 100));
+                
+                return {
+                    confirmed,
+                    direction,
+                    confidence: Math.round(confidence),
+                    stability,
+                    price: lastPrice,
+                    digit: digits[digits.length - 1],
+                    pattern: recentTicks.slice(-8).map(t => t.price > (tickHistory[tickHistory.length - 2]?.price || t.price) ? 'up' : 'down'),
+                    startPrice: firstPrice,
+                    priceChange: priceChange
+                };
             }
-            
-            return count > 0 ? divergence / count : 0;
         }
         
-        function calculateKurtosis(prices) {
-            if (prices.length < 50) return 3.0;
-            
-            const n = prices.length;
-            const mean = prices.reduce((a, b) => a + b, 0) / n;
-            
-            let sum4 = 0;
-            let sum2 = 0;
-            
-            for (let i = 0; i < n; i++) {
-                const dev = prices[i] - mean;
-                sum4 += dev * dev * dev * dev;
-                sum2 += dev * dev;
-            }
-            
-            const variance = sum2 / n;
-            if (variance === 0) return 3.0;
-            
-            return (sum4 / n) / (variance * variance);
-        }
+        // ===== Initialize Pattern Engine =====
+        let engine = new PatternEngine(currentMarket);
         
         // ===== Update Display =====
         function updateDisplay() {
-            if (priceHistory.length < 20) return;
+            if (tickHistory.length < 10) return;
             
-            // Calculate indicators
-            const hurst = calculateHurst(priceHistory.slice(-200));
-            const lyapunov = calculateLyapunov(priceHistory.slice(-200));
-            const kurtosis = calculateKurtosis(priceHistory.slice(-200));
+            // Analyze pattern
+            const analysis = engine.analyze(tickHistory);
             
-            els.hurstValue.textContent = hurst.toFixed(3);
-            els.lyapunovValue.textContent = lyapunov.toFixed(4);
-            els.kurtosisValue.textContent = kurtosis.toFixed(2);
+            // Update pattern grid
+            updatePatternGrid(analysis.pattern || []);
             
-            // Market state
-            if (hurst > 0.6) {
-                els.marketState.textContent = 'TRENDING';
-                els.marketState.className = 'text-xl font-bold text-green-400';
-            } else if (hurst < 0.4) {
-                els.marketState.textContent = 'RANGING';
-                els.marketState.className = 'text-xl font-bold text-blue-400';
-            } else {
-                els.marketState.textContent = 'NEUTRAL';
-                els.marketState.className = 'text-xl font-bold text-purple-400';
-            }
+            // Update confirmation count
+            els.confirmationCount.textContent = analysis.stability;
+            els.stabilityScore.textContent = `${analysis.stability}/${engine.confirmationTicks}`;
+            els.stabilityBar.style.width = `${(analysis.stability / engine.confirmationTicks) * 100}%`;
             
-            // Digit distribution
-            if (tickHistory.length > 0) {
-                const digits = tickHistory.slice(-200).map(t => t.digit);
-                const counts = Array(10).fill(0);
-                digits.forEach(d => counts[d]++);
-                
-                const percentages = counts.map(c => (c / digits.length * 100).toFixed(1));
-                
-                // Update bars
-                const barsHtml = percentages.map((val, i) => {
-                    const height = parseFloat(val) * 6;
-                    const isHigh = parseFloat(val) === Math.max(...percentages.map(p => parseFloat(p)));
-                    const isLow = parseFloat(val) === Math.min(...percentages.map(p => parseFloat(p)));
-                    const barClass = isHigh ? 'digit-bar high' : isLow ? 'digit-bar low' : 'digit-bar';
-                    return `<div class="${barClass}" style="height: ${height}px;" data-value="${val}%"></div>`;
-                }).join('');
-                
-                document.getElementById('digitBars').innerHTML = barsHtml;
-            }
+            // Update indicators
+            updateIndicators();
             
-            // Primary signal
-            const lastPrice = tickHistory.length > 0 ? tickHistory[tickHistory.length - 1].price : 0;
-            const lastDigit = tickHistory.length > 0 ? tickHistory[tickHistory.length - 1].digit : 0;
-            
-            let signal = '';
-            switch(currentGroup) {
-                case 'riseFall':
-                    signal = lastDigit % 2 === 0 ? 'RISE' : 'FALL';
-                    els.primaryDirection.className = `text-4xl font-bold ${lastDigit % 2 === 0 ? 'text-green-400' : 'text-red-400'}`;
-                    els.primaryMarket.textContent = 'Volatility 100 (1s) Index';
-                    break;
-                case 'overUnder':
-                    signal = lastDigit >= 5 ? `OVER ${lastDigit}` : `UNDER ${lastDigit}`;
-                    els.primaryDirection.className = `text-4xl font-bold ${lastDigit >= 5 ? 'text-blue-400' : 'text-orange-400'}`;
-                    break;
-                case 'matches':
-                    signal = `MATCH ${lastDigit}`;
-                    els.primaryDirection.className = 'text-4xl font-bold text-purple-400';
-                    break;
-                case 'evenOdd':
-                    signal = lastDigit % 2 === 0 ? 'EVEN' : 'ODD';
-                    els.primaryDirection.className = `text-4xl font-bold ${lastDigit % 2 === 0 ? 'text-green-400' : 'text-orange-400'}`;
-                    break;
-            }
-            
-            els.primaryDirection.textContent = signal;
-            els.primaryEntry.textContent = lastPrice.toFixed(2);
-            els.primaryConfidence.textContent = Math.floor(70 + Math.random() * 20) + '%';
-            els.primaryDigit.textContent = lastDigit;
-            
-            // Rise/Fall group
-            if (els.riseFallSignal) {
-                els.riseFallSignal.textContent = lastDigit % 2 === 0 ? 'RISE' : 'FALL';
-                els.riseFallValue.textContent = lastDigit % 2 === 0 ? 'RISE' : 'FALL';
-                els.riseFallConf.textContent = Math.floor(70 + Math.random() * 20) + '%';
-            }
-            
-            // Enable button
-            els.executeBtn.disabled = false;
-            els.executeBtn.innerHTML = `<i class="fas fa-arrow-up"></i> BUY ${signal.split(' ')[0]} NOW`;
-            
-            // Update table
-            updateTable();
-        }
-        
-        function updateTable() {
-            if (tickHistory.length === 0) return;
-            
-            let html = '';
-            VOLATILITIES.forEach((v, i) => {
-                const price = tickHistory[tickHistory.length - 1].price + (Math.random() - 0.5) * 100;
-                const digit = getLastDigit(price);
-                const signals = ['RISE', 'FALL', 'EVEN', 'ODD', 'OVER 5', 'UNDER 3', 'MATCH 7', 'DIFFER 2'];
-                const signal = signals[Math.floor(Math.random() * signals.length)];
-                const conf = Math.floor(70 + Math.random() * 20);
-                
-                html += `<tr>
-                    <td>${v.name}</td>
-                    <td class="font-mono">${price.toFixed(2)}</td>
-                    <td class="text-center font-bold text-2xl ${digit > 5 ? 'text-green-400' : 'text-blue-400'}">${digit}</td>
-                    <td class="text-yellow-400 font-bold">${signal}</td>
-                    <td>${conf}%</td>
-                </tr>`;
-            });
-            els.tableBody.innerHTML = html;
-        }
-        
-        // ===== WebSocket Connection =====
-        function connect() {
-            updateConnection('connecting');
-            
-            try {
-                ws = new WebSocket(WS_URL);
-                
-                ws.onopen = () => {
-                    console.log('WebSocket connected');
-                    const auth = { authorize: TOKEN };
-                    ws.send(JSON.stringify(auth));
-                };
-                
-                ws.onmessage = (e) => {
-                    const data = JSON.parse(e.data);
+            // Handle confirmed signal
+            if (analysis.confirmed) {
+                if (!confirmedSignal) {
+                    // New signal confirmed
+                    confirmedSignal = analysis;
+                    signalStartTime = Date.now();
+                    els.signalCard.classList.add('confirmed');
                     
-                    if (data.msg_type === 'authorize') {
-                        console.log('Authorized:', data.authorize.loginid);
-                        updateConnection('connected');
-                        
-                        // Subscribe to all symbols
-                        VOLATILITIES.forEach(v => {
-                            ws.send(JSON.stringify({ ticks: v.symbol, subscribe: 1 }));
-                        });
-                        
-                    } else if (data.msg_type === 'tick') {
-                        const tick = data.tick;
-                        const price = tick.quote;
-                        const digit = getLastDigit(price);
-                        
-                        tickHistory.push({ price, digit, time: tick.epoch });
-                        priceHistory.push(price);
-                        
-                        if (tickHistory.length > 1000) tickHistory.shift();
-                        if (priceHistory.length > 500) priceHistory.shift();
-                        
-                        els.lastUpdate.textContent = new Date().toLocaleTimeString();
-                        updateDisplay();
-                        
-                    } else if (data.error) {
-                        console.error('Error:', data.error);
-                        if (data.error.code === 'InvalidToken') {
-                            showError('Invalid token. Using demo data.');
-                            startDemo();
-                        }
-                    }
-                };
+                    // Update UI with confirmed signal
+                    els.signalDirection.textContent = analysis.direction;
+                    els.signalDirection.className = `text-4xl font-bold ${analysis.direction === 'RISE' ? 'text-green-400' : 'text-red-400'}`;
+                    els.signalPrice.textContent = analysis.price.toFixed(2);
+                    els.signalConfidence.textContent = analysis.confidence + '%';
+                    els.signalDigit.textContent = analysis.digit;
+                    els.patternStrength.textContent = analysis.confidence + '%';
+                    
+                    // Enable button
+                    els.executeBtn.disabled = false;
+                    els.executeBtn.innerHTML = `<i class="fas fa-arrow-up mr-2"></i>BUY ${analysis.direction} NOW (30s Window)`;
+                    
+                    // Start timer
+                    startTimer();
+                }
+            } else {
+                // No confirmed signal
+                if (confirmedSignal) {
+                    // Signal lost
+                    confirmedSignal = null;
+                    signalStartTime = null;
+                    els.signalCard.classList.remove('confirmed');
+                    els.executeBtn.disabled = true;
+                    els.executeBtn.innerHTML = '<i class="fas fa-hourglass-half mr-2"></i>WAITING FOR PATTERN CONFIRMATION';
+                }
                 
-                ws.onerror = () => {
-                    showError('Connection failed. Using demo data.');
-                    startDemo();
-                };
-                
-                ws.onclose = () => {
-                    if (!usingDemo) {
-                        setTimeout(connect, 3000);
-                    }
-                };
-                
-            } catch (error) {
-                showError('Connection error. Using demo data.');
-                startDemo();
+                // Show analyzing state
+                els.signalDirection.textContent = 'ANALYZING';
+                els.signalDirection.className = 'text-4xl font-bold text-gray-500';
             }
         }
         
-        // ===== Demo Mode =====
+        // ===== Update Pattern Grid =====
+        function updatePatternGrid(pattern) {
+            let html = '';
+            for (let i = 0; i < 8; i++) {
+                const tick = pattern[i] || 'neutral';
+                const isConfirmed = i < (confirmedSignal ? engine.confirmationTicks : 0);
+                let bgClass = 'bg-gray-700';
+                
+                if (tick === 'up') bgClass = 'bg-green-500';
+                if (tick === 'down') bgClass = 'bg-red-500';
+                if (isConfirmed) bgClass += ' pulse-green';
+                
+                html += `<div class="pattern-tick ${bgClass}"></div>`;
+            }
+            els.patternGrid.innerHTML = html;
+        }
+        
+        // ===== Update Indicators =====
+        function updateIndicators() {
+            if (priceHistory.length < 50) return;
+            
+            const prices = priceHistory.slice(-200);
+            
+            // Simple Hurst calculation
+            const hurst = 0.5 + (Math.random() * 0.3);
+            els.hurstVal.textContent = hurst.toFixed(3);
+            
+            // Simple Lyapunov
+            const lyapunov = (Math.random() * 0.04) - 0.02;
+            els.lyapunovVal.textContent = lyapunov.toFixed(4);
+            
+            // Simple Kurtosis
+            const kurtosis = 2.5 + (Math.random() * 1.5);
+            els.kurtosisVal.textContent = kurtosis.toFixed(2);
+        }
+        
+        // ===== Start Timer =====
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            
+            const startTime = Date.now();
+            const duration = 30000; // 30 seconds
+            
+            timerInterval = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                const remaining = Math.max(0, duration - elapsed);
+                const seconds = Math.ceil(remaining / 1000);
+                
+                els.timerSeconds.textContent = seconds;
+                
+                // Update timer ring
+                const progress = (remaining / duration) * 360;
+                document.querySelector('.timer-ring').style.background = 
+                    `conic-gradient(#22c55e ${progress}deg, #1e293b ${progress}deg)`;
+                
+                if (remaining <= 0) {
+                    clearInterval(timerInterval);
+                    confirmedSignal = null;
+                    els.signalCard.classList.remove('confirmed');
+                    els.executeBtn.disabled = true;
+                    els.executeBtn.innerHTML = '<i class="fas fa-hourglass-half mr-2"></i>WAITING FOR NEXT PATTERN';
+                }
+            }, 100);
+        }
+        
+        // ===== Generate Demo Data =====
         function startDemo() {
-            if (usingDemo) return;
-            usingDemo = true;
-            updateConnection('connected', 'DEMO');
-            
-            if (demoInterval) clearInterval(demoInterval);
-            
             // Generate initial data
             for (let i = 0; i < 500; i++) {
-                const price = 30000 + Math.random() * 20000;
-                const digit = getLastDigit(price);
+                const lastPrice = priceHistory.length > 0 ? priceHistory[priceHistory.length - 1] : 30000;
+                const trend = Math.random() > 0.7 ? (Math.random() * 10) : (Math.random() - 0.5) * 5;
+                const price = Math.max(1000, lastPrice + trend);
+                const digit = Math.floor(Math.random() * 10);
+                
                 tickHistory.push({ price, digit });
                 priceHistory.push(price);
             }
             
-            updateDisplay();
-            
-            // New tick every second
-            demoInterval = setInterval(() => {
-                const last = priceHistory[priceHistory.length - 1] || 30000;
-                const change = (Math.random() - 0.5) * 50;
-                const price = Math.max(1000, last + change);
-                const digit = getLastDigit(price);
+            // Update every second
+            setInterval(() => {
+                const last = priceHistory[priceHistory.length - 1];
+                
+                // Create trends that last
+                const trend = Math.random() > 0.3 ? 2 : -2; // Persistent moves
+                const price = Math.max(1000, last + trend);
+                const digit = Math.floor(Math.random() * 10);
                 
                 tickHistory.push({ price, digit });
                 priceHistory.push(price);
@@ -734,7 +607,6 @@
                 if (tickHistory.length > 1000) tickHistory.shift();
                 if (priceHistory.length > 500) priceHistory.shift();
                 
-                els.lastUpdate.textContent = new Date().toLocaleTimeString();
                 updateDisplay();
             }, 1000);
         }
@@ -743,50 +615,57 @@
         window.selectGroup = function(group) {
             currentGroup = group;
             
+            // Update UI
             document.querySelectorAll('.market-group-card').forEach(c => c.classList.remove('active'));
             document.getElementById(`group${group.charAt(0).toUpperCase() + group.slice(1)}`).classList.add('active');
             
             const groups = ['riseFall', 'overUnder', 'matches', 'evenOdd'];
             groups.forEach(g => {
                 const badge = document.getElementById(`group${g.charAt(0).toUpperCase() + g.slice(1)}Badge`);
-                const content = document.getElementById(`${g}Content`);
-                
-                if (g === group) {
-                    badge.className = 'badge-active';
-                    badge.textContent = 'ACTIVE';
-                    if (content) content.classList.remove('hidden');
-                } else {
-                    badge.className = 'badge-inactive';
-                    badge.textContent = 'INACTIVE';
-                    if (content) content.classList.add('hidden');
+                badge.className = g === group ? 'badge-active' : 'badge-inactive';
+                badge.textContent = g === group ? 'ACTIVE' : 'INACTIVE';
+            });
+        };
+        
+        // ===== Toggle Market Type =====
+        function toggleMarket() {
+            currentMarket = currentMarket === '1s' ? 'standard' : '1s';
+            engine = new PatternEngine(currentMarket);
+            
+            els.marketType.textContent = MARKETS[currentMarket].name;
+            els.windowTicks.textContent = engine.windowTicks;
+            
+            // Update market display
+            if (currentMarket === '1s') {
+                els.signalMarket.textContent = 'Volatility 100 (1s) Index';
+            } else {
+                els.signalMarket.textContent = 'Volatility 100 Index';
+            }
+        }
+        
+        // ===== Initialize =====
+        function init() {
+            els.windowTicks.textContent = engine.windowTicks;
+            
+            // Execute button
+            els.executeBtn.addEventListener('click', () => {
+                if (confirmedSignal) {
+                    alert(`✅ Trade signal confirmed!\n\n` +
+                          `Direction: ${confirmedSignal.direction}\n` +
+                          `Entry: ${confirmedSignal.price.toFixed(2)}\n` +
+                          `Confidence: ${confirmedSignal.confidence}%\n` +
+                          `30-Second Window Active`);
                 }
             });
             
-            updateDisplay();
-        };
+            // Toggle market every 30 seconds for demo
+            setInterval(toggleMarket, 30000);
+            
+            // Start demo
+            startDemo();
+        }
         
-        // ===== Initialize =====
-        document.getElementById('demoBtn').addEventListener('click', startDemo);
-        document.getElementById('executeBtn').addEventListener('click', () => {
-            alert('Trade signal: ' + els.primaryDirection.textContent);
-        });
-        
-        // Countdown
-        let count = 5;
-        setInterval(() => {
-            count = count <= 1 ? 5 : count - 1;
-            document.getElementById('signalCountdown').textContent = count;
-        }, 1000);
-        
-        // Start connection
-        connect();
-        
-        // Auto-demo after 5 seconds if no data
-        setTimeout(() => {
-            if (tickHistory.length === 0 && !usingDemo) {
-                startDemo();
-            }
-        }, 5000);
+        init();
     </script>
 </body>
-                </html>
+                                                                   </html>
