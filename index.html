@@ -2,228 +2,897 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Zion Advanced Quant Engine</title>
+<title>Zion 30-Second Quant Engine · Specific Signals</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-body{background:#0f172a;color:white;font-family:Arial}
-.card{background:#1e293b;padding:20px;border-radius:12px;margin-bottom:15px}
-.green{color:#22c55e}.red{color:#ef4444}.yellow{color:#facc15}
+    body { background: #0f172a; color: white; font-family: 'Inter', Arial; }
+    .card { background: #1e293b; padding: 20px; border-radius: 12px; margin-bottom: 15px; }
+    .green { color: #22c55e; } .red { color: #ef4444; } .yellow { color: #facc15; } .blue { color: #3b82f6; } .purple { color: #a855f7; }
+    .pulse { animation: pulse 2s infinite; }
+    @keyframes pulse { 0%{opacity:1} 50%{opacity:0.7} 100%{opacity:1} }
+    
+    .timer { font-size: 2rem; font-weight: bold; text-align: center; margin: 10px 0; }
+    .confirm-bar { height: 10px; background: #334155; border-radius: 5px; margin: 10px 0; }
+    .confirm-progress { height: 10px; background: #22c55e; border-radius: 5px; width: 0%; }
+    
+    .pattern-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; margin: 10px 0; }
+    .pattern-tick { height: 40px; border-radius: 5px; background: #334155; transition: all 0.3s; }
+    .pattern-tick.up { background: #22c55e; }
+    .pattern-tick.down { background: #ef4444; }
+    .pattern-tick.confirmed { box-shadow: 0 0 15px currentColor; }
+    
+    .volatility-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+    }
+    .volatility-table th {
+        text-align: left;
+        padding: 10px 5px;
+        color: #94a3b8;
+        border-bottom: 1px solid #334155;
+    }
+    .volatility-table td {
+        padding: 8px 5px;
+        border-bottom: 1px solid #1e293b;
+    }
+    .volatility-table tr:hover { background: #2d3748; }
+    
+    .signal-badge {
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        display: inline-block;
+    }
+    .badge-rise { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+    .badge-fall { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+    .badge-even { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+    .badge-odd { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+    .badge-over { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+    .badge-under { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+    .badge-match { background: rgba(168, 85, 247, 0.2); color: #a855f7; }
+    .badge-differ { background: rgba(236, 72, 153, 0.2); color: #ec4899; }
+    
+    .market-selector {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+    .market-btn {
+        padding: 10px;
+        border-radius: 8px;
+        background: #334155;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.3s;
+    }
+    .market-btn.active {
+        background: #3b82f6;
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+    }
+    .market-btn:hover { background: #475569; }
+    
+    .signal-card {
+        background: #1e293b;
+        border-left: 5px solid #22c55e;
+        padding: 15px;
+        margin-bottom: 15px;
+        border-radius: 8px;
+    }
 </style>
 </head>
 <body class="p-6">
 
-<h1 class="text-3xl font-bold mb-4">Zion Advanced Quant Engine</h1>
+<h1 class="text-3xl font-bold mb-4">Zion 30-Second Quant Engine · Specific Signals</h1>
 
+<!-- API Connection -->
 <div class="card">
-API Token:
-<input id="token" type="password" class="text-black p-2 w-full mb-2">
-<button onclick="connect()" class="bg-blue-600 px-4 py-2 rounded">Connect</button>
-<div id="status">Disconnected</div>
+    <div class="flex flex-wrap gap-4 items-center">
+        <div class="flex-1">
+            API Token:
+            <input id="token" type="password" class="text-black p-2 w-full rounded" placeholder="Enter your Deriv API token">
+        </div>
+        <div>
+            <button onclick="connect()" class="bg-blue-600 px-6 py-3 rounded hover:bg-blue-700">Connect</button>
+        </div>
+        <div id="status" class="text-yellow-400">Disconnected</div>
+    </div>
 </div>
 
-<div class="card">
-Symbol:
-<select id="symbol" class="text-black p-1">
-<option value="R_100">Volatility 100</option>
-<option value="1HZ100V">Volatility 100 (1s)</option>
-</select>
-
-Base Stake:
-<input id="stake" type="number" value="1" class="text-black p-1">
-
-Max Trades:
-<input id="maxTrades" type="number" value="10" class="text-black p-1">
-
-Max Consecutive Losses:
-<input id="maxLoss" type="number" value="3" class="text-black p-1">
-
-Auto:
-<select id="auto" class="text-black p-1">
-<option value="off">OFF</option>
-<option value="on">ON</option>
-</select>
+<!-- Market Type Selector (4 Groups) -->
+<div class="market-selector">
+    <div id="marketRiseFall" class="market-btn active" onclick="setMarketGroup('riseFall')">
+        <i class="fas fa-arrow-up text-green-400"></i> RISE/FALL
+    </div>
+    <div id="marketOverUnder" class="market-btn" onclick="setMarketGroup('overUnder')">
+        <i class="fas fa-greater-than text-blue-400"></i> OVER/UNDER
+    </div>
+    <div id="marketMatches" class="market-btn" onclick="setMarketGroup('matches')">
+        <i class="fas fa-equals text-purple-400"></i> MATCH/DIFFER
+    </div>
+    <div id="marketEvenOdd" class="market-btn" onclick="setMarketGroup('evenOdd')">
+        <i class="fas fa-divide text-green-400"></i> EVEN/ODD
+    </div>
 </div>
 
-<div class="card">
-Price: <span id="price">--</span><br>
-Digit: <span id="digit">--</span><br>
-Trend: <span id="trend">--</span><br>
-Volatility: <span id="vol">--</span><br>
-Momentum: <span id="momentum">--</span><br>
-Confidence: <span id="confidence">--</span>%
+<!-- Trading Controls -->
+<div class="card grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div>
+        <label class="block text-sm text-gray-400">Symbol</label>
+        <select id="symbol" class="text-black p-2 w-full rounded">
+            <optgroup label="1-Second Markets (30 ticks/30s)">
+                <option value="1HZ10V">Volatility 10 (1s)</option>
+                <option value="1HZ15V">Volatility 15 (1s)</option>
+                <option value="1HZ25V">Volatility 25 (1s)</option>
+                <option value="1HZ30V">Volatility 30 (1s)</option>
+                <option value="1HZ50V">Volatility 50 (1s)</option>
+                <option value="1HZ75V">Volatility 75 (1s)</option>
+                <option value="1HZ90V">Volatility 90 (1s)</option>
+                <option value="1HZ100V" selected>Volatility 100 (1s)</option>
+            </optgroup>
+            <optgroup label="Standard Markets (15 ticks/30s)">
+                <option value="R_10">Volatility 10</option>
+                <option value="R_25">Volatility 25</option>
+                <option value="R_50">Volatility 50</option>
+                <option value="R_75">Volatility 75</option>
+                <option value="R_100">Volatility 100</option>
+            </optgroup>
+        </select>
+    </div>
+    <div>
+        <label class="block text-sm text-gray-400">Base Stake ($)</label>
+        <input id="stake" type="number" value="1" min="0.5" step="0.5" class="text-black p-2 w-full rounded">
+    </div>
+    <div>
+        <label class="block text-sm text-gray-400">Max Trades</label>
+        <input id="maxTrades" type="number" value="10" class="text-black p-2 w-full rounded">
+    </div>
+    <div>
+        <label class="block text-sm text-gray-400">Max Consecutive Losses</label>
+        <input id="maxLoss" type="number" value="3" class="text-black p-2 w-full rounded">
+    </div>
 </div>
 
+<!-- 30-Second Pattern Analysis -->
 <div class="card">
-Win Rate: <span id="winrate">0%</span><br>
-Trades: <span id="trades">0</span><br>
-Consecutive Losses: <span id="losses">0</span>
+    <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-bold">30-Second Pattern Analysis</h3>
+        <div id="marketType" class="bg-blue-600 px-3 py-1 rounded-full text-sm">1S Market (30 ticks)</div>
+    </div>
+
+    <!-- Pattern Grid (8 ticks) -->
+    <div class="pattern-grid" id="patternGrid">
+        <!-- Generated by JS -->
+    </div>
+
+    <!-- Confirmation Progress -->
+    <div class="flex justify-between text-sm mt-2">
+        <span>Pattern Confirmation (<span id="confirmCount">0</span>/<span id="confirmRequired">8</span> ticks)</span>
+        <span id="patternDirection" class="text-gray-400">--</span>
+    </div>
+    <div class="confirm-bar">
+        <div id="confirmProgress" class="confirm-progress" style="width:0%"></div>
+    </div>
+
+    <!-- Signal Timer -->
+    <div class="timer" id="signalTimer">--</div>
 </div>
 
+<!-- CURRENT ACTIVE SIGNAL - SPECIFIC VOLATILITY + DIRECTION -->
+<div class="signal-card">
+    <div class="text-sm text-gray-400 mb-2">🔥 ACTIVE SIGNAL</div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+            <div class="text-4xl font-bold" id="activeVolatility">Volatility 100 (1s) Index</div>
+            <div class="text-6xl font-bold mt-2" id="activeSignal">WAITING</div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <div class="text-sm text-gray-400">Direction</div>
+                <div class="text-2xl font-bold" id="activeDirection">--</div>
+            </div>
+            <div>
+                <div class="text-sm text-gray-400">Confidence</div>
+                <div class="text-2xl font-bold text-green-400" id="activeConfidence">--</div>
+            </div>
+            <div>
+                <div class="text-sm text-gray-400">Entry Price</div>
+                <div class="text-xl font-mono" id="activePrice">--</div>
+            </div>
+            <div>
+                <div class="text-sm text-gray-400">Target Digit</div>
+                <div class="text-2xl font-bold text-yellow-400" id="activeDigit">-</div>
+            </div>
+        </div>
+    </div>
+    <button id="tradeBtn" onclick="manualTrade()" class="w-full bg-green-600 hover:bg-green-700 py-4 rounded-xl text-xl font-bold mt-4" disabled>
+        WAITING FOR 30-SECOND CONFIRMATION
+    </button>
+</div>
+
+<!-- Statistics -->
+<div class="card grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div>
+        <div class="text-sm text-gray-400">Win Rate</div>
+        <div id="winrate" class="text-2xl font-bold text-green-400">0%</div>
+    </div>
+    <div>
+        <div class="text-sm text-gray-400">Trades Today</div>
+        <div id="trades" class="text-2xl font-bold">0</div>
+    </div>
+    <div>
+        <div class="text-sm text-gray-400">Consecutive Losses</div>
+        <div id="losses" class="text-2xl font-bold text-red-400">0</div>
+    </div>
+    <div>
+        <div class="text-sm text-gray-400">Auto Mode</div>
+        <select id="auto" class="text-black p-1 rounded" onchange="toggleAutoMode()">
+            <option value="off">OFF</option>
+            <option value="on">ON</option>
+        </select>
+    </div>
+</div>
+
+<!-- ALL 13 VOLATILITIES - SPECIFIC SIGNALS TABLE -->
 <div class="card">
-<button onclick="manualTrade()" class="bg-green-600 px-6 py-2 rounded">Manual Trade</button>
-<div id="log"></div>
+    <h3 class="text-xl font-bold mb-4">📊 All 13 Volatilities · Specific Signals</h3>
+    <div class="overflow-x-auto">
+        <table class="volatility-table">
+            <thead>
+                <tr>
+                    <th>Volatility Index</th>
+                    <th>Type</th>
+                    <th>Price</th>
+                    <th>Digit</th>
+                    <th>Signal</th>
+                    <th>Direction</th>
+                    <th>Confidence</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="volatilityTable">
+                <!-- Populated by JS -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Log -->
+<div class="card">
+    <div class="text-sm text-gray-400 mb-2">System Log</div>
+    <div id="log" class="text-sm font-mono h-20 overflow-y-auto"></div>
 </div>
 
 <script>
+// =====================================================================
+// ZION 30-SECOND QUANT ENGINE - SPECIFIC SIGNALS FOR ALL VOLATILITIES
+// =====================================================================
 
-let ws, authorized=false;
-let prices=[], digits=[];
-let proposalId=null;
-let tradeCount=0;
-let wins=0;
-let losses=0;
-let consecutiveLosses=0;
+// Configuration
+const APP_ID = '126973';
+const VOLATILITIES = [
+    // 1-Second Markets (30 ticks per 30 seconds)
+    { name: 'Volatility 10 (1s)', symbol: '1HZ10V', type: '1s', ticksPerWindow: 30, confirmTicks: 8 },
+    { name: 'Volatility 15 (1s)', symbol: '1HZ15V', type: '1s', ticksPerWindow: 30, confirmTicks: 8 },
+    { name: 'Volatility 25 (1s)', symbol: '1HZ25V', type: '1s', ticksPerWindow: 30, confirmTicks: 8 },
+    { name: 'Volatility 30 (1s)', symbol: '1HZ30V', type: '1s', ticksPerWindow: 30, confirmTicks: 8 },
+    { name: 'Volatility 50 (1s)', symbol: '1HZ50V', type: '1s', ticksPerWindow: 30, confirmTicks: 8 },
+    { name: 'Volatility 75 (1s)', symbol: '1HZ75V', type: '1s', ticksPerWindow: 30, confirmTicks: 8 },
+    { name: 'Volatility 90 (1s)', symbol: '1HZ90V', type: '1s', ticksPerWindow: 30, confirmTicks: 8 },
+    { name: 'Volatility 100 (1s)', symbol: '1HZ100V', type: '1s', ticksPerWindow: 30, confirmTicks: 8 },
+    
+    // Standard Markets (15 ticks per 30 seconds)
+    { name: 'Volatility 10', symbol: 'R_10', type: 'standard', ticksPerWindow: 15, confirmTicks: 5 },
+    { name: 'Volatility 25', symbol: 'R_25', type: 'standard', ticksPerWindow: 15, confirmTicks: 5 },
+    { name: 'Volatility 50', symbol: 'R_50', type: 'standard', ticksPerWindow: 15, confirmTicks: 5 },
+    { name: 'Volatility 75', symbol: 'R_75', type: 'standard', ticksPerWindow: 15, confirmTicks: 5 },
+    { name: 'Volatility 100', symbol: 'R_100', type: 'standard', ticksPerWindow: 15, confirmTicks: 5 }
+];
 
-function connect(){
-ws=new WebSocket("wss://ws.derivws.com/websockets/v3?app_id=126973");
+// State
+let ws = null;
+let authorized = false;
+let accountId = '';
+let currentGroup = 'riseFall';
+let marketData = {};
+let tickHistory = {};
+let priceHistory = {};
+let confirmedSignals = {};
+let signalTimers = {};
+let proposalId = null;
+let tradeCount = 0;
+let wins = 0;
+let losses = 0;
+let consecutiveLosses = 0;
 
-ws.onopen=()=>{
-ws.send(JSON.stringify({authorize:document.getElementById("token").value}));
+// Initialize data structures
+VOLATILITIES.forEach(v => {
+    marketData[v.symbol] = { price: null, digit: null, time: null };
+    tickHistory[v.symbol] = [];
+    priceHistory[v.symbol] = [];
+    confirmedSignals[v.symbol] = null;
+    signalTimers[v.symbol] = null;
+});
+
+// DOM Elements
+const els = {
+    status: document.getElementById('status'),
+    marketType: document.getElementById('marketType'),
+    patternGrid: document.getElementById('patternGrid'),
+    confirmCount: document.getElementById('confirmCount'),
+    confirmRequired: document.getElementById('confirmRequired'),
+    confirmProgress: document.getElementById('confirmProgress'),
+    signalTimer: document.getElementById('signalTimer'),
+    patternDirection: document.getElementById('patternDirection'),
+    
+    activeVolatility: document.getElementById('activeVolatility'),
+    activeSignal: document.getElementById('activeSignal'),
+    activeDirection: document.getElementById('activeDirection'),
+    activeConfidence: document.getElementById('activeConfidence'),
+    activePrice: document.getElementById('activePrice'),
+    activeDigit: document.getElementById('activeDigit'),
+    tradeBtn: document.getElementById('tradeBtn'),
+    
+    winrate: document.getElementById('winrate'),
+    trades: document.getElementById('trades'),
+    losses: document.getElementById('losses'),
+    log: document.getElementById('log'),
+    volatilityTable: document.getElementById('volatilityTable')
 };
 
-ws.onmessage=(m)=>{
-let data=JSON.parse(m.data);
-
-if(data.msg_type==="authorize"){
-authorized=true;
-document.getElementById("status").innerText="Connected";
-subscribe();
+// ===== Helper Functions =====
+function log(msg) {
+    console.log(msg);
+    if (els.log) {
+        els.log.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}<br>` + els.log.innerHTML;
+    }
 }
 
-if(data.msg_type==="tick") handleTick(data.tick);
-if(data.msg_type==="proposal") proposalId=data.proposal.id;
-if(data.msg_type==="buy"){
-tradeCount++;
-updateStats();
-log("Trade Placed ID "+data.buy.contract_id);
+function getLastDigit(price) {
+    if (!price) return 0;
+    const str = price.toString();
+    if (str.includes('.')) {
+        return parseInt(str.split('.')[1].charAt(0)) || 0;
+    }
+    return parseInt(str.slice(-1)) || 0;
 }
 
-if(data.msg_type==="proposal_open_contract"){
-if(data.proposal_open_contract.is_sold){
-if(data.proposal_open_contract.profit>0){
-wins++; consecutiveLosses=0;
-}else{
-losses++; consecutiveLosses++;
-}
-updateStats();
-}
-}
-
-};
-
+function updateConnection(status, msg) {
+    if (status === 'connected') {
+        els.status.innerHTML = '✅ Connected · ' + msg;
+        els.status.className = 'text-green-400';
+    } else if (status === 'connecting') {
+        els.status.innerHTML = '⏳ Connecting...';
+        els.status.className = 'text-yellow-400';
+    } else {
+        els.status.innerHTML = '❌ ' + msg;
+        els.status.className = 'text-red-400';
+    }
 }
 
-function subscribe(){
-ws.send(JSON.stringify({
-ticks:document.getElementById("symbol").value,
-subscribe:1
-}));
+// ===== Market Group Selection =====
+function setMarketGroup(group) {
+    currentGroup = group;
+    
+    // Update UI
+    ['riseFall', 'overUnder', 'matches', 'evenOdd'].forEach(g => {
+        const el = document.getElementById(`market${g.charAt(0).toUpperCase() + g.slice(1)}`);
+        if (el) {
+            if (g === group) el.classList.add('active');
+            else el.classList.remove('active');
+        }
+    });
+    
+    log(`Switched to ${group} mode`);
+    updateAllSignals();
 }
 
-function handleTick(tick){
-let price=tick.quote;
-let digit=parseInt(price.toString().slice(-1));
-
-prices.push(price);
-digits.push(digit);
-if(prices.length>200) prices.shift();
-if(digits.length>200) digits.shift();
-
-document.getElementById("price").innerText=price;
-document.getElementById("digit").innerText=digit;
-
-analyze();
+// ===== WebSocket Connection =====
+function connect() {
+    const token = document.getElementById('token').value;
+    if (!token) {
+        alert('Please enter your API token');
+        return;
+    }
+    
+    updateConnection('connecting');
+    
+    try {
+        ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`);
+        
+        ws.onopen = () => {
+            log('WebSocket connected');
+            ws.send(JSON.stringify({ authorize: token }));
+        };
+        
+        ws.onmessage = (e) => {
+            const data = JSON.parse(e.data);
+            
+            if (data.msg_type === 'authorize') {
+                authorized = true;
+                accountId = data.authorize.loginid;
+                updateConnection('connected', accountId);
+                log(`Authorized as ${accountId}`);
+                subscribeAll();
+            }
+            
+            else if (data.msg_type === 'tick') {
+                handleTick(data.tick);
+            }
+            
+            else if (data.msg_type === 'proposal') {
+                proposalId = data.proposal.id;
+            }
+            
+            else if (data.msg_type === 'buy') {
+                tradeCount++;
+                updateStats();
+                log(`Trade placed: ${data.buy.contract_id}`);
+            }
+            
+            else if (data.msg_type === 'proposal_open_contract') {
+                if (data.proposal_open_contract.is_sold) {
+                    if (data.proposal_open_contract.profit > 0) {
+                        wins++;
+                        consecutiveLosses = 0;
+                        log('✅ Trade won');
+                    } else {
+                        losses++;
+                        consecutiveLosses++;
+                        log('❌ Trade lost');
+                    }
+                    updateStats();
+                }
+            }
+            
+            else if (data.error) {
+                log(`Error: ${data.error.message}`);
+                if (data.error.code === 'InvalidToken') {
+                    updateConnection('error', 'Invalid token');
+                }
+            }
+        };
+        
+        ws.onerror = () => {
+            updateConnection('error', 'Connection failed');
+            log('WebSocket error');
+        };
+        
+        ws.onclose = () => {
+            authorized = false;
+            updateConnection('error', 'Disconnected');
+            log('WebSocket closed');
+            setTimeout(connect, 5000);
+        };
+        
+    } catch (error) {
+        log(`Connection error: ${error.message}`);
+        updateConnection('error', error.message);
+    }
 }
 
-function analyze(){
-
-if(prices.length<30) return;
-
-let returns=[];
-for(let i=1;i<prices.length;i++)
-returns.push(prices[i]-prices[i-1]);
-
-let mean=returns.reduce((a,b)=>a+b)/returns.length;
-let variance=returns.reduce((a,b)=>a+Math.pow(b-mean,2),0)/returns.length;
-let volatility=Math.sqrt(variance);
-
-// Momentum persistence
-let sameDirection=0;
-for(let i=1;i<returns.length;i++){
-if(Math.sign(returns[i])===Math.sign(returns[i-1]))
-sameDirection++;
-}
-let momentum=sameDirection/returns.length;
-
-document.getElementById("trend").innerText=mean.toFixed(5);
-document.getElementById("vol").innerText=volatility.toFixed(5);
-document.getElementById("momentum").innerText=(momentum*100).toFixed(1)+"%";
-
-// Multi-factor confidence
-let trendScore=Math.abs(mean)/(volatility+0.0001);
-let momentumScore=momentum;
-let volatilityFilter=volatility<5?1:0.5;
-
-let confidence=Math.min(95,Math.round((trendScore*50 + momentumScore*50)*volatilityFilter));
-document.getElementById("confidence").innerText=confidence;
-
-if(document.getElementById("auto").value==="on"
-&& confidence>75
-&& tradeCount<parseInt(document.getElementById("maxTrades").value)
-&& consecutiveLosses<parseInt(document.getElementById("maxLoss").value)){
-execute(mean>0?"CALL":"PUT",confidence);
+function subscribeAll() {
+    VOLATILITIES.forEach(v => {
+        ws.send(JSON.stringify({
+            ticks: v.symbol,
+            subscribe: 1
+        }));
+    });
+    log(`Subscribed to ${VOLATILITIES.length} volatility indices`);
 }
 
+// ===== Tick Processing =====
+function handleTick(tick) {
+    const symbol = tick.symbol;
+    const price = tick.quote;
+    const digit = getLastDigit(price);
+    const time = tick.epoch;
+    
+    // Update market data
+    marketData[symbol] = { price, digit, time };
+    
+    // Update history
+    if (!tickHistory[symbol]) tickHistory[symbol] = [];
+    if (!priceHistory[symbol]) priceHistory[symbol] = [];
+    
+    tickHistory[symbol].push({ price, digit, time });
+    priceHistory[symbol].push(price);
+    
+    if (tickHistory[symbol].length > 500) tickHistory[symbol].shift();
+    if (priceHistory[symbol].length > 300) priceHistory[symbol].shift();
+    
+    // Update pattern for this symbol
+    updatePatternForSymbol(symbol);
+    
+    // Update UI if this is the selected symbol
+    const selectedSymbol = document.getElementById('symbol').value;
+    if (symbol === selectedSymbol) {
+        updateDisplay(symbol);
+    }
+    
+    // Update volatility table
+    updateVolatilityTable();
 }
 
-function execute(type,confidence){
-
-if(!authorized) return;
-
-let baseStake=parseFloat(document.getElementById("stake").value);
-
-// Risk-adjusted stake
-let stake=baseStake*(confidence/100);
-
-ws.send(JSON.stringify({
-proposal:1,
-amount:stake,
-basis:"stake",
-contract_type:type,
-currency:"USD",
-duration:5,
-duration_unit:"t",
-symbol:document.getElementById("symbol").value
-}));
-
-setTimeout(()=>{
-if(proposalId){
-ws.send(JSON.stringify({
-buy:proposalId,
-price:stake
-}));
+// ===== Pattern Analysis =====
+function analyzePattern(symbol) {
+    const history = tickHistory[symbol];
+    if (!history || history.length < 20) return null;
+    
+    const market = VOLATILITIES.find(v => v.symbol === symbol);
+    if (!market) return null;
+    
+    const windowTicks = market.ticksPerWindow;
+    const confirmTicks = market.confirmTicks;
+    
+    // Get recent ticks
+    const recent = history.slice(-windowTicks);
+    if (recent.length < windowTicks) return null;
+    
+    // Calculate trend direction
+    const prices = recent.map(t => t.price);
+    const firstPrice = prices[0];
+    const lastPrice = prices[prices.length - 1];
+    const priceChange = lastPrice - firstPrice;
+    
+    // Calculate pattern consistency
+    let consistentMoves = 0;
+    let lastDirection = null;
+    let pattern = [];
+    
+    for (let i = 1; i < recent.length; i++) {
+        const direction = recent[i].price > recent[i-1].price ? 'up' : 'down';
+        pattern.push(direction);
+        
+        if (lastDirection === direction) {
+            consistentMoves++;
+        } else {
+            consistentMoves = 1;
+            lastDirection = direction;
+        }
+    }
+    
+    // Get last 8 ticks for display
+    const last8 = pattern.slice(-8);
+    
+    // Calculate stability
+    const stability = Math.min(confirmTicks, consistentMoves);
+    const isConfirmed = stability >= confirmTicks;
+    
+    // Determine base direction
+    const baseDirection = priceChange > 0 ? 'RISE' : 'FALL';
+    
+    // Calculate confidence
+    const trendStrength = Math.abs(priceChange) / (firstPrice || 1) * 100;
+    const confidence = Math.min(95, Math.round(50 + (stability * 5) + trendStrength));
+    
+    // Get current digit
+    const currentDigit = recent[recent.length - 1]?.digit || 0;
+    
+    // Calculate digit frequencies for MATCH/DIFFER
+    const digits = recent.map(t => t.digit);
+    const counts = Array(10).fill(0);
+    digits.forEach(d => counts[d]++);
+    const mostFreq = counts.indexOf(Math.max(...counts));
+    const leastFreq = counts.indexOf(Math.min(...counts));
+    const probability = (counts[mostFreq] / digits.length * 100).toFixed(1);
+    
+    // Generate SPECIFIC signal based on group
+    let specificSignal = '';
+    let signalClass = '';
+    let direction = '';
+    
+    switch(currentGroup) {
+        case 'riseFall':
+            specificSignal = baseDirection;
+            signalClass = baseDirection === 'RISE' ? 'badge-rise' : 'badge-fall';
+            direction = baseDirection;
+            break;
+            
+        case 'overUnder':
+            if (currentDigit >= 5) {
+                specificSignal = `OVER ${currentDigit}`;
+                signalClass = 'badge-over';
+                direction = 'OVER';
+            } else {
+                specificSignal = `UNDER ${currentDigit}`;
+                signalClass = 'badge-under';
+                direction = 'UNDER';
+            }
+            break;
+            
+        case 'matches':
+            if (parseFloat(probability) > 12) {
+                specificSignal = `MATCH ${mostFreq}`;
+                signalClass = 'badge-match';
+                direction = 'MATCH';
+            } else {
+                specificSignal = `DIFFER ${leastFreq}`;
+                signalClass = 'badge-differ';
+                direction = 'DIFFER';
+            }
+            break;
+            
+        case 'evenOdd':
+            specificSignal = currentDigit % 2 === 0 ? 'EVEN' : 'ODD';
+            signalClass = currentDigit % 2 === 0 ? 'badge-even' : 'badge-odd';
+            direction = specificSignal;
+            break;
+    }
+    
+    return {
+        symbol,
+        marketName: market.name,
+        marketType: market.type,
+        baseDirection,
+        specificSignal,
+        signalClass,
+        direction,
+        confidence,
+        stability,
+        isConfirmed,
+        pattern: last8,
+        price: lastPrice,
+        digit: currentDigit,
+        windowTicks,
+        confirmTicks,
+        priceChange
+    };
 }
-},800);
 
+// ===== Update Pattern Display =====
+function updatePatternForSymbol(symbol) {
+    const analysis = analyzePattern(symbol);
+    if (!analysis) return;
+    
+    // Store confirmed signals with 30-second timer
+    if (analysis.isConfirmed) {
+        if (!confirmedSignals[symbol] || confirmedSignals[symbol]?.specificSignal !== analysis.specificSignal) {
+            confirmedSignals[symbol] = analysis;
+            
+            // Clear old timer
+            if (signalTimers[symbol]) clearInterval(signalTimers[symbol]);
+            
+            // Start 30-second timer
+            const startTime = Date.now();
+            const duration = 30000;
+            
+            signalTimers[symbol] = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                const remaining = Math.max(0, duration - elapsed);
+                
+                if (remaining <= 0) {
+                    clearInterval(signalTimers[symbol]);
+                    confirmedSignals[symbol] = null;
+                    if (symbol === document.getElementById('symbol').value) {
+                        updateDisplay(symbol);
+                    }
+                    updateVolatilityTable();
+                }
+            }, 100);
+            
+            log(`✅ CONFIRMED: ${analysis.marketName} | ${analysis.specificSignal} | ${analysis.confidence}%`);
+        }
+    }
 }
 
-function manualTrade(){
-execute("CALL",80);
+// ===== Update UI for Selected Symbol =====
+function updateDisplay(symbol) {
+    const analysis = analyzePattern(symbol);
+    if (!analysis) return;
+    
+    const market = VOLATILITIES.find(v => v.symbol === symbol);
+    if (market) {
+        els.marketType.textContent = market.type === '1s' ? '⚡ 1S Market (30 ticks)' : '⏱️ Standard Market (15 ticks)';
+        els.confirmRequired.textContent = market.confirmTicks;
+    }
+    
+    // Update pattern grid
+    let gridHtml = '';
+    for (let i = 0; i < 8; i++) {
+        const tick = analysis.pattern[i] || 'neutral';
+        const isConfirmed = i < analysis.confirmTicks && analysis.isConfirmed;
+        let bgClass = 'bg-gray-600';
+        if (tick === 'up') bgClass = 'bg-green-500';
+        if (tick === 'down') bgClass = 'bg-red-500';
+        if (isConfirmed) bgClass += ' pulse';
+        gridHtml += `<div class="pattern-tick ${bgClass}"></div>`;
+    }
+    els.patternGrid.innerHTML = gridHtml;
+    
+    // Update confirmation progress
+    els.confirmCount.textContent = analysis.stability;
+    els.confirmProgress.style.width = `${(analysis.stability / analysis.confirmTicks) * 100}%`;
+    
+    // Update pattern direction
+    els.patternDirection.textContent = analysis.baseDirection;
+    els.patternDirection.className = analysis.baseDirection === 'RISE' ? 'text-green-400' : 'text-red-400';
+    
+    // Update ACTIVE SIGNAL display
+    els.activeVolatility.textContent = analysis.marketName;
+    els.activeSignal.textContent = analysis.specificSignal;
+    els.activeSignal.className = `text-6xl font-bold mt-2 ${analysis.signalClass}`;
+    els.activeDirection.textContent = analysis.direction;
+    els.activeConfidence.textContent = analysis.confidence + '%';
+    els.activePrice.textContent = analysis.price.toFixed(2);
+    els.activeDigit.textContent = analysis.digit;
+    
+    // Update timer and button if signal confirmed
+    if (confirmedSignals[symbol]) {
+        const remaining = Math.max(0, 30000 - (Date.now() - signalTimers[symbol]._startTime || 0)) / 1000;
+        els.signalTimer.textContent = `⏱️ ${remaining.toFixed(0)}s remaining`;
+        els.tradeBtn.disabled = false;
+        els.tradeBtn.textContent = `BUY ${analysis.specificSignal.split(' ')[0]} NOW`;
+    } else {
+        els.signalTimer.textContent = '--';
+        els.tradeBtn.disabled = true;
+        els.tradeBtn.textContent = 'WAITING FOR 30-SECOND CONFIRMATION';
+    }
 }
 
-function updateStats(){
-let total=wins+losses;
-let winrate=total>0?((wins/total)*100).toFixed(1):0;
-document.getElementById("winrate").innerText=winrate+"%";
-document.getElementById("trades").innerText=tradeCount;
-document.getElementById("losses").innerText=consecutiveLosses;
+// ===== Update Volatility Table =====
+function updateVolatilityTable() {
+    let html = '';
+    
+    VOLATILITIES.forEach(v => {
+        const analysis = analyzePattern(v.symbol);
+        
+        if (analysis) {
+            const isConfirmed = confirmedSignals[v.symbol] ? '✅ ACTIVE' : `⏳ ${analysis.stability}/${analysis.confirmTicks}`;
+            
+            html += `<tr>
+                <td class="font-bold">${v.name}</td>
+                <td>${v.type === '1s' ? '⚡ 1s' : '⏱️ 2s'}</td>
+                <td class="font-mono">${analysis.price.toFixed(2)}</td>
+                <td class="text-center font-bold text-xl ${analysis.digit > 5 ? 'text-green-400' : 'text-blue-400'}">${analysis.digit}</td>
+                <td><span class="signal-badge ${analysis.signalClass}">${analysis.specificSignal}</span></td>
+                <td class="${analysis.baseDirection === 'RISE' ? 'text-green-400' : 'text-red-400'}">${analysis.baseDirection}</td>
+                <td class="text-green-400">${analysis.confidence}%</td>
+                <td>${isConfirmed}</td>
+            </tr>`;
+        } else {
+            html += `<tr>
+                <td class="font-bold">${v.name}</td>
+                <td>${v.type === '1s' ? '⚡ 1s' : '⏱️ 2s'}</td>
+                <td class="font-mono">--</td>
+                <td>-</td>
+                <td><span class="signal-badge">--</span></td>
+                <td>--</td>
+                <td>--</td>
+                <td>⏳ Collecting data</td>
+            </tr>`;
+        }
+    });
+    
+    els.volatilityTable.innerHTML = html;
 }
 
-function log(msg){
-document.getElementById("log").innerText=msg;
+// ===== Update All Signals =====
+function updateAllSignals() {
+    VOLATILITIES.forEach(v => updatePatternForSymbol(v.symbol));
 }
 
+// ===== Trade Execution =====
+function manualTrade() {
+    const symbol = document.getElementById('symbol').value;
+    const signal = confirmedSignals[symbol];
+    
+    if (!signal || !authorized) return;
+    
+    const stake = parseFloat(document.getElementById('stake').value);
+    
+    // Determine contract type
+    let contractType = 'CALL';
+    if (signal.specificSignal.includes('RISE')) contractType = 'CALL';
+    else if (signal.specificSignal.includes('FALL')) contractType = 'PUT';
+    else if (signal.specificSignal.includes('OVER')) contractType = 'DIGITOVER';
+    else if (signal.specificSignal.includes('UNDER')) contractType = 'DIGITUNDER';
+    else if (signal.specificSignal.includes('MATCH')) contractType = 'DIGITMATCH';
+    else if (signal.specificSignal.includes('DIFFER')) contractType = 'DIGITDIFF';
+    else if (signal.specificSignal.includes('EVEN')) contractType = 'DIGITEVEN';
+    else if (signal.specificSignal.includes('ODD')) contractType = 'DIGITODD';
+    
+    // Get barrier digit
+    let barrier = null;
+    const parts = signal.specificSignal.split(' ');
+    if (parts.length > 1 && !isNaN(parts[1])) {
+        barrier = parseInt(parts[1]);
+    }
+    
+    const proposal = {
+        proposal: 1,
+        amount: stake,
+        basis: 'stake',
+        contract_type: contractType,
+        currency: 'USD',
+        duration: 5,
+        duration_unit: 't',
+        symbol: symbol
+    };
+    
+    if (barrier !== null) {
+        proposal.barrier = barrier;
+    }
+    
+    ws.send(JSON.stringify(proposal));
+    
+    setTimeout(() => {
+        if (proposalId) {
+            ws.send(JSON.stringify({
+                buy: proposalId,
+                price: stake
+            }));
+            log(`✅ EXECUTING: ${signal.marketName} | ${signal.specificSignal} | $${stake}`);
+        }
+    }, 800);
+}
+
+// ===== Auto Mode =====
+function toggleAutoMode() {
+    const auto = document.getElementById('auto').value;
+    if (auto === 'on') {
+        log('🤖 Auto mode enabled');
+        startAutoTrading();
+    } else {
+        log('🤖 Auto mode disabled');
+    }
+}
+
+function startAutoTrading() {
+    setInterval(() => {
+        const auto = document.getElementById('auto').value;
+        if (auto !== 'on') return;
+        
+        const maxTrades = parseInt(document.getElementById('maxTrades').value);
+        const maxLoss = parseInt(document.getElementById('maxLoss').value);
+        
+        if (tradeCount >= maxTrades || consecutiveLosses >= maxLoss) {
+            log(`⏸️ Auto paused: Max trades (${maxTrades}) or max losses (${maxLoss})`);
+            return;
+        }
+        
+        // Check all volatilities for confirmed signals
+        VOLATILITIES.forEach(v => {
+            if (confirmedSignals[v.symbol] && confirmedSignals[v.symbol].confidence > 75) {
+                // Switch to this symbol and trade
+                document.getElementById('symbol').value = v.symbol;
+                updateDisplay(v.symbol);
+                manualTrade();
+            }
+        });
+    }, 10000);
+}
+
+// ===== Statistics Update =====
+function updateStats() {
+    const total = wins + losses;
+    const winrate = total > 0 ? ((wins / total) * 100).toFixed(1) : 0;
+    
+    els.winrate.textContent = winrate + '%';
+    els.trades.textContent = tradeCount;
+    els.losses.textContent = consecutiveLosses;
+}
+
+// ===== Initialize =====
+function init() {
+    // Set up symbol change handler
+    document.getElementById('symbol').addEventListener('change', (e) => {
+        updateDisplay(e.target.value);
+    });
+    
+    // Start periodic updates
+    setInterval(updateAllSignals, 1000);
+    setInterval(updateVolatilityTable, 2000);
+    
+    log('🚀 Zion 30-Second Quant Engine initialized');
+    log('🔑 Enter your API token and click Connect');
+}
+
+// Start on load
+window.onload = init;
 </script>
 
 </body>
-</html>
+  </html>
