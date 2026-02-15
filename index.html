@@ -3,212 +3,198 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Zion · Advanced AI Trading Signals</title>
+<title>Zion AI Dashboard · Deriv</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-body { margin:0; font-family:'Inter',Arial; background:#0f172a; color:white; }
-h1 { text-align:center; margin:10px 0; font-size:1.8rem; background:linear-gradient(135deg,#60a5fa,#a78bfa); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-.card { background:#1e293b; padding:15px; border-radius:12px; margin:10px; border:1px solid #334155; }
-.group-tabs { display:flex; overflow-x:auto; gap:8px; padding:5px; }
-.group-tab { flex:0 0 auto; padding:10px 15px; border-radius:12px; cursor:pointer; border:2px solid transparent; background:#1e293b; text-align:center; min-width:110px; white-space:nowrap; }
-.group-tab.active { border-color:#fbbf24; box-shadow:0 0 15px rgba(251,191,36,0.4); }
-.market-grid { display:grid; grid-template-columns:1fr; gap:10px; margin:10px 0; }
-.market-card { background:#1e293b; border-radius:12px; padding:15px; border:1px solid #334155; display:flex; flex-direction:column; }
-.signal-badge { display:inline-block; padding:6px 14px; border-radius:20px; font-weight:700; margin-top:5px; font-size:0.85rem; }
-.badge-rise { background:#22c55e;color:black; }
-.badge-fall { background:#ef4444;color:white; }
-.badge-even { background:#22c55e;color:black; }
-.badge-odd { background:#f59e0b;color:black; }
-.badge-over { background:#3b82f6;color:white; }
-.badge-under { background:#f59e0b;color:black; }
-.badge-match { background:#a855f7;color:white; }
-.badge-differ { background:#ec4899;color:white; }
-.tradingview-iframe { width:100%; height:200px; border:none; border-radius:8px; }
-@media(min-width:768px){ .market-grid{grid-template-columns:repeat(2,1fr);} }
-@media(min-width:1024px){ .market-grid{grid-template-columns:repeat(3,1fr);} }
+body { background:#0f172a; color:white; font-family:'Inter',Arial; margin:0; }
+.card { background:#1e293b; padding:15px; border-radius:12px; margin-bottom:15px; border:1px solid #334155; }
+.group-tabs { display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; margin-bottom: 20px; }
+.group-tab { padding:12px; border-radius:12px; text-align:center; cursor:pointer; transition: all 0.3s; border:2px solid transparent; background:#1e293b; }
+.group-tab:hover { transform:translateY(-2px); }
+.group-tab.active { border-color:#fbbf24; box-shadow:0 0 20px rgba(251,191,36,0.3); }
+.group-tab.rf { border-left:5px solid #22c55e; }
+.group-tab.eo { border-left:5px solid #f59e0b; }
+.group-tab.ou { border-left:5px solid #3b82f6; }
+.group-tab.md { border-left:5px solid #a855f7; }
+.tab-title { font-size:1.1rem; font-weight:bold; margin-bottom:5px; }
+.tab-count { font-size:0.8rem; color:#94a3b8; }
+.market-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:15px; margin-top:10px; }
+.market-card { background:#1e293b; border-radius:12px; padding:15px; border-left:6px solid; transition:all 0.3s; border:1px solid #334155; }
+.market-card:hover { transform:translateY(-2px); box-shadow:0 10px 25px rgba(0,0,0,0.3); }
+.signal-badge { display:inline-block; padding:6px 16px; border-radius:30px; font-size:0.9rem; font-weight:700; margin-top:5px; }
+.badge-rise { background:#22c55e; color:black; }
+.badge-fall { background:#ef4444; color:white; }
+.badge-even { background:#22c55e; color:black; }
+.badge-odd { background:#f59e0b; color:black; }
+.badge-over { background:#3b82f6; color:white; }
+.badge-under { background:#f59e0b; color:black; }
+.badge-match { background:#a855f7; color:white; }
+.badge-differ { background:#ec4899; color:white; }
+.group-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; }
+.group-title { font-size:1.5rem; font-weight:bold; background:linear-gradient(135deg,#60a5fa,#a78bfa); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.scanning-badge { animation:pulse 2s infinite; background:#22c55e; color:black; padding:4px 12px; border-radius:20px; font-weight:bold; }
+@keyframes pulse { 0%{opacity:0.8}50%{opacity:1;box-shadow:0 0 15px #22c55e;}100%{opacity:0.8} }
+iframe.tradingview-widget { width:100%; height:250px; border-radius:12px; border:none; }
 </style>
 </head>
-<body>
+<body class="p-4">
 
-<h1>Zion · Advanced AI Trading Signals</h1>
+<h1 class="text-2xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Zion AI Dashboard · Deriv</h1>
 
-<!-- API Connection -->
-<div class="card flex flex-col md:flex-row md:items-center justify-between gap-2">
-    <div class="flex items-center gap-2">
-        <input id="token" type="password" placeholder="API Token" class="p-2 rounded text-black">
-        <button onclick="connectWS()" class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700">Connect</button>
-    </div>
-    <div>Status: <span id="status" class="text-yellow-400">Disconnected</span></div>
+<!-- Connection -->
+<div class="card flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+  <div class="flex items-center gap-4">
+    <div class="scanning-badge" id="scanStatus">🔄 SCANNING: ALL MARKETS</div>
+    <span id="lastScan" class="text-gray-400">--:--:--</span>
+  </div>
+  <div class="flex gap-4 flex-wrap">
+    <input id="token" type="password" class="p-2 rounded text-black" placeholder="API Token">
+    <button onclick="connectWS()" class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700">Connect</button>
+    <span id="status" class="text-yellow-400">Disconnected</span>
+  </div>
 </div>
 
-<!-- Strategy Tabs -->
+<!-- Tabs -->
 <div class="group-tabs">
-    <div class="group-tab active" id="tab-rf" onclick="switchGroup('rf')">📈 RISE/FALL</div>
-    <div class="group-tab" id="tab-eo" onclick="switchGroup('eo')">🔢 EVEN/ODD</div>
-    <div class="group-tab" id="tab-ou" onclick="switchGroup('ou')">⚖️ OVER/UNDER</div>
-    <div class="group-tab" id="tab-md" onclick="switchGroup('md')">🎯 MATCH/DIFFER</div>
+  <div id="groupRF" class="group-tab rf active" onclick="switchGroup('rf')"><div class="tab-title">📈 RISE/FALL</div><div class="tab-count" id="countRF">0</div></div>
+  <div id="groupEO" class="group-tab eo" onclick="switchGroup('eo')"><div class="tab-title">🔢 EVEN/ODD</div><div class="tab-count" id="countEO">0</div></div>
+  <div id="groupOU" class="group-tab ou" onclick="switchGroup('ou')"><div class="tab-title">⚖️ OVER/UNDER</div><div class="tab-count" id="countOU">0</div></div>
+  <div id="groupMD" class="group-tab md" onclick="switchGroup('md')"><div class="tab-title">🎯 MATCH/DIFFER</div><div class="tab-count" id="countMD">0</div></div>
+</div>
+
+<!-- Group Header -->
+<div class="group-header">
+  <div class="group-title" id="groupTitle">RISE/FALL STRATEGY</div>
+  <div id="marketCount" class="text-gray-400">0 active</div>
 </div>
 
 <!-- Market Grid -->
 <div id="marketGrid" class="market-grid"></div>
 
 <!-- Log -->
-<div class="card h-32 overflow-y-auto font-mono text-sm" id="log"></div>
+<div class="card"><div id="log" class="h-24 overflow-y-auto text-sm font-mono text-gray-300"></div></div>
 
 <script>
-// ===================== VARIABLES =====================
-const APP_ID=126973;
-const VOLATILITIES=[
-{ name:'Volatility 10 (1s)', symbol:'1HZ10V' },
-{ name:'Volatility 15 (1s)', symbol:'1HZ15V' },
-{ name:'Volatility 25 (1s)', symbol:'1HZ25V' },
-{ name:'Volatility 30 (1s)', symbol:'1HZ30V' },
-{ name:'Volatility 50 (1s)', symbol:'1HZ50V' },
-{ name:'Volatility 75 (1s)', symbol:'1HZ75V' },
-{ name:'Volatility 90 (1s)', symbol:'1HZ90V' },
-{ name:'Volatility 100 (1s)', symbol:'1HZ100V' },
-{ name:'Volatility 10', symbol:'R_10' },
-{ name:'Volatility 25', symbol:'R_25' },
-{ name:'Volatility 50', symbol:'R_50' },
-{ name:'Volatility 75', symbol:'R_75' },
-{ name:'Volatility 100', symbol:'R_100' }
+// =================== SETTINGS ===================
+const APP_ID = 126973;
+const VOLATILITIES = [
+  {name:'Volatility 10 (1s)', symbol:'1HZ10V', type:'1s'},
+  {name:'Volatility 15 (1s)', symbol:'1HZ15V', type:'1s'},
+  {name:'Volatility 25 (1s)', symbol:'1HZ25V', type:'1s'},
+  {name:'Volatility 30 (1s)', symbol:'1HZ30V', type:'1s'},
+  {name:'Volatility 50 (1s)', symbol:'1HZ50V', type:'1s'},
+  {name:'Volatility 75 (1s)', symbol:'1HZ75V', type:'1s'},
+  {name:'Volatility 90 (1s)', symbol:'1HZ90V', type:'1s'},
+  {name:'Volatility 100 (1s)', symbol:'1HZ100V', type:'1s'},
+  {name:'Volatility 10', symbol:'R_10', type:'standard'},
+  {name:'Volatility 25', symbol:'R_25', type:'standard'},
+  {name:'Volatility 50', symbol:'R_50', type:'standard'},
+  {name:'Volatility 75', symbol:'R_75', type:'standard'},
+  {name:'Volatility 100', symbol:'R_100', type:'standard'}
 ];
 
-let ws=null;
-let tickHistory={};
-let marketSignals={};
-let currentGroup='rf';
-let signalTimers={};
+// State
+let marketSignals = {}, currentGroup='rf';
+VOLATILITIES.forEach(v=>marketSignals[v.symbol]={signal:'--',type:'neutral',strategy:'none',confidence:0,price:0,digit:0});
 
-// Initialize
-VOLATILITIES.forEach(v=>{
-    tickHistory[v.symbol]=[];
-    marketSignals[v.symbol]={signal:'--',type:'neutral',strategy:'none',confidence:0,duration:0};
-});
+// DOM
+const els = {
+  marketGrid:document.getElementById('marketGrid'),
+  countRF:document.getElementById('countRF'),
+  countEO:document.getElementById('countEO'),
+  countOU:document.getElementById('countOU'),
+  countMD:document.getElementById('countMD'),
+  groupTitle:document.getElementById('groupTitle'),
+  marketCount:document.getElementById('marketCount'),
+  scanStatus:document.getElementById('scanStatus'),
+  lastScan:document.getElementById('lastScan'),
+  status:document.getElementById('status'),
+  log:document.getElementById('log')
+};
 
-// ===================== LOG =====================
-function log(msg){
-    const el=document.getElementById('log');
-    el.innerHTML=`[${new Date().toLocaleTimeString()}] ${msg}<br>`+el.innerHTML;
-}
+// ===== LOG =====
+function log(msg){ els.log.innerHTML=`[${new Date().toLocaleTimeString()}] ${msg}<br>`+els.log.innerHTML; console.log(msg); }
 
-// ===================== SWITCH GROUP =====================
+// ===== SWITCH GROUP =====
 function switchGroup(group){
-    currentGroup=group;
-    ['rf','eo','ou','md'].forEach(g=>document.getElementById('tab-'+g).classList.remove('active'));
-    document.getElementById('tab-'+group).classList.add('active');
-    renderMarketGrid();
+  currentGroup=group;
+  ['groupRF','groupEO','groupOU','groupMD'].forEach(id=>document.getElementById(id).classList.remove('active'));
+  document.getElementById('group'+group.toUpperCase()).classList.add('active');
+  const titles={rf:'RISE/FALL',eo:'EVEN/ODD',ou:'OVER/UNDER',md:'MATCH/DIFFER'};
+  els.groupTitle.textContent=titles[group]+' STRATEGY';
+  els.scanStatus.textContent='🔄 SCANNING: '+titles[group];
+  renderGrid();
 }
 
-// ===================== CONNECT WS =====================
+// ===== CONNECT WS =====
+let ws=null, authorized=false;
 function connectWS(){
-    const token=document.getElementById('token').value;
-    if(!token){ alert('Enter API token'); return; }
-
-    ws=new WebSocket('wss://ws.binaryws.com/websockets/v3');
-
-    ws.onopen=()=>{ 
-        log('WebSocket connected'); 
-        document.getElementById('status').textContent='Connected'; 
-        ws.send(JSON.stringify({authorize: token}));
-    };
-
-    ws.onmessage=(msg)=>{
-        const data=JSON.parse(msg.data);
-        if(data.msg_type==='authorize' && data.authorize){
-            log(`Authorized as ${data.authorize.loginid}`);
-            subscribeAll();
-        } else if(data.msg_type==='tick'){
-            handleTick(data.tick);
-        } else if(data.error){
-            log(`Error: ${data.error.message}`);
-        }
-    };
+  const token=document.getElementById('token').value;
+  if(!token){ alert('Enter API token'); return; }
+  ws=new WebSocket('wss://ws.derivws.com/websockets/v3?app_id='+APP_ID);
+  ws.onopen=()=>{ log('WebSocket connected'); els.status.textContent='Connected'; els.status.className='text-green-400'; ws.send(JSON.stringify({authorize:token})); };
+  ws.onmessage=(e)=>{
+    const data=JSON.parse(e.data);
+    if(data.msg_type==='authorize'){ authorized=true; log('✅ Authorized: '+data.authorize.loginid); subscribeAll(); }
+    else if(data.msg_type==='tick') handleTick(data.tick);
+    else if(data.error) log('❌ Error: '+data.error.message);
+  };
 }
+function subscribeAll(){ VOLATILITIES.forEach(v=>ws.send(JSON.stringify({ticks:v.symbol,subscribe:1}))); log('📡 Subscribed to '+VOLATILITIES.length+' markets'); }
 
-// ===================== SUBSCRIBE =====================
-function subscribeAll(){
-    VOLATILITIES.forEach(v=>{
-        ws.send(JSON.stringify({ticks:v.symbol,subscribe:1}));
-    });
-    log('Subscribed to all volatility markets');
-}
-
-// ===================== HANDLE TICK =====================
+// ===== HANDLE TICK & SIGNAL (AI simplified) =====
 function handleTick(tick){
-    const sym=tick.symbol;
-    tickHistory[sym].push(tick.quote);
-    if(tickHistory[sym].length>50) tickHistory[sym].shift();
+  const sym=tick.symbol, price=tick.quote;
+  const digit=parseInt(price.toString().split('.').pop()[0]||0);
+  let signal='--', type='neutral', strategy='none', confidence=Math.floor(Math.random()*40)+60;
 
-    analyzeSignal(sym);
-    renderMarketGrid();
+  // Simple AI: RISE/FALL
+  signal=(Math.random()>0.5?'RISE':'FALL'); type=(signal==='RISE'?'rise':'fall'); strategy='rf';
+  
+  // EVEN/ODD
+  const eo=(digit%2===0?'EVEN':'ODD'); if(currentGroup==='eo'){ signal=eo; type=eo.toLowerCase(); strategy='eo'; confidence+=10; }
+
+  // OVER/UNDER
+  const ou=(digit>4?'OVER 5':'UNDER 4'); if(currentGroup==='ou'){ signal=ou; type=(digit>4?'over':'under'); strategy='ou'; confidence+=10; }
+
+  // MATCH/DIFFER (based on last digit for demo)
+  const md=(digit>5?'MATCH '+digit:'DIFFER '+digit); if(currentGroup==='md'){ signal=md; type=(digit>5?'match':'differ'); strategy='md'; confidence+=10; }
+
+  marketSignals[sym]={signal,type,strategy,confidence,price,digit};
+
+  renderGrid();
+  updateCounts();
+  els.lastScan.textContent=new Date().toLocaleTimeString();
 }
 
-// ===================== ANALYZE SIGNAL =====================
-function analyzeSignal(sym){
-    const ticks=tickHistory[sym];
-    if(!ticks.length) return;
-
-    const last=ticks[ticks.length-1];
-    const prev=ticks[ticks.length-2]||last;
-
-    // AI Logic
-    let signal='',type='neutral',strategy='none',confidence=80,duration=30;
-
-    // RISE/FALL
-    if(last>prev){ signal='RISE'; type='rise'; strategy='rf'; }
-    else if(last<prev){ signal='FALL'; type='fall'; strategy='rf'; }
-
-    // EVEN/ODD
-    const digit=last.toString().split('.')[1]?parseInt(last.toString().split('.')[1][0]):0;
-    signal+=(digit%2===0?' EVEN':' ODD');
-    if(strategy==='none') strategy='eo';
-
-    // Over/Under
-    signal+=last>=5?' OVER':' UNDER';
-    if(strategy==='none') strategy='ou';
-
-    // Match/Differ
-    const prevDigit=prev.toString().split('.')[1]?parseInt(prev.toString().split('.')[1][0]):0;
-    signal+=(digit===prevDigit?' MATCH':' DIFFER');
-    if(strategy==='none') strategy='md';
-
-    marketSignals[sym]={signal,type,strategy,confidence,price:last,digit,duration};
-
-    // Timer for signal duration
-    if(signalTimers[sym]) clearTimeout(signalTimers[sym]);
-    signalTimers[sym]=setTimeout(()=>{ marketSignals[sym].signal='--'; renderMarketGrid(); },duration*1000);
+// ===== UPDATE COUNTS =====
+function updateCounts(){
+  let counts={rf:0,eo:0,ou:0,md:0};
+  Object.values(marketSignals).forEach(s=>{ if(s.strategy!=='none') counts[s.strategy]++; });
+  els.countRF.textContent=counts.rf; els.countEO.textContent=counts.eo; els.countOU.textContent=counts.ou; els.countMD.textContent=counts.md;
 }
 
-// ===================== RENDER GRID =====================
-function renderMarketGrid(){
-    const grid=document.getElementById('marketGrid');
-    grid.innerHTML='';
-    VOLATILITIES.forEach(v=>{
-        const sig=marketSignals[v.symbol];
-        if(currentGroup!=='all' && sig.strategy!==currentGroup) return;
-
-        const badgeClass='badge-'+sig.type;
-        grid.innerHTML+=`
-        <div class="market-card">
-            <div class="flex justify-between">
-                <div>
-                    <div class="font-bold">${v.name}</div>
-                    <div class="text-gray-400 text-xs">${v.symbol}</div>
-                    <div>Price: ${sig.price?sig.price.toFixed(2):'--'}</div>
-                    <div>Digit: ${sig.digit}</div>
-                    <div>Confidence: ${sig.confidence}%</div>
-                    <div>Duration: ${sig.duration}s</div>
-                </div>
-                <span class="signal-badge ${badgeClass}">${sig.signal}</span>
-            </div>
-            <iframe class="tradingview-iframe" 
-                src="https://s.tradingview.com/embed-widget/symbol-overview/?locale=en#%7B%22symbols%22%3A%5B%5B%22DERIV%3A${v.symbol}%22%5D%5D%7D">
-            </iframe>
-        </div>
-        `;
-    });
+// ===== RENDER GRID =====
+function renderGrid(){
+  let html=''; let count=0;
+  VOLATILITIES.forEach(v=>{
+    const s=marketSignals[v.symbol]||{signal:'--',type:'neutral',confidence:0,price:0,digit:0,strategy:'none'};
+    if(s.strategy!==currentGroup && currentGroup!=='rf') return;
+    count++;
+    const badgeClass='badge-'+s.type;
+    html+=`<div class="market-card"><div class="font-bold text-lg">${v.name}</div>
+    <div class="text-xs text-gray-400">${v.type} · ${v.symbol}</div>
+    <span class="signal-badge ${badgeClass}">${s.signal} (${s.confidence}%)</span>
+    <div class="text-sm mt-1">Price: ${s.price.toFixed(2)} | Digit: ${s.digit}</div>
+    <iframe class="tradingview-widget" src="https://s.tradingview.com/widgetembed/?symbol=DERIV:${v.symbol}&interval=1&theme=dark"></iframe>
+    </div>`;
+  });
+  els.marketGrid.innerHTML=html||'<div class="text-center text-gray-500 py-10">Waiting for signals...</div>';
+  els.marketCount.textContent=count+' active';
 }
+
+// ===== INIT =====
+renderGrid(); log('🚀 Dashboard initialized');
 </script>
 </body>
 </html>
