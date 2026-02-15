@@ -1,798 +1,304 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Zion Professional Quant Engine · Top-Down Analysis</title>
-<script src="https://cdn.tailwindcss.com"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Synthetic Trading Terminal</title>
+<script src="https://s3.tradingview.com/tv.js"></script>
+
 <style>
-    body { background: #0f172a; color: white; font-family: 'Inter', Arial; }
-    .card { background: #1e293b; padding: 20px; border-radius: 12px; margin-bottom: 15px; }
-    
-    /* Quality indicators */
-    .quality-ultra { background: linear-gradient(135deg, #22c55e, #10b981); color: black; font-weight: bold; }
-    .quality-high { background: #22c55e; color: black; }
-    .quality-medium { background: #facc15; color: black; }
-    .quality-low { background: #ef4444; color: white; }
-    
-    .signal-card {
-        background: #1e293b;
-        border-left: 5px solid #22c55e;
-        padding: 20px;
-        border-radius: 12px;
-        margin-bottom: 15px;
-        transition: all 0.3s;
-    }
-    .signal-card.ultra {
-        border-left: 8px solid #fbbf24;
-        box-shadow: 0 0 30px rgba(251, 191, 36, 0.3);
-    }
-    
-    .digit-decay { opacity: 0.5; text-decoration: line-through; }
-    .digit-peak { font-weight: bold; color: #22c55e; transform: scale(1.2); }
-    .digit-exhaustion { color: #ef4444; animation: pulse 1s infinite; }
-    
-    @keyframes pulse { 0%{opacity:1} 50%{opacity:0.5} 100%{opacity:1} }
-    
-    .pattern-grid {
-        display: grid;
-        grid-template-columns: repeat(20, 1fr);
-        gap: 2px;
-        margin: 10px 0;
-    }
-    .pattern-candle {
-        height: 60px;
-        background: #334155;
-        position: relative;
-    }
-    .pattern-candle.up { background: #22c55e; }
-    .pattern-candle.down { background: #ef4444; }
-    
-    .metric { font-size: 0.8rem; color: #94a3b8; }
-    .value { font-size: 1.2rem; font-weight: bold; }
+body{
+    margin:0;
+    font-family:Arial, sans-serif;
+    background:#0f172a;
+    color:white;
+}
+
+header{
+    background:#111827;
+    padding:15px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    border-bottom:1px solid #1f2937;
+}
+
+h1{
+    font-size:18px;
+}
+
+select, input{
+    padding:6px;
+    background:#1f2937;
+    border:none;
+    color:white;
+}
+
+.container{
+    display:grid;
+    grid-template-columns: 2fr 1fr;
+    gap:15px;
+    padding:15px;
+}
+
+.card{
+    background:#111827;
+    border-radius:10px;
+    padding:15px;
+    box-shadow:0 5px 20px rgba(0,0,0,0.5);
+}
+
+button{
+    background:#2563eb;
+    border:none;
+    padding:10px;
+    color:white;
+    cursor:pointer;
+    border-radius:6px;
+    margin-top:5px;
+}
+
+button:hover{
+    background:#1d4ed8;
+}
+
+.chart-icons{
+    display:flex;
+    gap:15px;
+    margin-bottom:10px;
+}
+
+.icon{
+    background:#1f2937;
+    padding:10px;
+    border-radius:8px;
+    cursor:pointer;
+    text-align:center;
+    flex:1;
+}
+
+.icon:hover{
+    background:#374151;
+}
+
+.digit-grid{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:5px;
+}
+
+.digit-box{
+    background:#1f2937;
+    padding:8px;
+    text-align:center;
+    border-radius:6px;
+}
+
+.signal{
+    font-size:18px;
+    font-weight:bold;
+    margin-top:10px;
+}
+
+.green{color:#10b981;}
+.red{color:#ef4444;}
+.yellow{color:#facc15;}
+
+footer{
+    text-align:center;
+    padding:10px;
+    font-size:12px;
+    color:gray;
+}
 </style>
 </head>
-<body class="p-6">
 
-<h1 class="text-3xl font-bold mb-4">Zion Professional Quant Engine · Top-Down Analysis</h1>
+<body>
 
-<!-- API Connection -->
+<header>
+<h1>AI Synthetic Trading Terminal</h1>
+
+<div>
+Market:
+<select id="market">
+<option value="R_10">Volatility 10</option>
+<option value="R_25">Volatility 25</option>
+<option value="R_50">Volatility 50</option>
+<option value="R_75">Volatility 75</option>
+<option value="R_100">Volatility 100</option>
+</select>
+
+Stake: <input type="number" id="stake" value="1">
+Max Loss: <input type="number" id="maxLoss" value="5">
+</div>
+</header>
+
+<div class="container">
+
+<!-- LEFT SIDE -->
 <div class="card">
-    <div class="flex gap-4">
-        <input id="token" type="password" class="flex-1 text-black p-2 rounded" placeholder="Enter API Token">
-        <button onclick="connect()" class="bg-blue-600 px-6 py-2 rounded">Connect</button>
-        <span id="status" class="text-yellow-400 py-2">Disconnected</span>
-    </div>
+
+<div class="chart-icons">
+<div class="icon" onclick="openDeriv()">📊 Open Deriv Chart</div>
+<div class="icon" onclick="openTrader()">🔢 Digit Trader</div>
 </div>
 
-<!-- Market Overview -->
-<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-    <div class="card">
-        <div class="metric">Market Structure</div>
-        <div id="marketStructure" class="value text-blue-400">ANALYZING</div>
-        <div class="metric mt-2">Trend Strength</div>
-        <div class="w-full bg-gray-700 h-2 rounded">
-            <div id="trendStrength" class="bg-green-500 h-2 rounded" style="width:0%"></div>
-        </div>
-    </div>
-    <div class="card">
-        <div class="metric">Digit Momentum</div>
-        <div id="digitMomentum" class="value text-yellow-400">--</div>
-        <div class="metric mt-2">Decay Rate</div>
-        <div id="decayRate" class="value text-orange-400">--</div>
-    </div>
-    <div class="card">
-        <div class="metric">Exhaustion Level</div>
-        <div id="exhaustion" class="value text-red-400">--</div>
-        <div class="metric mt-2">Reversal Probability</div>
-        <div id="reversalProb" class="value text-purple-400">--</div>
-    </div>
-    <div class="card">
-        <div class="metric">Overall Quality</div>
-        <div id="overallQuality" class="value text-green-400">WAITING</div>
-        <div class="metric mt-2">Confidence</div>
-        <div id="overallConfidence" class="value">--</div>
-    </div>
+<div id="tv_chart" style="height:450px;"></div>
+
 </div>
 
-<!-- Active Ultra-High Quality Signal (Only shows when >90% confidence) -->
-<div id="ultraSignal" class="signal-card ultra hidden">
-    <div class="flex justify-between items-center">
-        <div>
-            <span class="bg-yellow-500 text-black px-3 py-1 rounded-full text-sm font-bold">⭐ ULTRA HIGH QUALITY ⭐</span>
-            <span class="ml-2 text-gray-400" id="ultraTime">30s window</span>
-        </div>
-        <div class="text-4xl font-bold" id="ultraQuality">95%</div>
-    </div>
-    
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
-        <div>
-            <div class="text-3xl font-bold" id="ultraSignal">--</div>
-            <div class="text-xl" id="ultraMarket">--</div>
-        </div>
-        <div>
-            <div class="metric">Entry</div>
-            <div class="text-2xl font-mono" id="ultraPrice">--</div>
-            <div class="metric mt-2">Target Digit</div>
-            <div class="text-2xl font-bold text-yellow-400" id="ultraDigit">-</div>
-        </div>
-        <div>
-            <div class="metric">Top-Down Confirmation</div>
-            <div id="ultraConfirmation" class="text-green-400">✅ 30s ✅ 2min ✅ 5min</div>
-            <div class="metric mt-2">Digit Health</div>
-            <div id="ultraHealth" class="text-green-400">Peak | No Decay</div>
-        </div>
-    </div>
-    
-    <button id="ultraTradeBtn" onclick="executeUltraTrade()" class="w-full bg-gradient-to-r from-yellow-500 to-amber-500 text-black font-bold py-4 rounded-xl text-xl mt-4">
-        ⚡ EXECUTE ULTRA SIGNAL ⚡
-    </button>
-</div>
-
-<!-- Multi-Timeframe Analysis -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-    <div class="card">
-        <h3 class="font-bold mb-2">30-Second View (Micro)</h3>
-        <div id="microPattern" class="pattern-grid"></div>
-        <div class="grid grid-cols-4 gap-2 mt-2 text-center">
-            <div><span class="metric">Trend</span><br><span id="microTrend" class="text-sm">--</span></div>
-            <div><span class="metric">Digits</span><br><span id="microDigits" class="text-sm">--</span></div>
-            <div><span class="metric">Momentum</span><br><span id="microMomentum" class="text-sm">--</span></div>
-            <div><span class="metric">Quality</span><br><span id="microQuality" class="text-sm">--</span></div>
-        </div>
-    </div>
-    
-    <div class="card">
-        <h3 class="font-bold mb-2">2-Minute View (Meso)</h3>
-        <div id="mesoPattern" class="pattern-grid"></div>
-        <div class="grid grid-cols-4 gap-2 mt-2 text-center">
-            <div><span class="metric">Trend</span><br><span id="mesoTrend" class="text-sm">--</span></div>
-            <div><span class="metric">Digits</span><br><span id="mesoDigits" class="text-sm">--</span></div>
-            <div><span class="metric">Momentum</span><br><span id="mesoMomentum" class="text-sm">--</span></div>
-            <div><span class="metric">Quality</span><br><span id="mesoQuality" class="text-sm">--</span></div>
-        </div>
-    </div>
-    
-    <div class="card">
-        <h3 class="font-bold mb-2">5-Minute View (Macro)</h3>
-        <div id="macroPattern" class="pattern-grid"></div>
-        <div class="grid grid-cols-4 gap-2 mt-2 text-center">
-            <div><span class="metric">Trend</span><br><span id="macroTrend" class="text-sm">--</span></div>
-            <div><span class="metric">Digits</span><br><span id="macroDigits" class="text-sm">--</span></div>
-            <div><span class="metric">Momentum</span><br><span id="macroMomentum" class="text-sm">--</span></div>
-            <div><span class="metric">Quality</span><br><span id="macroQuality" class="text-sm">--</span></div>
-        </div>
-    </div>
-</div>
-
-<!-- All Volatilities with Quality Scores -->
+<!-- RIGHT SIDE -->
 <div class="card">
-    <h3 class="text-xl font-bold mb-4">📊 All Volatilities · Quality Analysis</h3>
-    <div class="overflow-x-auto">
-        <table class="w-full">
-            <thead>
-                <tr class="text-left text-gray-400">
-                    <th>Market</th>
-                    <th>Signal</th>
-                    <th>Direction</th>
-                    <th>Quality</th>
-                    <th>Digit Health</th>
-                    <th>Momentum</th>
-                    <th>Exhaustion</th>
-                    <th>Confidence</th>
-                </tr>
-            </thead>
-            <tbody id="qualityTable">
-                <!-- Populated by JS -->
-            </tbody>
-        </table>
-    </div>
+
+<h3>Digit Analyzer</h3>
+<h2 id="lastDigit">-</h2>
+
+<div class="digit-grid" id="digitGrid"></div>
+
+<div class="signal" id="evenOddSignal">Even/Odd: -</div>
+<div class="signal" id="overUnderSignal">Over/Under: -</div>
+
+<hr>
+
+<h3>Risk Control</h3>
+<div>Loss Count: <span id="lossCount">0</span></div>
+<div>Total Loss: <span id="totalLoss">0</span></div>
+
+<button onclick="resetStats()">Reset</button>
+
+</div>
 </div>
 
-<!-- Digit Health Monitor -->
-<div class="card">
-    <h3 class="text-xl font-bold mb-4">🔍 Digit Health Analysis</h3>
-    <div class="grid grid-cols-10 gap-2 text-center mb-4">
-        <div><span class="metric">0</span><br><span id="digit0" class="text-lg">--</span></div>
-        <div><span class="metric">1</span><br><span id="digit1" class="text-lg">--</span></div>
-        <div><span class="metric">2</span><br><span id="digit2" class="text-lg">--</span></div>
-        <div><span class="metric">3</span><br><span id="digit3" class="text-lg">--</span></div>
-        <div><span class="metric">4</span><br><span id="digit4" class="text-lg">--</span></div>
-        <div><span class="metric">5</span><br><span id="digit5" class="text-lg">--</span></div>
-        <div><span class="metric">6</span><br><span id="digit6" class="text-lg">--</span></div>
-        <div><span class="metric">7</span><br><span id="digit7" class="text-lg">--</span></div>
-        <div><span class="metric">8</span><br><span id="digit8" class="text-lg">--</span></div>
-        <div><span class="metric">9</span><br><span id="digit9" class="text-lg">--</span></div>
-    </div>
-    <div class="flex gap-4 text-sm">
-        <div><span class="metric">Peak Digit:</span> <span id="peakDigit" class="text-green-400">--</span></div>
-        <div><span class="metric">Decaying Digits:</span> <span id="decayDigits" class="text-red-400">--</span></div>
-        <div><span class="metric">Exhaustion:</span> <span id="exhaustionDigits" class="text-orange-400">--</span></div>
-    </div>
-</div>
-
-<!-- Log -->
-<div class="card">
-    <div class="text-sm text-gray-400 mb-2">Analysis Log</div>
-    <div id="log" class="text-sm font-mono h-20 overflow-y-auto"></div>
-</div>
+<footer>
+Professional Synthetic Index Terminal
+</footer>
 
 <script>
-// =====================================================================
-// ZION PROFESSIONAL QUANT ENGINE - TOP-DOWN ANALYSIS
-// =====================================================================
-
-class ProfessionalAnalyzer {
-    constructor() {
-        this.timeframes = {
-            micro: { ticks: 30, name: '30s' },
-            meso: { ticks: 120, name: '2min' },
-            macro: { ticks: 300, name: '5min' }
-        };
-        
-        this.digitHistory = [];
-        this.priceHistory = [];
-        this.timeframeData = {};
-        this.ultraSignal = null;
-    }
-    
-    // ===== TOP-DOWN ANALYSIS =====
-    analyzeTopDown(ticks) {
-        if (ticks.length < 300) return null;
-        
-        // Analyze each timeframe
-        const micro = this.analyzeTimeframe(ticks.slice(-30), 'micro');
-        const meso = this.analyzeTimeframe(ticks.slice(-120), 'meso');
-        const macro = this.analyzeTimeframe(ticks.slice(-300), 'macro');
-        
-        // Check for alignment (top-down confirmation)
-        const alignment = this.checkAlignment(micro, meso, macro);
-        
-        // Analyze digit health
-        const digitHealth = this.analyzeDigitHealth(ticks);
-        
-        // Check for exhaustion
-        const exhaustion = this.detectExhaustion(ticks);
-        
-        // Calculate overall quality score (0-100)
-        const quality = this.calculateQuality(micro, meso, macro, alignment, digitHealth, exhaustion);
-        
-        // Generate signal only if ultra-high quality
-        const signal = quality >= 90 ? this.generateSignal(micro, digitHealth) : null;
-        
-        return {
-            micro,
-            meso,
-            macro,
-            alignment,
-            digitHealth,
-            exhaustion,
-            quality,
-            signal,
-            timestamp: Date.now()
-        };
-    }
-    
-    // ===== TIMEFRAME ANALYSIS =====
-    analyzeTimeframe(ticks, timeframe) {
-        const prices = ticks.map(t => t.price);
-        const digits = ticks.map(t => t.digit);
-        
-        // Trend calculation
-        const startPrice = prices[0];
-        const endPrice = prices[prices.length - 1];
-        const trend = endPrice > startPrice ? 'RISE' : 'FALL';
-        const trendStrength = Math.abs(endPrice - startPrice) / startPrice * 100;
-        
-        // Digit analysis
-        const digitCounts = Array(10).fill(0);
-        digits.forEach(d => digitCounts[d]++);
-        const dominantDigit = digitCounts.indexOf(Math.max(...digitCounts));
-        const dominance = Math.max(...digitCounts) / digits.length * 100;
-        
-        // Momentum calculation
-        let momentum = 0;
-        for (let i = 1; i < prices.length; i++) {
-            momentum += prices[i] > prices[i-1] ? 1 : -1;
-        }
-        momentum = (momentum / prices.length) * 100;
-        
-        // Quality score for this timeframe
-        const quality = this.calculateTimeframeQuality(trendStrength, dominance, momentum);
-        
-        return {
-            timeframe,
-            trend,
-            trendStrength,
-            dominantDigit,
-            dominance,
-            momentum,
-            quality
-        };
-    }
-    
-    // ===== DIGIT HEALTH ANALYSIS =====
-    analyzeDigitHealth(ticks) {
-        const digits = ticks.map(t => t.digit);
-        const digitCounts = Array(10).fill(0);
-        digits.forEach(d => digitCounts[d]++);
-        
-        // Calculate moving averages for decay detection
-        const recent = digits.slice(-50);
-        const older = digits.slice(-100, -50);
-        
-        const recentCounts = Array(10).fill(0);
-        const olderCounts = Array(10).fill(0);
-        
-        recent.forEach(d => recentCounts[d]++);
-        older.forEach(d => olderCounts[d]++);
-        
-        // Detect decaying digits (frequency dropping)
-        const decaying = [];
-        const peaking = [];
-        const exhausted = [];
-        
-        for (let i = 0; i < 10; i++) {
-            const recentPct = (recentCounts[i] / recent.length) * 100;
-            const olderPct = (olderCounts[i] / older.length) * 100;
-            const change = recentPct - olderPct;
-            
-            if (change < -5) {
-                decaying.push({ digit: i, change });
-            } else if (change > 10) {
-                peaking.push({ digit: i, change });
-            }
-            
-            // Exhaustion = high frequency then sharp drop
-            if (olderPct > 15 && change < -10) {
-                exhausted.push(i);
-            }
-        }
-        
-        // Find peak digit (highest recent frequency)
-        const peakDigit = recentCounts.indexOf(Math.max(...recentCounts));
-        const peakStrength = (Math.max(...recentCounts) / recent.length) * 100;
-        
-        return {
-            decaying,
-            peaking,
-            exhausted,
-            peakDigit,
-            peakStrength,
-            recentCounts,
-            olderCounts
-        };
-    }
-    
-    // ===== EXHAUSTION DETECTION =====
-    detectExhaustion(ticks) {
-        const prices = ticks.map(t => t.price);
-        const digits = ticks.map(t => t.digit);
-        
-        // Look for trend exhaustion patterns
-        let exhaustionScore = 0;
-        
-        // 1. Decreasing momentum
-        let momentum = 0;
-        for (let i = 1; i < prices.length; i++) {
-            momentum += prices[i] > prices[i-1] ? 1 : -1;
-        }
-        const momentumPct = (momentum / prices.length) * 100;
-        
-        if (Math.abs(momentumPct) < 10) exhaustionScore += 30;
-        
-        // 2. Digit concentration dropping
-        const digitCounts = Array(10).fill(0);
-        digits.slice(-30).forEach(d => digitCounts[d]++);
-        const maxConcentration = Math.max(...digitCounts) / 30 * 100;
-        
-        if (maxConcentration < 15) exhaustionScore += 40;
-        
-        // 3. Range contraction (volatility drop)
-        const recentPrices = prices.slice(-30);
-        const volatility = Math.max(...recentPrices) - Math.min(...recentPrices);
-        const olderPrices = prices.slice(-60, -30);
-        const olderVolatility = Math.max(...olderPrices) - Math.min(...olderPrices);
-        
-        if (volatility < olderVolatility * 0.7) exhaustionScore += 30;
-        
-        return {
-            score: exhaustionScore,
-            level: exhaustionScore > 70 ? 'HIGH' : exhaustionScore > 40 ? 'MEDIUM' : 'LOW',
-            exhausted: exhaustionScore > 70
-        };
-    }
-    
-    // ===== CHECK TIMEFRAME ALIGNMENT =====
-    checkAlignment(micro, meso, macro) {
-        if (!micro || !meso || !macro) return false;
-        
-        // All timeframes agree on direction
-        const directionAgreement = micro.trend === meso.trend && meso.trend === macro.trend;
-        
-        // Strong trends in all timeframes
-        const strengthAgreement = micro.trendStrength > 0.1 && 
-                                  meso.trendStrength > 0.1 && 
-                                  macro.trendStrength > 0.1;
-        
-        // Digit alignment
-        const digitAgreement = micro.dominantDigit === meso.dominantDigit;
-        
-        return {
-            aligned: directionAgreement && strengthAgreement && digitAgreement,
-            directionAgreement,
-            strengthAgreement,
-            digitAgreement
-        };
-    }
-    
-    // ===== CALCULATE QUALITY SCORE =====
-    calculateQuality(micro, meso, macro, alignment, digitHealth, exhaustion) {
-        let score = 0;
-        
-        // Timeframe quality (max 30)
-        if (micro) score += micro.quality * 0.3;
-        if (meso) score += meso.quality * 0.3;
-        if (macro) score += macro.quality * 0.4;
-        
-        // Alignment bonus (max 30)
-        if (alignment.aligned) score += 30;
-        else if (alignment.directionAgreement) score += 15;
-        
-        // Digit health (max 20)
-        if (digitHealth.peaking.length > 0) score += 10;
-        if (digitHealth.peakStrength > 20) score += 10;
-        if (digitHealth.decaying.length === 0) score += 5;
-        
-        // No exhaustion penalty
-        if (!exhaustion.exhausted) score += 15;
-        else score -= 30;
-        
-        return Math.min(100, Math.max(0, Math.round(score)));
-    }
-    
-    // ===== TIMEFRAME QUALITY =====
-    calculateTimeframeQuality(trendStrength, dominance, momentum) {
-        let score = 0;
-        
-        // Trend strength (0-40)
-        score += Math.min(40, trendStrength * 20);
-        
-        // Digit dominance (0-30)
-        score += Math.min(30, dominance * 1.5);
-        
-        // Momentum consistency (0-30)
-        score += Math.min(30, Math.abs(momentum));
-        
-        return Math.min(100, score);
-    }
-    
-    // ===== GENERATE SIGNAL (only for ultra-high quality) =====
-    generateSignal(micro, digitHealth) {
-        if (!micro) return null;
-        
-        // Use peak digit for precise signals
-        const targetDigit = digitHealth.peakDigit;
-        const direction = micro.trend;
-        
-        // Determine best signal type based on conditions
-        let signal = '';
-        
-        if (digitHealth.peakStrength > 25) {
-            signal = `MATCH ${targetDigit}`;
-        } else if (digitHealth.peaking.length > 0) {
-            signal = direction === 'RISE' ? 'RISE' : 'FALL';
-        } else {
-            signal = targetDigit % 2 === 0 ? 'EVEN' : 'ODD';
-        }
-        
-        return {
-            signal,
-            direction,
-            targetDigit,
-            peakStrength: digitHealth.peakStrength
-        };
-    }
-}
-
-// =====================================================================
-// MAIN APPLICATION
-// =====================================================================
-
-const analyzer = new ProfessionalAnalyzer();
+let digitFrequency = Array(10).fill(0);
 let tickHistory = [];
-let analysisResult = null;
+let lossCount = 0;
+let totalLoss = 0;
+let ws;
 
-// DOM Elements
-const els = {
-    status: document.getElementById('status'),
-    marketStructure: document.getElementById('marketStructure'),
-    trendStrength: document.getElementById('trendStrength'),
-    digitMomentum: document.getElementById('digitMomentum'),
-    decayRate: document.getElementById('decayRate'),
-    exhaustion: document.getElementById('exhaustion'),
-    reversalProb: document.getElementById('reversalProb'),
-    overallQuality: document.getElementById('overallQuality'),
-    overallConfidence: document.getElementById('overallConfidence'),
-    
-    ultraSignal: document.getElementById('ultraSignal'),
-    ultraQuality: document.getElementById('ultraQuality'),
-    ultraMarket: document.getElementById('ultraMarket'),
-    ultraPrice: document.getElementById('ultraPrice'),
-    ultraDigit: document.getElementById('ultraDigit'),
-    ultraConfirmation: document.getElementById('ultraConfirmation'),
-    ultraHealth: document.getElementById('ultraHealth'),
-    ultraTradeBtn: document.getElementById('ultraTradeBtn'),
-    ultraSignalDiv: document.getElementById('ultraSignal'),
-    
-    microPattern: document.getElementById('microPattern'),
-    mesoPattern: document.getElementById('mesoPattern'),
-    macroPattern: document.getElementById('macroPattern'),
-    
-    microTrend: document.getElementById('microTrend'),
-    mesoTrend: document.getElementById('mesoTrend'),
-    macroTrend: document.getElementById('macroTrend'),
-    
-    microDigits: document.getElementById('microDigits'),
-    mesoDigits: document.getElementById('mesoDigits'),
-    macroDigits: document.getElementById('macroDigits'),
-    
-    microMomentum: document.getElementById('microMomentum'),
-    mesoMomentum: document.getElementById('mesoMomentum'),
-    macroMomentum: document.getElementById('macroMomentum'),
-    
-    microQuality: document.getElementById('microQuality'),
-    mesoQuality: document.getElementById('mesoQuality'),
-    macroQuality: document.getElementById('macroQuality'),
-    
-    qualityTable: document.getElementById('qualityTable'),
-    log: document.getElementById('log'),
-    
-    digit0: document.getElementById('digit0'),
-    digit1: document.getElementById('digit1'),
-    digit2: document.getElementById('digit2'),
-    digit3: document.getElementById('digit3'),
-    digit4: document.getElementById('digit4'),
-    digit5: document.getElementById('digit5'),
-    digit6: document.getElementById('digit6'),
-    digit7: document.getElementById('digit7'),
-    digit8: document.getElementById('digit8'),
-    digit9: document.getElementById('digit9'),
-    
-    peakDigit: document.getElementById('peakDigit'),
-    decayDigits: document.getElementById('decayDigits'),
-    exhaustionDigits: document.getElementById('exhaustionDigits')
-};
-
-function log(msg) {
-    console.log(msg);
-    if (els.log) {
-        els.log.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}<br>` + els.log.innerHTML;
-    }
-}
-
-// ===== DEMO DATA GENERATION =====
-function startDemo() {
-    log('🎮 Starting professional analysis demo');
-    
-    setInterval(() => {
-        // Generate realistic price data with trends
-        const lastPrice = tickHistory.length > 0 ? tickHistory[tickHistory.length - 1].price : 30000;
-        const trend = Math.random() > 0.7 ? (Math.random() * 10) : (Math.random() - 0.5) * 3;
-        const price = Math.max(1000, lastPrice + trend);
-        const digit = Math.floor(Math.random() * 10);
-        
-        tickHistory.push({ price, digit, time: Date.now() });
-        if (tickHistory.length > 500) tickHistory.shift();
-        
-        analyzeAndDisplay();
-    }, 1000);
-}
-
-// ===== ANALYZE AND DISPLAY =====
-function analyzeAndDisplay() {
-    if (tickHistory.length < 300) return;
-    
-    analysisResult = analyzer.analyzeTopDown(tickHistory);
-    if (!analysisResult) return;
-    
-    updateTimeframeDisplays();
-    updateDigitHealth();
-    updateQualityTable();
-    updateUltraSignal();
-}
-
-// ===== UPDATE TIMEFRAME DISPLAYS =====
-function updateTimeframeDisplays() {
-    if (!analysisResult) return;
-    
-    const { micro, meso, macro } = analysisResult;
-    
-    // Update micro (30s)
-    if (micro) {
-        els.microTrend.textContent = micro.trend;
-        els.microTrend.className = micro.trend === 'RISE' ? 'text-sm text-green-400' : 'text-sm text-red-400';
-        els.microDigits.textContent = `${micro.dominantDigit} (${micro.dominance.toFixed(1)}%)`;
-        els.microMomentum.textContent = micro.momentum.toFixed(1) + '%';
-        els.microQuality.textContent = micro.quality.toFixed(0) + '%';
-        
-        // Pattern grid
-        let html = '';
-        for (let i = 0; i < 20; i++) {
-            const candleClass = i % 2 === 0 ? 'up' : 'down';
-            html += `<div class="pattern-candle ${candleClass}" style="height: ${20 + Math.random() * 40}px"></div>`;
-        }
-        els.microPattern.innerHTML = html;
-    }
-    
-    // Update meso (2min)
-    if (meso) {
-        els.mesoTrend.textContent = meso.trend;
-        els.mesoTrend.className = meso.trend === 'RISE' ? 'text-sm text-green-400' : 'text-sm text-red-400';
-        els.mesoDigits.textContent = `${meso.dominantDigit} (${meso.dominance.toFixed(1)}%)`;
-        els.mesoMomentum.textContent = meso.momentum.toFixed(1) + '%';
-        els.mesoQuality.textContent = meso.quality.toFixed(0) + '%';
-    }
-    
-    // Update macro (5min)
-    if (macro) {
-        els.macroTrend.textContent = macro.trend;
-        els.macroTrend.className = macro.trend === 'RISE' ? 'text-sm text-green-400' : 'text-sm text-red-400';
-        els.macroDigits.textContent = `${macro.dominantDigit} (${macro.dominance.toFixed(1)}%)`;
-        els.macroMomentum.textContent = macro.momentum.toFixed(1) + '%';
-        els.macroQuality.textContent = macro.quality.toFixed(0) + '%';
-    }
-    
-    // Update overall metrics
-    els.marketStructure.textContent = analysisResult.alignment.aligned ? 'ALIGNED' : 'MIXED';
-    els.trendStrength.style.width = `${micro.trendStrength * 10}%`;
-    els.digitMomentum.textContent = `${analysisResult.digitHealth.peakStrength.toFixed(1)}%`;
-    els.decayRate.textContent = `${analysisResult.digitHealth.decaying.length} digits`;
-    els.exhaustion.textContent = analysisResult.exhaustion.level;
-    els.reversalProb.textContent = analysisResult.exhaustion.score + '%';
-    els.overallQuality.textContent = analysisResult.quality + '%';
-    els.overallConfidence.textContent = analysisResult.quality + '%';
-}
-
-// ===== UPDATE DIGIT HEALTH =====
-function updateDigitHealth() {
-    if (!analysisResult) return;
-    
-    const health = analysisResult.digitHealth;
-    const recent = health.recentCounts;
-    const total = recent.reduce((a, b) => a + b, 0);
-    
-    // Update each digit
-    for (let i = 0; i < 10; i++) {
-        const pct = (recent[i] / total * 100).toFixed(1);
-        const el = els[`digit${i}`];
-        if (el) {
-            el.textContent = pct + '%';
-            
-            // Style based on health
-            if (health.peaking.some(p => p.digit === i)) {
-                el.className = 'text-lg text-green-400 font-bold';
-            } else if (health.decaying.some(d => d.digit === i)) {
-                el.className = 'text-lg text-red-400 digit-decay';
-            } else if (health.exhausted.includes(i)) {
-                el.className = 'text-lg text-orange-400 digit-exhaustion';
-            } else {
-                el.className = 'text-lg';
-            }
-        }
-    }
-    
-    // Update peak/decay/exhaustion info
-    els.peakDigit.textContent = `${health.peakDigit} (${health.peakStrength.toFixed(1)}%)`;
-    els.decayDigits.textContent = health.decaying.map(d => d.digit).join(', ') || 'None';
-    els.exhaustionDigits.textContent = health.exhausted.join(', ') || 'None';
-}
-
-// ===== UPDATE QUALITY TABLE =====
-function updateQualityTable() {
-    if (!analysisResult) return;
-    
-    const markets = [
-        { name: 'Volatility 100 (1s)', signal: analysisResult.signal?.signal || '--', 
-          direction: analysisResult.micro.trend, quality: analysisResult.quality,
-          health: analysisResult.digitHealth.peaking.length > 0 ? 'Peak' : 'Normal',
-          momentum: analysisResult.micro.momentum.toFixed(1) + '%',
-          exhaustion: analysisResult.exhaustion.level,
-          confidence: analysisResult.quality + '%' }
-    ];
-    
-    let html = '';
-    markets.forEach(m => {
-        const qualityClass = m.quality >= 90 ? 'quality-ultra' : 
-                            m.quality >= 75 ? 'quality-high' :
-                            m.quality >= 50 ? 'quality-medium' : 'quality-low';
-        
-        html += `<tr class="border-b border-gray-700">
-            <td class="py-2">${m.name}</td>
-            <td class="py-2 font-bold">${m.signal}</td>
-            <td class="py-2 ${m.direction === 'RISE' ? 'text-green-400' : 'text-red-400'}">${m.direction}</td>
-            <td class="py-2"><span class="px-2 py-1 rounded ${qualityClass}">${m.quality}%</span></td>
-            <td class="py-2">${m.health}</td>
-            <td class="py-2">${m.momentum}</td>
-            <td class="py-2 ${m.exhaustion === 'HIGH' ? 'text-red-400' : 'text-yellow-400'}">${m.exhaustion}</td>
-            <td class="py-2 text-green-400">${m.confidence}</td>
-        </tr>`;
+// Initialize TradingView
+function loadChart(symbol){
+    document.getElementById("tv_chart").innerHTML="";
+    new TradingView.widget({
+        container_id:"tv_chart",
+        width:"100%",
+        height:450,
+        symbol:symbol,
+        interval:"1",
+        timezone:"Etc/UTC",
+        theme:"dark",
+        style:"1",
+        locale:"en",
+        toolbar_bg:"#111827",
+        enable_publishing:false
     });
-    
-    els.qualityTable.innerHTML = html;
 }
 
-// ===== UPDATE ULTRA SIGNAL =====
-function updateUltraSignal() {
-    if (!analysisResult || analysisResult.quality < 90 || !analysisResult.signal) {
-        els.ultraSignalDiv.classList.add('hidden');
-        return;
+loadChart("R_100");
+
+// Open Deriv external
+function openDeriv(){
+    window.open("https://app.deriv.com/charts","_blank");
+}
+
+function openTrader(){
+    window.open("https://app.deriv.com/trader","_blank");
+}
+
+// Connect WebSocket
+function connect(){
+    if(ws) ws.close();
+
+    ws = new WebSocket("wss://ws.derivws.com/websockets/v3?app_id=1089");
+
+    ws.onopen = () => {
+        ws.send(JSON.stringify({
+            ticks: document.getElementById("market").value
+        }));
+    };
+
+    ws.onmessage = (msg)=>{
+        const data = JSON.parse(msg.data);
+        if(data.tick){
+            let price = data.tick.quote.toString();
+            let lastDigit = parseInt(price.slice(-1));
+            processDigit(lastDigit);
+        }
+    };
+}
+
+function processDigit(digit){
+    document.getElementById("lastDigit").innerText=digit;
+
+    digitFrequency[digit]++;
+    tickHistory.push(digit);
+    if(tickHistory.length>100) tickHistory.shift();
+
+    updateGrid();
+    generateSignals();
+}
+
+function updateGrid(){
+    let grid="";
+    for(let i=0;i<10;i++){
+        grid += `<div class="digit-box">${i}: ${digitFrequency[i]}</div>`;
     }
-    
-    const signal = analysisResult.signal;
-    const ultraDiv = document.getElementById('ultraSignal');
-    
-    els.ultraSignalDiv.classList.remove('hidden');
-    els.ultraQuality.textContent = analysisResult.quality + '%';
-    els.ultraSignal.textContent = signal.signal;
-    els.ultraMarket.textContent = 'Volatility 100 (1s) Index';
-    els.ultraPrice.textContent = tickHistory[tickHistory.length - 1]?.price.toFixed(2) || '--';
-    els.ultraDigit.textContent = signal.targetDigit;
-    
-    // Top-down confirmation
-    const alignment = analysisResult.alignment;
-    if (alignment.aligned) {
-        els.ultraConfirmation.innerHTML = '✅ 30s ✅ 2min ✅ 5min';
-    } else {
-        els.ultraConfirmation.innerHTML = '⚠️ Partial alignment';
+    document.getElementById("digitGrid").innerHTML=grid;
+}
+
+function generateSignals(){
+
+    let even = 0;
+    let odd = 0;
+
+    tickHistory.forEach(d=>{
+        if(d%2==0) even++;
+        else odd++;
+    });
+
+    if(even > odd){
+        document.getElementById("evenOddSignal").innerHTML=
+        "Even Bias: <span class='green'>BUY EVEN</span>";
+    }else{
+        document.getElementById("evenOddSignal").innerHTML=
+        "Odd Bias: <span class='green'>BUY ODD</span>";
     }
-    
-    // Digit health
-    if (analysisResult.digitHealth.peaking.length > 0) {
-        els.ultraHealth.innerHTML = '✅ Peak | No Decay';
-    } else {
-        els.ultraHealth.innerHTML = '⚠️ Normal';
+
+    let high=0, low=0;
+    tickHistory.forEach(d=>{
+        if(d>=5) high++;
+        else low++;
+    });
+
+    if(high>low){
+        document.getElementById("overUnderSignal").innerHTML=
+        "Over 5 Bias: <span class='yellow'>BUY OVER</span>";
+    }else{
+        document.getElementById("overUnderSignal").innerHTML=
+        "Under 5 Bias: <span class='yellow'>BUY UNDER</span>";
     }
-    
-    log(`🔥 ULTRA SIGNAL: ${signal.signal} | ${analysisResult.quality}% confidence`);
 }
 
-// ===== EXECUTE ULTRA TRADE =====
-function executeUltraTrade() {
-    if (!analysisResult || analysisResult.quality < 90) return;
-    
-    alert(`✅ ULTRA HIGH QUALITY SIGNAL\n\n` +
-          `Signal: ${analysisResult.signal.signal}\n` +
-          `Confidence: ${analysisResult.quality}%\n` +
-          `Market: Volatility 100 (1s)\n` +
-          `Entry: ${tickHistory[tickHistory.length - 1]?.price.toFixed(2)}\n\n` +
-          `Top-Down: ✅ Confirmed\n` +
-          `Digit Health: ✅ Peak\n` +
-          `Exhaustion: ✅ None`);
-    
-    log(`🚀 EXECUTING ULTRA TRADE: ${analysisResult.signal.signal}`);
+function resetStats(){
+    digitFrequency = Array(10).fill(0);
+    tickHistory=[];
+    lossCount=0;
+    totalLoss=0;
+    document.getElementById("lossCount").innerText=0;
+    document.getElementById("totalLoss").innerText=0;
 }
 
-// ===== CONNECT =====
-function connect() {
-    const token = document.getElementById('token').value;
-    if (token) {
-        log('🔌 Connecting with token...');
-        // Add real WebSocket connection here
-    }
-    
-    // Start demo for now
-    startDemo();
-}
+document.getElementById("market").addEventListener("change",()=>{
+    loadChart(document.getElementById("market").value);
+    connect();
+});
 
-// ===== INIT =====
-function init() {
-    log('🚀 Zion Professional Quant Engine initialized');
-    log('⏳ Waiting for quality signals (90%+ confidence only)');
-    startDemo();
-}
-
-window.onload = init;
+connect();
 </script>
 
 </body>
-                                                      </html>
+</html>
