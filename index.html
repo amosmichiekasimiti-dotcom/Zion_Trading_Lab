@@ -119,14 +119,91 @@ button.danger:hover{background:#b91c1c;}
 <div class="tab" onclick="openTab('matchdiff')">🎲 Match/Differ</div>
 </div>
 
-<!-- Sections: Rise, Even/Odd, Over/Under, Match/Differ (same as previous) -->
+<!-- RISE/FALL SECTION -->
+<div id="rise" class="section active">
+  <div class="market-scroll" id="riseMarketList"></div>
+  <input type="hidden" id="riseMarket">
+  <div class="auto-trade">
+    <label>Stake ($)</label>
+    <input type="number" id="riseStake" value="10" min="1" max="1000">
+    <button onclick="toggleAutoTrade('rise')" class="danger" id="riseAutoBtn">🤖 Auto</button>
+  </div>
+  <div class="timer-component" id="riseTimer">⏱️ Next AI analysis in: 60s</div>
+  <div class="probability-bar"><div class="probability-fill" id="riseProb" style="width:0%"></div></div>
+  <div class="signal-container">
+    <div id="riseSignal" class="signal-box neutral">📊 Waiting for AI analysis... <span class="ai-badge">GEMINI</span></div>
+  </div>
+  <div id="riseChart"></div>
+</div>
 
-<!-- ... Keep your HTML structure for tabs and signals as in previous code ... -->
+<!-- EVEN/ODD SECTION -->
+<div id="evenodd" class="section">
+  <div class="market-scroll" id="eoMarketList"></div>
+  <input type="hidden" id="eoMarket">
+  <div class="auto-trade">
+    <label>Stake ($)</label>
+    <input type="number" id="eoStake" value="10" min="1" max="1000">
+    <button onclick="toggleAutoTrade('eo')" class="danger" id="eoAutoBtn">🤖 Auto</button>
+  </div>
+  <div class="timer-component" id="eoTimer">⏱️ Next AI analysis in: 60s</div>
+  <div class="probability-bar"><div class="probability-fill" id="eoProb" style="width:0%"></div></div>
+  <div class="signal-container">
+    <div id="eoSignal" class="signal-box neutral">🔮 AI calculating probability... <span class="ai-badge">GEMINI</span></div>
+  </div>
+  <div id="eoChart"></div>
+</div>
+
+<!-- OVER/UNDER SECTION -->
+<div id="overunder" class="section">
+  <div class="market-scroll" id="ouMarketList"></div>
+  <input type="hidden" id="ouMarket">
+  <select id="barrier">
+    <option value="1">🎯 Barrier 1</option><option value="2">🎯 Barrier 2</option>
+    <option value="3">🎯 Barrier 3</option><option value="4">🎯 Barrier 4</option>
+    <option value="5">🎯 Barrier 5</option><option value="6">🎯 Barrier 6</option>
+    <option value="7">🎯 Barrier 7</option><option value="8">🎯 Barrier 8</option>
+  </select>
+  <div class="auto-trade">
+    <label>Stake ($)</label>
+    <input type="number" id="ouStake" value="10" min="1" max="1000">
+    <button onclick="toggleAutoTrade('ou')" class="danger" id="ouAutoBtn">🤖 Auto</button>
+  </div>
+  <div class="timer-component" id="ouTimer">⏱️ Next AI analysis in: 60s</div>
+  <div class="probability-bar"><div class="probability-fill" id="ouProb" style="width:0%"></div></div>
+  <div class="signal-container">
+    <div id="ouSignal" class="signal-box neutral">📈 AI loading data... <span class="ai-badge">GEMINI</span></div>
+  </div>
+  <div id="ouChart"></div>
+</div>
+
+<!-- MATCH/DIFFER SECTION -->
+<div id="matchdiff" class="section">
+  <div class="market-scroll" id="mdMarketList"></div>
+  <input type="hidden" id="mdMarket">
+  <select id="digitSelect">
+    <option value="0">0️⃣ Digit 0</option><option value="1">1️⃣ Digit 1</option>
+    <option value="2">2️⃣ Digit 2</option><option value="3">3️⃣ Digit 3</option>
+    <option value="4">4️⃣ Digit 4</option><option value="5">5️⃣ Digit 5</option>
+    <option value="6">6️⃣ Digit 6</option><option value="7">7️⃣ Digit 7</option>
+    <option value="8">8️⃣ Digit 8</option><option value="9">9️⃣ Digit 9</option>
+  </select>
+  <div class="auto-trade">
+    <label>Stake ($)</label>
+    <input type="number" id="mdStake" value="10" min="1" max="1000">
+    <button onclick="toggleAutoTrade('md')" class="danger" id="mdAutoBtn">🤖 Auto</button>
+  </div>
+  <div class="timer-component" id="mdTimer">⏱️ Next AI analysis in: 60s</div>
+  <div class="probability-bar"><div class="probability-fill" id="mdProb" style="width:0%"></div></div>
+  <div class="signal-container">
+    <div id="mdSignal" class="signal-box neutral">🎲 AI analyzing digits... <span class="ai-badge">GEMINI</span></div>
+  </div>
+  <div id="mdChart"></div>
+</div>
 
 <!-- Trade History -->
 <div class="trade-history" id="tradeHistory">
-<div style="font-weight:bold;margin-bottom:8px;">📜 AI Trade History</div>
-<div id="historyList">No trades yet</div>
+  <div style="font-weight:bold;margin-bottom:8px;">📜 AI Trade History</div>
+  <div id="historyList">No trades yet</div>
 </div>
 
 </div>
@@ -143,73 +220,323 @@ const markets = {
 const marketsList = Object.keys(markets);
 
 // ========== STATE ==========
-let ws, tickHistory={}, lastSignal={}, autoTradeStates={rise:false, eo:false, ou:false, md:false}, timerValues={}, timerIntervals={}, activeMarkets={}, trades=[], balance=1000;
+let ws;
+let tickHistory = {};
+let lastSignal = {};
+let autoTradeStates = {rise: false, eo: false, ou: false, md: false};
+let timerValues = {};
+let timerIntervals = {};
+let activeMarkets = {};
+let trades = [];
+let balance = 1000;
 
 // ========== MARKET SCROLL INIT ==========
 function populateMarketScroll(containerId, selectId, engineId){
-  const container=document.getElementById(containerId);
-  const selectEl=document.getElementById(selectId);
-  container.innerHTML="";
-  marketsList.forEach(name=>{
-    const btn=document.createElement("button");
-    btn.textContent=name;
-    btn.onclick=()=>{container.querySelectorAll("button").forEach(b=>b.classList.remove("active"));btn.classList.add("active");selectEl.value=markets[name];activeMarkets[engineId]=markets[name];loadChart(engineId+"Chart",markets[name]);};
+  const container = document.getElementById(containerId);
+  const selectEl = document.getElementById(selectId);
+  container.innerHTML = "";
+  marketsList.forEach(name => {
+    const btn = document.createElement("button");
+    btn.textContent = name;
+    btn.onclick = () => {
+      container.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      selectEl.value = markets[name];
+      activeMarkets[engineId] = markets[name];
+      loadChart(engineId + "Chart", markets[name]);
+    };
     container.appendChild(btn);
   });
-  if(container.children.length>0){container.children[0].classList.add("active");selectEl.value=markets[marketsList[0]];activeMarkets[engineId]=markets[marketsList[0]];loadChart(engineId+"Chart",markets[marketsList[0]]);}
+  if(container.children.length > 0){
+    container.children[0].classList.add("active");
+    selectEl.value = markets[marketsList[0]];
+    activeMarkets[engineId] = markets[marketsList[0]];
+    loadChart(engineId + "Chart", markets[marketsList[0]]);
+  }
 }
-["rise","eo","ou","md"].forEach(engine=>populateMarketScroll(engine+"MarketList",engine+((engine==="rise")?"Market":(engine==="eo")?"Market":(engine==="ou")?"Market":"Market"),engine));
+
+// Initialize all market scrolls
+populateMarketScroll("riseMarketList", "riseMarket", "rise");
+populateMarketScroll("eoMarketList", "eoMarket", "eo");
+populateMarketScroll("ouMarketList", "ouMarket", "ou");
+populateMarketScroll("mdMarketList", "mdMarket", "md");
 
 // ========== TABS ==========
-function openTab(tab){document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));event.target.classList.add("active");document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));document.getElementById(tab).classList.add("active");}
-function loadChart(container,symbol){document.getElementById(container).innerHTML=`<iframe src="https://charts.deriv.com/deriv?symbol=${symbol}&theme=dark" style="width:100%;height:300px;border:none;border-radius:12px;"></iframe>`;}
+function openTab(tab){
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  event.target.classList.add("active");
+  document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+  document.getElementById(tab).classList.add("active");
+}
+
+function loadChart(container, symbol){
+  document.getElementById(container).innerHTML = 
+    `<iframe src="https://charts.deriv.com/deriv?symbol=${symbol}&theme=dark" style="width:100%;height:300px;border:none;border-radius:12px;"></iframe>`;
+}
 
 // ========== WEBSOCKET ==========
 function connectWS(){
-  let token=document.getElementById("token").value.trim(),app_id=document.getElementById("app_id").value;
-  if(!token){alert("Please enter your API token");return;}
+  let token = document.getElementById("token").value.trim();
+  let app_id = document.getElementById("app_id").value;
+  
+  if(!token){ alert("Please enter your API token"); return; }
   if(ws) ws.close();
-  ws=new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${app_id}`);
-  ws.onopen=()=>{document.getElementById("connectionStatus").innerHTML="🟢 Connected (AI Ready)";document.getElementById("connectionStatus").className="status-badge connected";ws.send(JSON.stringify({authorize:token}));};
-  ws.onmessage=msg=>{
-    let data=JSON.parse(msg.data);
-    if(data.msg_type==='authorize'){
-      for(let symbol of Object.values(markets)){ws.send(JSON.stringify({ticks:symbol,subscribe:1}));tickHistory[symbol]=[];lastSignal[symbol]="";}
-      startTimers();
-    }else if(data.tick){let sym=data.tick.symbol,price=parseFloat(data.tick.quote);if(!tickHistory[sym]) tickHistory[sym]=[];tickHistory[sym].push(price);if(tickHistory[sym].length>50) tickHistory[sym].shift();}
+  
+  ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${app_id}`);
+  
+  ws.onopen = () => {
+    document.getElementById("connectionStatus").innerHTML = "🟢 Connected (AI Ready)";
+    document.getElementById("connectionStatus").className = "status-badge connected";
+    ws.send(JSON.stringify({authorize: token}));
   };
-  ws.onclose=()=>{document.getElementById("connectionStatus").innerHTML="🔴 Disconnected";document.getElementById("connectionStatus").className="status-badge disconnected";clearAllTimers();};
+  
+  ws.onmessage = msg => {
+    let data = JSON.parse(msg.data);
+    if(data.msg_type === 'authorize'){
+      for(let symbol of Object.values(markets)){
+        ws.send(JSON.stringify({ticks: symbol, subscribe: 1}));
+        tickHistory[symbol] = [];
+        lastSignal[symbol] = "";
+      }
+      startTimers();
+    } else if(data.tick){
+      let sym = data.tick.symbol;
+      let price = parseFloat(data.tick.quote);
+      if(!tickHistory[sym]) tickHistory[sym] = [];
+      tickHistory[sym].push(price);
+      if(tickHistory[sym].length > 50) tickHistory[sym].shift();
+    }
+  };
+  
+  ws.onclose = () => {
+    document.getElementById("connectionStatus").innerHTML = "🔴 Disconnected";
+    document.getElementById("connectionStatus").className = "status-badge disconnected";
+    clearAllTimers();
+  };
 }
-function disconnectWS(){if(ws) ws.close();clearAllTimers();}
+
+function disconnectWS(){
+  if(ws) ws.close();
+  clearAllTimers();
+}
 
 // ========== 1-MINUTE STABLE SIGNALS ==========
 function startTimers(){
   clearAllTimers();
-  ["rise","eo","ou","md"].forEach(engine=>{
-    timerValues[engine]=60;
+  ["rise","eo","ou","md"].forEach(engine => {
+    timerValues[engine] = 60;
     updateTimerDisplay(engine);
-    timerIntervals[engine]=setInterval(()=>{
+    timerIntervals[engine] = setInterval(() => {
       timerValues[engine]--;
       updateTimerDisplay(engine);
-      if(timerValues[engine]<=0){
-        let symbol=activeMarkets[engine];
-        if(symbol && tickHistory[symbol] && tickHistory[symbol].length>=20){
-          runAIAnalysis(symbol,tickHistory[symbol].slice(-1)[0]);
+      if(timerValues[engine] <= 0){
+        let symbol = activeMarkets[engine];
+        if(symbol && tickHistory[symbol] && tickHistory[symbol].length >= 20){
+          runAIAnalysis(symbol, tickHistory[symbol].slice(-1)[0]);
         }
-        timerValues[engine]=60;
+        timerValues[engine] = 60;
       }
-    },1000);
+    }, 1000);
   });
 }
-function updateTimerDisplay(engine){const t=document.getElementById(engine+"Timer");if(t) t.innerHTML=`⏱️ Next AI analysis in: ${timerValues[engine]}s`;}
-function clearAllTimers(){for(let k in timerIntervals) clearInterval(timerIntervals[k]);}
+
+function updateTimerDisplay(engine){
+  const t = document.getElementById(engine + "Timer");
+  if(t) t.innerHTML = `⏱️ Next AI analysis in: ${timerValues[engine]}s`;
+}
+
+function clearAllTimers(){
+  for(let k in timerIntervals) clearInterval(timerIntervals[k]);
+}
 
 // ========== AI ANALYSIS & PREDICTION ==========
-async function runAIAnalysis(symbol,price){for(let engine of ["rise","eo","ou","md"]){if(activeMarkets[engine]!==symbol) continue;let history=tickHistory[symbol];if(!history||history.length<20) continue;let prediction=await getAIPrediction(history,engine,{barrier:engine==="ou"?parseInt(document.getElementById("barrier").value):null,digit:engine==="md"?parseInt(document.getElementById("digitSelect").value):null});if(prediction) updateSignal(engine,symbol,prediction);}
+async function runAIAnalysis(symbol, price){
+  for(let engine of ["rise","eo","ou","md"]){
+    if(activeMarkets[engine] !== symbol) continue;
+    let history = tickHistory[symbol];
+    if(!history || history.length < 20) continue;
+    
+    let prediction = await getAIPrediction(history, engine, {
+      barrier: engine === "ou" ? parseInt(document.getElementById("barrier").value) : null,
+      digit: engine === "md" ? parseInt(document.getElementById("digitSelect").value) : null
+    });
+    
+    if(prediction) updateSignal(engine, symbol, prediction);
+  }
+}
 
-// ... Keep getAIPrediction, fallbackPrediction, updateSignal, executeTrade, toggleAutoTrade, updateDashboard, displayTradeHistory as in your previous code ...
+async function getAIPrediction(history, engine, params){
+  let geminiKey = document.getElementById("gemini_key").value;
+  if(!geminiKey) return fallbackPrediction(history, engine, params);
+  
+  let recentData = history.slice(-20);
+  let digits = recentData.map(p => parseInt(p.toString().slice(-1)));
+  let prices = recentData;
+  
+  let prompt = `You are a professional trading AI. Analyze this market data and predict the next move.
 
-window.onload=function(){updateDashboard();};
+Data (last 20 ticks): ${prices.join(', ')}
+Last digits: ${digits.join(', ')}
+
+${engine === 'rise' ? 'Predict if next tick will RISE or FALL. Return JSON: {"signal":"RISE" or "FALL","confidence":0-100}' : ''}
+${engine === 'eo' ? 'Predict if next digit will be EVEN or ODD. Return JSON: {"signal":"EVEN" or "ODD","confidence":0-100}' : ''}
+${engine === 'ou' ? `Predict if next digit will be OVER or UNDER barrier ${params.barrier}. Return JSON: {"signal":"OVER" or "UNDER","confidence":0-100}` : ''}
+${engine === 'md' ? `Predict if next digit will MATCH or DIFFER from digit ${params.digit}. Return JSON: {"signal":"MATCH" or "DIFFER","confidence":0-100}` : ''}
+
+Return ONLY valid JSON, no other text.`;
+  
+  try {
+    let response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        contents: [{
+          parts: [{text: prompt}]
+        }]
+      })
+    });
+    
+    let data = await response.json();
+    let text = data.candidates[0].content.parts[0].text;
+    let jsonMatch = text.match(/\{.*\}/s);
+    
+    if(jsonMatch) {
+      return JSON.parse(jsonMatch[0]);
+    }
+  } catch(e) {
+    console.error("AI Error:", e);
+  }
+  
+  return fallbackPrediction(history, engine, params);
+}
+
+function fallbackPrediction(history, engine, params){
+  let recent = history.slice(-10);
+  
+  if(engine === "rise"){
+    let up = 0;
+    for(let i=1; i<recent.length; i++) if(recent[i] > recent[i-1]) up++;
+    return {signal: up > recent.length/2 ? "RISE" : "FALL", confidence: 60};
+  }
+  else if(engine === "eo"){
+    let even = recent.filter(p => parseInt(p.toString().slice(-1)) % 2 === 0).length;
+    return {signal: even > recent.length/2 ? "EVEN" : "ODD", confidence: 60};
+  }
+  else if(engine === "ou"){
+    let over = recent.filter(p => parseInt(p.toString().slice(-1)) > params.barrier).length;
+    return {signal: over > recent.length/2 ? "OVER" : "UNDER", confidence: 60};
+  }
+  else if(engine === "md"){
+    let matches = recent.filter(p => parseInt(p.toString().slice(-1)) === params.digit).length;
+    return {signal: matches > recent.length/2 ? "MATCH" : "DIFFER", confidence: 60};
+  }
+  return {signal: "NEUTRAL", confidence: 50};
+}
+
+function updateSignal(engine, symbol, prediction){
+  let signal = prediction.signal;
+  let confidence = prediction.confidence || 70;
+  
+  // Update probability bar
+  let probEl = document.getElementById(engine + "Prob");
+  if(probEl) probEl.style.width = confidence + "%";
+  
+  let el = document.getElementById(engine + "Signal");
+  if(!el) return;
+  
+  // Map signal to display format
+  let displaySignal = signal;
+  if(engine === "rise") displaySignal = signal === "RISE" ? "BUY ↑" : "SELL ↓";
+  else if(engine === "eo") displaySignal = signal;
+  else if(engine === "ou") displaySignal = signal;
+  else if(engine === "md") displaySignal = signal;
+  
+  // Only update if signal changed
+  if(lastSignal[symbol] !== displaySignal){
+    lastSignal[symbol] = displaySignal;
+    
+    el.innerHTML = `${displaySignal} (AI: ${confidence}% confidence) ✅ <span class="ai-badge">GEMINI</span>`;
+    el.className = "signal-box " + (
+      displaySignal.includes("BUY") || 
+      displaySignal.includes("RISE") || 
+      displaySignal.includes("EVEN") || 
+      displaySignal.includes("OVER") || 
+      displaySignal.includes("MATCH") ? "buy" : "sell"
+    );
+    
+    // Update AI confidence display
+    document.getElementById("aiConfidence").innerHTML = confidence + "%";
+    
+    // Auto-trade if enabled and high confidence
+    if(confidence > 75 && autoTradeStates[engine]){
+      executeTrade(engine, displaySignal, confidence);
+    }
+  }
+}
+
+// ========== TRADING FUNCTIONS ==========
+function toggleAutoTrade(engine){
+  autoTradeStates[engine] = !autoTradeStates[engine];
+  let btn = document.getElementById(engine + "AutoBtn");
+  if(btn){
+    btn.innerHTML = autoTradeStates[engine] ? "⏹️ Stop AI" : "🤖 AI Auto";
+    btn.className = autoTradeStates[engine] ? "danger" : "";
+  }
+}
+
+function executeTrade(engine, signal, confidence){
+  let stake = parseFloat(document.getElementById(engine + "Stake").value) || 10;
+  
+  // Simulate trade with AI confidence affecting outcome
+  let win = Math.random() * 100 < confidence * 0.85;
+  let potential = Math.round(stake * 0.95 * 100) / 100;
+  
+  let trade = {
+    time: new Date().toLocaleTimeString(),
+    engine: engine.toUpperCase(),
+    signal: signal,
+    stake: stake,
+    result: win ? "WIN" : "LOSS",
+    profit: win ? potential : -stake,
+    confidence: confidence
+  };
+  
+  balance = Math.max(0, balance + (win ? potential : -stake));
+  trades.unshift(trade);
+  if(trades.length > 10) trades.pop();
+  
+  updateDashboard();
+  displayTradeHistory();
+}
+
+function updateDashboard(){
+  let wins = trades.filter(t => t.result === "WIN").length;
+  let total = trades.length;
+  document.getElementById("winRate").innerHTML = total ? Math.round((wins/total)*100) + "%" : "0%";
+  document.getElementById("totalTrades").innerHTML = total;
+  document.getElementById("balance").innerHTML = "$" + balance.toFixed(2);
+}
+
+function displayTradeHistory(){
+  let list = document.getElementById("historyList");
+  if(trades.length === 0){
+    list.innerHTML = "No trades yet";
+    return;
+  }
+  list.innerHTML = trades.map(t => `
+    <div class="trade-item">
+      <span>${t.time} - ${t.engine} ${t.signal} (${t.confidence}% AI)</span>
+      <span class="${t.result === 'WIN' ? 'trade-profit' : 'trade-loss'}">
+        ${t.result === 'WIN' ? '+' : '-'}$${Math.abs(t.profit)}
+      </span>
+    </div>
+  `).join("");
+}
+
+// Initialize
+window.onload = function() {
+  updateDashboard();
+};
 </script>
 </body>
-</html>
+                                                                     </html>
