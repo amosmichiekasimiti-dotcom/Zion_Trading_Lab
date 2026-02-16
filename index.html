@@ -3,113 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deriv Dynamic Discovery</title>
-    <!-- Tailwind CSS for Design -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body { background-color: #050505; color: #ffffff; font-family: sans-serif; }
-        .market-card {
-            background: #111111;
-            border: 1px solid #222;
-            transition: all 0.3s ease;
-        }
-        .market-card:hover {
-            border-color: #3b82f6;
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px -10px rgba(59, 130, 246, 0.4);
-        }
-        .active-filter {
-            background-color: #3b82f6 !important;
-            color: white !important;
-        }
-    </style>
+    <title>Zion Trading Lab | Live Discovery</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-<body class="min-h-screen">
-
-    <!-- Header -->
-    <header class="border-b border-white/10 p-6 sticky top-0 bg-black/90 backdrop-blur-md z-50">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-            <div class="text-center md:text-left">
-                <h1 class="text-2xl font-black tracking-tighter uppercase">Deriv Auto-Pull</h1>
-                <p id="status-text" class="text-[10px] font-bold text-yellow-500 uppercase tracking-widest mt-1">Connecting Handshake...</p>
+<body>
+    <div id="app">
+        <header>
+            <div class="logo-area">
+                <h1>ZION TRADING LAB</h1>
+                <div id="connection-status" class="status-offline">Connecting Handshake...</div>
             </div>
-            
-            <nav id="filter-nav" class="flex flex-wrap gap-2 justify-center">
-                <button onclick="updateFilter('all', this)" class="active-filter px-4 py-2 rounded-full text-[10px] font-bold uppercase bg-zinc-800 text-zinc-400">All</button>
-                <button onclick="updateFilter('synthetic_index', this)" class="px-4 py-2 rounded-full text-[10px] font-bold uppercase bg-zinc-800 text-zinc-400">Synthetics</button>
-                <button onclick="updateFilter('forex', this)" class="px-4 py-2 rounded-full text-[10px] font-bold uppercase bg-zinc-800 text-zinc-400">Forex</button>
-                <button onclick="updateFilter('indices', this)" class="px-4 py-2 rounded-full text-[10px] font-bold uppercase bg-zinc-800 text-zinc-400">Stocks</button>
+            <nav id="filters">
+                <button onclick="filterType('all', event)" class="active">All Markets</button>
+                <button onclick="filterType('synthetic_index', event)">Synthetics</button>
+                <button onclick="filterType('forex', event)">Forex</button>
+                <button onclick="filterType('indices', event)">Stock Indices</button>
             </nav>
-        </div>
-    </header>
+        </header>
 
-    <!-- Market Grid -->
-    <main class="max-w-7xl mx-auto p-6">
-        <div id="market-display" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            <div class="col-span-full py-20 text-center text-zinc-500">
-                Waiting for Deriv Handshake...
-            </div>
-        </div>
-    </main>
+        <main id="market-grid">
+            <div class="loading-state">Initial handshake in progress...</div>
+        </main>
+    </div>
 
     <script>
-        const socket = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
-        let globalSymbols = [];
+        // UI INJECTOR: This function is triggered by app.js
+        window.renderMarkets = function(list) {
+            const grid = document.getElementById('market-grid');
+            grid.innerHTML = ''; 
 
-        socket.onopen = () => {
-            document.getElementById('status-text').innerText = "Handshake Secure - Reading Markets";
-            document.getElementById('status-text').classList.replace('text-yellow-500', 'text-green-500');
-
-            // This command pulls EVERYTHING from Deriv
-            socket.send(JSON.stringify({
-                "active_symbols": "full",
-                "product_type": "basic"
-            }));
-        };
-
-        socket.onmessage = (msg) => {
-            const data = JSON.parse(msg.data);
-            if (data.msg_type === 'active_symbols') {
-                globalSymbols = data.active_symbols;
-                renderMarkets(globalSymbols);
-            }
-        };
-
-        function renderMarkets(markets) {
-            const display = document.getElementById('market-display');
-            display.innerHTML = '';
-
-            markets.forEach(m => {
-                const isFast = m.display_name.includes('1s') ? '⚡' : '';
+            list.forEach(m => {
                 const card = document.createElement('div');
-                card.className = 'market-card p-5 rounded-xl flex flex-col justify-between h-32';
+                card.className = 'market-card';
+                card.setAttribute('data-symbol', m.symbol); 
+                
                 card.innerHTML = `
-                    <div class="flex justify-between items-start">
-                        <span class="text-[9px] font-black text-zinc-600 uppercase tracking-tighter">${m.market_display_name}</span>
-                        <span class="text-blue-500 text-xs">${isFast}</span>
+                    <div class="card-header">
+                        <span class="category">${m.market_display_name}</span>
+                        <span class="live-price">0.0000</span>
                     </div>
-                    <div>
-                        <h3 class="text-sm font-bold leading-tight">${m.display_name}</h3>
-                        <p class="text-[10px] font-mono text-zinc-500 mt-1">${m.symbol}</p>
+                    <h3>${m.display_name}</h3>
+                    <div class="stats-area">
+                        <div class="calibrating">Handshaking Stream...</div>
                     </div>
                 `;
-                display.appendChild(card);
+                grid.appendChild(card);
             });
-        }
+        };
 
-        function updateFilter(type, btn) {
-            document.querySelectorAll('#filter-nav button').forEach(b => b.classList.remove('active-filter'));
-            btn.classList.add('active-filter');
-            if (type === 'all') {
-                renderMarkets(globalSymbols);
-            } else {
-                renderMarkets(globalSymbols.filter(s => s.market === type));
+        function filterType(type, event) {
+            document.querySelectorAll('#filters button').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            if(window.allSymbols) {
+                const filtered = type === 'all' ? window.allSymbols : window.allSymbols.filter(s => s.market === type);
+                window.renderMarkets(filtered);
             }
         }
-
-        setInterval(() => {
-            if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ "ping": 1 }));
-        }, 30000);
     </script>
+    <script src="app.js"></script>
 </body>
 </html>
