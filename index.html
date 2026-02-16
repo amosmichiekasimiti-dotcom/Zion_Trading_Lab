@@ -1,31 +1,74 @@
-window.renderMarkets = function(list) {
-    const grid = document.getElementById('market-grid');
-    grid.innerHTML = ''; 
-
-    list.forEach(m => {
-        const card = document.createElement('div');
-        card.className = 'market-card';
-        card.setAttribute('data-symbol', m.symbol); 
-        
-        card.innerHTML = `
-            <div class="card-header">
-                <span class="category" style="background:#1a1a1a; padding:2px 5px; border-radius:3px;">${m.market_display_name}</span>
-                <span class="live-price" style="font-family:monospace; font-size:13px; font-weight:bold;">0.0000</span>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZION TRADING LAB | Universal Hub</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <div class="logo-area">
+                <h1>ZION TRADING LAB</h1>
+                <div id="connection-status" class="status-offline">Establishing Handshake...</div>
             </div>
-            <h3 style="margin:8px 0; font-size:16px; letter-spacing:-0.5px;">${m.display_name}</h3>
-            
-            <!-- Statistics Area (Automatically switches between Digit Stats and Trend Analysis) -->
-            <div class="stats-area" style="margin-top:10px; display:none;"></div>
-            <div class="trend-area" style="margin-top:10px; display:none;"></div>
+            <nav id="filters">
+                <button onclick="filterType('all', event)" class="active">All Markets</button>
+                <button onclick="filterType('synthetic_index', event)">Synthetics</button>
+                <button onclick="filterType('forex', event)">Forex</button>
+                <button onclick="filterType('indices', event)">Stock Indices</button>
+            </nav>
+        </header>
 
-            <!-- Deep Discovery Labels (Rise/Fall, Accumulators, Matches/Differs) -->
-            <div style="margin-top:15px; padding-top:12px; border-top:1px solid #1a1a1a;">
-                <p style="font-size:8px; color:#444; font-weight:900; text-transform:uppercase; margin-bottom:6px; letter-spacing:1px;">Market Capabilities:</p>
-                <div class="market-types">
-                    <span style="font-size:8px; color:#222;">Deep scanning...</span>
-                </div>
-            </div>
-        `;
-        grid.appendChild(card);
-    });
-};
+        <main id="market-grid">
+            <div class="loading-state">Scanning Deriv Backend...</div>
+        </main>
+    </div>
+
+    <script>
+        // UNIVERSAL UI INJECTOR
+        window.renderMarkets = function(list) {
+            const grid = document.getElementById('market-grid');
+            if (!grid) return;
+            grid.innerHTML = ''; 
+
+            list.forEach(m => {
+                const card = document.createElement('div');
+                card.className = 'market-card';
+                card.setAttribute('data-symbol', m.symbol); 
+                
+                card.innerHTML = `
+                    <div class="card-header">
+                        <span class="category">${m.market_display_name}</span>
+                        <span class="live-price">0.0000</span>
+                    </div>
+                    <h3>${m.display_name}</h3>
+                    
+                    <!-- Intelligent Data Slot -->
+                    <div class="dynamic-analysis" style="margin-top:10px; min-height:40px;">
+                        <div class="analyzing-text" style="font-size:10px; color:#444;">Analyzing Market Type...</div>
+                    </div>
+
+                    <!-- Hidden Contract Discovery -->
+                    <div class="discovery-footer" style="margin-top:12px; padding-top:10px; border-top:1px solid #1a1a1a;">
+                        <div class="market-types" style="display:flex; flex-wrap:wrap; gap:4px;"></div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        };
+
+        function filterType(type, event) {
+            const btns = document.querySelectorAll('#filters button');
+            btns.forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            if(window.allSymbols) {
+                const filtered = type === 'all' ? window.allSymbols : window.allSymbols.filter(s => s.market === type);
+                window.renderMarkets(filtered);
+            }
+        }
+    </script>
+    <script src="app.js"></script>
+</body>
+</html>
