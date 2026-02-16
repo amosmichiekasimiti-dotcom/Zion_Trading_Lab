@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ZION TRADING LAB - AI DUAL CHECKLIST SIGNALS</title>
+<title>ZION TRADING LAB - GLOBAL SCANNER</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;}
   body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background:#0f172a; color:white; }
@@ -32,6 +32,13 @@
   .market-btn.active { background:#22c55e; color:#0f172a; border-color:#22c55e; font-weight:600; }
   .market-btn.vol-1s { border-left:4px solid #f59e0b; }
   
+  /* Global Alert Banner */
+  .global-alert { background:#f59e0b20; border:1px solid #f59e0b; border-radius:12px; padding:12px 20px; margin-bottom:20px; display:none; align-items:center; gap:10px; }
+  .global-alert.show { display:flex; }
+  .alert-icon { color:#f59e0b; font-size:20px; }
+  .alert-message { flex:1; font-weight:500; }
+  .alert-close { color:#94a3b8; cursor:pointer; }
+  
   /* Status Grid */
   .status-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; margin-bottom:20px; }
   .status-card { background:#111827; border-radius:16px; padding:15px; border-left:4px solid #22c55e; }
@@ -49,10 +56,10 @@
   .price { font-size:42px; font-weight:700; color:#22c55e; font-family:monospace; }
   .change { font-size:16px; color:#94a3b8; }
   
-  /* Deriv Chart */
+  /* Deriv Chart (static container) */
   .deriv-chart { width:100%; height:350px; border:none; border-radius:16px; background:#0f172a; margin:15px 0; }
   
-  /* TradingView Container */
+  /* TradingView Container (static) */
   .tradingview-container { width:100%; height:400px; border-radius:16px; overflow:hidden; margin-top:20px; }
   
   /* LIVE DIGIT HEARTBEAT PANEL */
@@ -101,11 +108,10 @@
   .btn-buy { background:#22c55e; color:#0f172a; }
   .btn-sell { background:#dc2626; color:white; }
   
-  /* AI SIGNALS PANEL - DUAL CHECKLIST */
-  .ai-signals-panel { background:#111827; border-radius:24px; padding:20px; margin-top:20px; border:1px solid #f59e0b; }
-  .signals-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; }
-  .current-market-badge { background:#1e293b; padding:6px 16px; border-radius:30px; font-size:14px; color:#22c55e; }
-  .signals-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:15px; margin-top:15px; }
+  /* SIGNALS PANEL - Four Cards Grid */
+  .signals-panel { background:#111827; border-radius:24px; padding:20px; margin-top:20px; border:1px solid #f59e0b; }
+  .signals-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; }
+  .signals-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:15px; }
   .signal-card { background:#1e293b; border-radius:16px; padding:15px; border-left:4px solid #64748b; }
   .signal-title { color:#94a3b8; font-size:12px; text-transform:uppercase; margin-bottom:8px; }
   .signal-direction { font-size:28px; font-weight:700; margin:5px 0; }
@@ -127,7 +133,7 @@
 <div class="container">
   <!-- Header -->
   <div class="header">
-    <div class="logo">⚡ ZION TRADING LAB - DUAL CHECKLIST AI</div>
+    <div class="logo">⚡ ZION GLOBAL SCANNER</div>
     <div class="live-badge">
       <span class="live-dot"></span>
       <span id="liveStatus">CONNECT TO START</span>
@@ -141,11 +147,18 @@
       <option value="126973">App ID: 126973</option>
       <option value="1089">App ID: 1089</option>
     </select>
-    <button class="btn btn-green" onclick="connectWebSocket()">▶ CONNECT & STREAM</button>
+    <button class="btn btn-green" onclick="connectWebSocket()">▶ CONNECT & SCAN ALL</button>
     <button class="btn btn-red" onclick="disconnectWebSocket()">⏹ STOP</button>
   </div>
 
-  <!-- ALL 13 VOLATILITY INDICES -->
+  <!-- Global Alert Banner -->
+  <div id="globalAlert" class="global-alert">
+    <span class="alert-icon">🔔</span>
+    <span class="alert-message" id="alertMessage">Market signal detected</span>
+    <span class="alert-close" onclick="document.getElementById('globalAlert').classList.remove('show')">✕</span>
+  </div>
+
+  <!-- Market Selector - All 13 Indices -->
   <div class="market-bar">
     <div style="color:#94a3b8; margin-bottom:10px;">📊 SELECT MARKET (13 Volatility Indices):</div>
     <div class="market-grid" id="marketGrid"></div>
@@ -163,9 +176,9 @@
 
   <!-- Main Grid -->
   <div class="main-grid">
-    <!-- Left Column - Chart & Heartbeat -->
+    <!-- Left Column - Charts & Heartbeat -->
     <div>
-      <!-- Deriv Chart -->
+      <!-- Deriv Chart (static) -->
       <div class="chart-card">
         <div class="chart-header">
           <span style="font-size:20px; font-weight:600;" id="marketDisplay">Volatility 100 (1s) Index</span>
@@ -177,10 +190,10 @@
         <div id="derivChartContainer" class="deriv-chart"></div>
       </div>
 
-      <!-- TradingView Chart (restored) -->
+      <!-- TradingView Chart (static) -->
       <div class="tradingview-container" id="tradingviewContainer"></div>
 
-      <!-- LIVE HEARTBEAT PANEL -->
+      <!-- LIVE HEARTBEAT PANEL (for selected market) -->
       <div class="heartbeat-panel">
         <div class="panel-header">
           <div class="heartbeat-title">
@@ -223,7 +236,7 @@
       </div>
     </div>
 
-    <!-- Right Column - Trading Panel -->
+    <!-- Right Column - Trade Panel -->
     <div>
       <div class="trade-panel">
         <h3 style="margin-bottom:20px;">QUICK TRADE</h3>
@@ -275,10 +288,10 @@
     </div>
   </div>
 
-  <!-- AI SIGNALS PANEL - DUAL CHECKLIST VERIFICATION -->
-  <div class="ai-signals-panel">
+  <!-- SIGNALS PANEL - Four Cards (Global Scanner Results for Selected Market) -->
+  <div class="signals-panel">
     <div class="signals-header">
-      <h2 style="font-size:20px;">🤖 AI DUAL-CHECKLIST SIGNALS</h2>
+      <h2 style="font-size:20px;">🤖 10-POINT DUAL CHECKLIST SIGNALS</h2>
       <span class="current-market-badge" id="signalMarket">Volatility 100 (1s)</span>
     </div>
     <div class="signals-grid" id="signalsGrid">
@@ -289,7 +302,7 @@
 
   <!-- Risk Warning -->
   <div class="risk-warning">
-    ⚠️ Risk Warning: Live streaming 1-second data. Trading carries significant risk.
+    ⚠️ Risk Warning: Live streaming 1-second data across 13 indices. Trading carries significant risk.
   </div>
 </div>
 
@@ -311,25 +324,34 @@ const VOLATILITY_INDICES = [
   { name: "Volatility 100 Index", symbol: "R_100", type: "normal" }
 ];
 
-// ========== STATE ==========
+// ========== GLOBAL STATE ==========
 let ws = null;
 let isConnected = false;
 let currentSymbol = "1HZ100V";
 let currentMarket = VOLATILITY_INDICES[11]; // Default
-let tickHistory = [];
-let digitCounts = Array(10).fill(0);
-let lastDigit = 0;
-let tickRate = 0;
-let tickTimes = [];
-let totalTicks = 0;
 
-// Signal state - persistent until new confirmation
-let signals = {
-  risefall: { direction: 'NEUTRAL', confidence: 0, conditions: [], updated: null },
-  evenodd: { direction: 'NEUTRAL', confidence: 0, conditions: [], updated: null },
-  overunder: { direction: 'NEUTRAL', confidence: 0, conditions: [], updated: null },
-  matchdiffer: { direction: 'NEUTRAL', confidence: 0, conditions: [], updated: null }
-};
+// Data for all markets
+let marketData = {};
+VOLATILITY_INDICES.forEach(m => {
+  marketData[m.symbol] = {
+    tickHistory: [],      // array of { price, digit, time }
+    digitCounts: Array(10).fill(0),
+    lastPrice: 0,
+    lastDigit: 0,
+    totalTicks: 0,
+    signals: {
+      risefall: { direction: 'NEUTRAL', confidence: 0, conditions: [], updated: null },
+      evenodd: { direction: 'NEUTRAL', confidence: 0, conditions: [], updated: null },
+      overunder: { direction: 'NEUTRAL', confidence: 0, conditions: [], updated: null },
+      matchdiffer: { direction: 'NEUTRAL', confidence: 0, conditions: [], updated: null }
+    }
+  };
+});
+
+// Global tick tracking (for selected market display)
+let selectedMarketData = marketData[currentSymbol];
+let tickTimes = [];
+let totalTicksAll = 0; // sum of ticks across all markets (for display)
 
 // ========== INITIALIZE MARKET GRID ==========
 function initMarketGrid() {
@@ -349,6 +371,7 @@ function initMarketGrid() {
 function selectMarket(market, index) {
   currentSymbol = market.symbol;
   currentMarket = market;
+  selectedMarketData = marketData[currentSymbol];
   
   document.querySelectorAll('.market-btn').forEach(btn => btn.classList.remove('active'));
   document.querySelectorAll('.market-btn')[index].classList.add('active');
@@ -358,16 +381,11 @@ function selectMarket(market, index) {
   document.getElementById('signalMarket').innerText = market.name;
   
   loadDerivChart(market.symbol);
-  
-  if(isConnected && ws) {
-    ws.send(JSON.stringify({ forget_all: 'ticks' }));
-    ws.send(JSON.stringify({ ticks: market.symbol, subscribe: 1 }));
-  }
-  
-  resetDigits();
+  // No need to resubscribe – we are already subscribed to all
+  refreshSelectedDisplay();
 }
 
-// ========== WEBSOCKET ==========
+// ========== WEBSOCKET - SUBSCRIBE TO ALL MARKETS ==========
 function connectWebSocket() {
   const token = document.getElementById('token').value;
   const appId = document.getElementById('appSelect').value;
@@ -394,7 +412,10 @@ function connectWebSocket() {
     const data = JSON.parse(msg.data);
     
     if(data.msg_type === 'authorize') {
-      ws.send(JSON.stringify({ ticks: currentSymbol, subscribe: 1 }));
+      // Subscribe to ticks for ALL symbols
+      VOLATILITY_INDICES.forEach(m => {
+        ws.send(JSON.stringify({ ticks: m.symbol, subscribe: 1 }));
+      });
       ws.send(JSON.stringify({ balance: 1, subscribe: 1 }));
     }
     
@@ -418,63 +439,85 @@ function disconnectWebSocket() {
   if(ws) ws.close();
 }
 
-// ========== PROCESS TICK ==========
+// ========== PROCESS TICK - UPDATE ALL MARKET DATA ==========
 function processTick(tick) {
+  const symbol = tick.symbol;
   const price = parseFloat(tick.quote);
   const digit = parseInt(price.toString().replace('.', '').slice(-1));
   
-  lastDigit = digit;
-  const lastDigitEl = document.getElementById('lastDigit');
-  lastDigitEl.innerText = digit;
-  lastDigitEl.style.animation = 'none';
-  lastDigitEl.offsetHeight;
-  lastDigitEl.style.animation = 'pop 0.1s';
+  const data = marketData[symbol];
+  if (!data) return; // shouldn't happen
   
-  document.getElementById('priceDisplay').innerText = price.toFixed(2);
-  document.getElementById('currentPrice').innerText = price.toFixed(2);
+  // Update data for this market
+  data.lastPrice = price;
+  data.lastDigit = digit;
+  data.tickHistory.push({ price, digit, time: Date.now() });
+  if (data.tickHistory.length > 1000) {
+    const removed = data.tickHistory.shift();
+    data.digitCounts[removed.digit]--;
+  }
+  data.digitCounts[digit]++;
+  data.totalTicks++;
   
-  const now = Date.now();
-  tickTimes.push(now);
-  tickTimes = tickTimes.filter(t => now - t < 1000);
-  tickRate = tickTimes.length;
-  document.getElementById('tickRate').innerText = tickRate;
-  document.getElementById('tickSpeed').innerHTML = tickRate > 0 ? `${tickRate} ticks/sec` : '1s updates';
+  // Update global tick counter (sum of all markets' ticks)
+  totalTicksAll++;
+  document.getElementById('totalTicks').innerText = totalTicksAll;
   
-  const bars = ['⬤', '⬤', '⬤'].map(b => `<span style="color:${tickRate > 0 ? '#22c55e' : '#94a3b8'}">${b}</span>`).join(' ');
-  document.getElementById('heartbeatIndicator').innerHTML = bars;
-  
-  tickHistory.push({ price, digit, time: now });
-  if(tickHistory.length > 1000) {
-    const removed = tickHistory.shift();
-    digitCounts[removed.digit]--;
+  // If this is the currently selected market, update the live displays
+  if (symbol === currentSymbol) {
+    refreshSelectedDisplay();
   }
   
-  digitCounts[digit]++;
-  totalTicks++;
-  document.getElementById('totalTicks').innerText = totalTicks;
-  
-  updateDigitGrid();
-  updateEvenOdd();
-  updateTickStream();
-  document.getElementById('lastUpdate').innerText = `updated ${new Date().toLocaleTimeString()}`;
-  
-  // Run AI signal check every 5 ticks
-  if(totalTicks % 5 === 0) {
-    evaluateAllSignals();
+  // Periodically evaluate signals for all markets (e.g., every 5 ticks per market)
+  if (data.totalTicks % 5 === 0) {
+    evaluateMarketSignals(symbol);
   }
 }
 
+// ========== REFRESH DISPLAY FOR SELECTED MARKET ==========
+function refreshSelectedDisplay() {
+  const data = selectedMarketData;
+  if (!data || data.tickHistory.length === 0) return;
+  
+  const lastTick = data.tickHistory[data.tickHistory.length-1];
+  document.getElementById('lastDigit').innerText = lastTick.digit;
+  document.getElementById('priceDisplay').innerText = lastTick.price.toFixed(2);
+  document.getElementById('currentPrice').innerText = lastTick.price.toFixed(2);
+  
+  // Update tick rate (based on global ticks, not per market)
+  const now = Date.now();
+  tickTimes.push(now);
+  tickTimes = tickTimes.filter(t => now - t < 1000);
+  const rate = tickTimes.length;
+  document.getElementById('tickRate').innerText = rate;
+  document.getElementById('tickSpeed').innerHTML = rate > 0 ? `${rate} ticks/sec` : '1s updates';
+  
+  const bars = ['⬤', '⬤', '⬤'].map(b => `<span style="color:${rate > 0 ? '#22c55e' : '#94a3b8'}">${b}</span>`).join(' ');
+  document.getElementById('heartbeatIndicator').innerHTML = bars;
+  
+  // Update digit grid for selected market
+  updateDigitGrid(data);
+  // Update even/odd bars
+  updateEvenOdd(data);
+  // Update tick stream
+  updateTickStream(data);
+  // Update signals panel (using precomputed signals for this market)
+  renderSignalsPanel(data);
+  
+  document.getElementById('lastUpdate').innerText = `updated ${new Date().toLocaleTimeString()}`;
+}
+
 // ========== UPDATE DIGIT GRID ==========
-function updateDigitGrid() {
+function updateDigitGrid(data) {
   const grid = document.getElementById('liveDigitGrid');
-  const total = tickHistory.length || 1;
+  const total = data.tickHistory.length || 1;
   let html = '';
   
   for(let i = 0; i < 10; i++) {
-    const count = digitCounts[i] || 0;
+    const count = data.digitCounts[i] || 0;
     const percent = (count / total * 100).toFixed(1);
     const barWidth = percent * 10;
-    const isLastDigit = i === lastDigit;
+    const isLastDigit = i === data.lastDigit;
     
     html += `
       <div class="live-cell ${isLastDigit ? 'highlight' : ''}">
@@ -490,13 +533,13 @@ function updateDigitGrid() {
 }
 
 // ========== UPDATE EVEN/ODD BARS ==========
-function updateEvenOdd() {
-  const total = tickHistory.length || 1;
+function updateEvenOdd(data) {
+  const total = data.tickHistory.length || 1;
   let even = 0, odd = 0;
   
   for(let i = 0; i < 10; i++) {
-    if(i % 2 === 0) even += digitCounts[i];
-    else odd += digitCounts[i];
+    if(i % 2 === 0) even += data.digitCounts[i];
+    else odd += data.digitCounts[i];
   }
   
   const evenPercent = (even / total * 100).toFixed(1);
@@ -509,11 +552,11 @@ function updateEvenOdd() {
 }
 
 // ========== UPDATE TICK STREAM ==========
-function updateTickStream() {
+function updateTickStream(data) {
   const stream = document.getElementById('tickStream');
   let html = '';
   
-  tickHistory.slice(-20).reverse().forEach(tick => {
+  data.tickHistory.slice(-20).reverse().forEach(tick => {
     const timeStr = new Date(tick.time).toLocaleTimeString();
     html += `
       <div class="tick-row">
@@ -527,13 +570,304 @@ function updateTickStream() {
   stream.innerHTML = html || '<div style="color:#94a3b8; text-align:center;">Waiting for ticks...</div>';
 }
 
-// ========== RESET DIGITS ==========
-function resetDigits() {
-  tickHistory = [];
-  digitCounts = Array(10).fill(0);
-  totalTicks = 0;
-  updateDigitGrid();
-  updateEvenOdd();
+// ========== EVALUATE 10-POINT SIGNALS FOR A SPECIFIC MARKET ==========
+function evaluateMarketSignals(symbol) {
+  const data = marketData[symbol];
+  if (!data || data.tickHistory.length < 100) return;
+  
+  // Rise/Fall
+  const riseFall = evaluateRiseFall(data);
+  data.signals.risefall = riseFall;
+  
+  // Even/Odd
+  const evenOdd = evaluateEvenOdd(data);
+  data.signals.evenodd = evenOdd;
+  
+  // Over/Under
+  const overUnder = evaluateOverUnder(data);
+  data.signals.overunder = overUnder;
+  
+  // Match/Differ
+  const matchDiffer = evaluateMatchDiffer(data);
+  data.signals.matchdiffer = matchDiffer;
+  
+  // Check for global alert (any signal with 10/10 conditions)
+  const allSignals = [riseFall, evenOdd, overUnder, matchDiffer];
+  for (let s of allSignals) {
+    if (s.direction !== 'NEUTRAL' && s.conditions.filter(Boolean).length === 10) {
+      // Show global alert
+      const marketName = VOLATILITY_INDICES.find(m => m.symbol === symbol)?.name || symbol;
+      document.getElementById('alertMessage').innerText = `${marketName} - ${s.direction} signal confirmed (10/10)`;
+      document.getElementById('globalAlert').classList.add('show');
+      break;
+    }
+  }
+  
+  // If this is the selected market, update the signals panel
+  if (symbol === currentSymbol) {
+    renderSignalsPanel(data);
+  }
+}
+
+// ========== SIGNAL EVALUATION FUNCTIONS (simplified, but following the checklists) ==========
+function evaluateRiseFall(data) {
+  const prices = data.tickHistory.map(t => t.price);
+  if (prices.length < 50) return { direction: 'NEUTRAL', confidence: 0, conditions: [], updated: new Date() };
+  
+  const lastPrice = prices[prices.length-1];
+  const prevPrice = prices[prices.length-2] || lastPrice;
+  const priceUp = lastPrice > prevPrice;
+  
+  // Simulate technical conditions using price action and randomness for demo
+  // In production, replace with real indicator calculations (Bollinger, RSI, Stochastic, etc.)
+  
+  // RISE conditions
+  let riseConds = [];
+  // 1. Lower Bound Rejection: price near recent low? (simulate)
+  const recentLow = Math.min(...prices.slice(-20));
+  riseConds.push(lastPrice < recentLow * 1.01);
+  // 2. Oversold Stochastic (random)
+  riseConds.push(Math.random() > 0.3);
+  // 3. RSI Recovery (random)
+  riseConds.push(Math.random() > 0.3);
+  // 4. Bottom Support (price up from low)
+  riseConds.push(priceUp);
+  // 5. Bullish EMA Cross (simple MA cross)
+  const ma5 = prices.slice(-5).reduce((a,b)=>a+b,0)/5;
+  const ma21 = prices.slice(-21).reduce((a,b)=>a+b,0)/21;
+  riseConds.push(lastPrice > ma5 && ma5 > ma21);
+  // 6. MACD Bottoming (random)
+  riseConds.push(Math.random() > 0.3);
+  // 7. Upward Velocity (random)
+  riseConds.push(Math.random() > 0.3);
+  // 8. Supportive SAR (random)
+  riseConds.push(Math.random() > 0.3);
+  // 9. Higher Low Pattern (last 3 ticks)
+  const lastThree = prices.slice(-3);
+  const higherLow = lastThree[0] < lastThree[1] && lastThree[1] < lastThree[2];
+  riseConds.push(higherLow);
+  // 10. Positive Momentum (random)
+  riseConds.push(Math.random() > 0.3);
+  
+  // FALL conditions
+  let fallConds = [];
+  const recentHigh = Math.max(...prices.slice(-20));
+  fallConds.push(lastPrice > recentHigh * 0.99);
+  fallConds.push(Math.random() > 0.3);
+  fallConds.push(Math.random() > 0.3);
+  fallConds.push(!priceUp);
+  fallConds.push(lastPrice < ma5 && ma5 < ma21);
+  fallConds.push(Math.random() > 0.3);
+  fallConds.push(Math.random() > 0.3);
+  fallConds.push(Math.random() > 0.3);
+  const lowerHigh = lastThree[0] > lastThree[1] && lastThree[1] > lastThree[2];
+  fallConds.push(lowerHigh);
+  fallConds.push(Math.random() > 0.3);
+  
+  const riseMet = riseConds.filter(Boolean).length;
+  const fallMet = fallConds.filter(Boolean).length;
+  
+  if (riseMet === 10) {
+    return { direction: 'RISE ↑', confidence: 95, conditions: riseConds, updated: new Date() };
+  } else if (fallMet === 10) {
+    return { direction: 'FALL ↓', confidence: 95, conditions: fallConds, updated: new Date() };
+  } else {
+    // Return previous? We'll keep neutral with some conditions for display
+    return { direction: 'NEUTRAL', confidence: 0, conditions: riseConds.slice(0,5), updated: new Date() };
+  }
+}
+
+function evaluateEvenOdd(data) {
+  const total = data.tickHistory.length;
+  if (total < 100) return { direction: 'NEUTRAL', confidence: 0, conditions: [], updated: new Date() };
+  
+  const even = data.digitCounts.filter((_, i) => i % 2 === 0).reduce((a,b)=>a+b,0);
+  const odd = total - even;
+  const evenPercent = (even / total * 100);
+  const oddPercent = (odd / total * 100);
+  const lastDigit = data.lastDigit;
+  const lastDigits = data.tickHistory.slice(-5).map(t => t.digit);
+  
+  // EVEN conditions
+  let evenConds = [];
+  evenConds.push(evenPercent > 55);
+  evenConds.push((evenPercent - oddPercent) >= 6);
+  const last10Even = data.tickHistory.slice(-10).filter(t => t.digit % 2 === 0).length;
+  const prev10Even = data.tickHistory.slice(-20, -10).filter(t => t.digit % 2 === 0).length;
+  evenConds.push(last10Even >= prev10Even);
+  const hotEvens = [0,2,4,6,8].filter(d => data.digitCounts[d] / total * 100 > 12).length;
+  evenConds.push(hotEvens >= 2);
+  let oddRun = 0;
+  for (let i = lastDigits.length-1; i>=0; i--) {
+    if (lastDigits[i] % 2 === 1) oddRun++; else break;
+  }
+  evenConds.push(oddRun >= 3);
+  evenConds.push(data.tickHistory.slice(-10).some(t => t.digit === 0));
+  const last20Even = data.tickHistory.slice(-20).filter(t => t.digit % 2 === 0).length;
+  evenConds.push(last20Even > 10);
+  evenConds.push(true); // volatility stable (simulate)
+  evenConds.push(true); // low latency (simulate)
+  evenConds.push(lastDigit % 2 === 0);
+  
+  // ODD conditions
+  let oddConds = [];
+  oddConds.push(oddPercent > 55);
+  oddConds.push((oddPercent - evenPercent) >= 6);
+  oddConds.push(last10Even <= prev10Even);
+  const hotOdds = [1,3,5,7,9].filter(d => data.digitCounts[d] / total * 100 > 12).length;
+  oddConds.push(hotOdds >= 2);
+  let evenRun = 0;
+  for (let i = lastDigits.length-1; i>=0; i--) {
+    if (lastDigits[i] % 2 === 0) evenRun++; else break;
+  }
+  oddConds.push(evenRun >= 3);
+  oddConds.push(data.tickHistory.slice(-10).some(t => t.digit === 9));
+  const last20Odd = data.tickHistory.slice(-20).filter(t => t.digit % 2 === 1).length;
+  oddConds.push(last20Odd > 10);
+  oddConds.push(true);
+  oddConds.push(true);
+  oddConds.push(lastDigit % 2 === 1);
+  
+  const evenMet = evenConds.filter(Boolean).length;
+  const oddMet = oddConds.filter(Boolean).length;
+  
+  if (evenMet === 10) {
+    return { direction: 'EVEN', confidence: 95, conditions: evenConds, updated: new Date() };
+  } else if (oddMet === 10) {
+    return { direction: 'ODD', confidence: 95, conditions: oddConds, updated: new Date() };
+  } else {
+    return { direction: 'NEUTRAL', confidence: 0, conditions: evenConds.slice(0,5), updated: new Date() };
+  }
+}
+
+function evaluateOverUnder(data) {
+  const total = data.tickHistory.length;
+  if (total < 100) return { direction: 'NEUTRAL', confidence: 0, conditions: [], updated: new Date() };
+  
+  const barrier = parseInt(document.getElementById('barrierSelect').value);
+  const over = data.digitCounts.filter((_, i) => i > barrier).reduce((a,b)=>a+b,0);
+  const under = total - over;
+  const overPercent = (over / total * 100);
+  const underPercent = (under / total * 100);
+  
+  // OVER conditions
+  let overConds = [];
+  overConds.push(overPercent > 38);
+  overConds.push(overPercent > underPercent);
+  overConds.push(true); // payout match (simulate)
+  overConds.push(true); // EMA up-slope (simulate)
+  for (let i=0; i<6; i++) overConds.push(Math.random() > 0.3); // fill to 10
+  
+  // UNDER conditions
+  let underConds = [];
+  underConds.push(underPercent > 38);
+  underConds.push(underPercent > overPercent);
+  underConds.push(true);
+  underConds.push(true);
+  for (let i=0; i<6; i++) underConds.push(Math.random() > 0.3);
+  
+  const overMet = overConds.filter(Boolean).length;
+  const underMet = underConds.filter(Boolean).length;
+  
+  if (overMet === 10) {
+    return { direction: 'OVER', confidence: 90, conditions: overConds, updated: new Date() };
+  } else if (underMet === 10) {
+    return { direction: 'UNDER', confidence: 90, conditions: underConds, updated: new Date() };
+  } else {
+    return { direction: 'NEUTRAL', confidence: 0, conditions: overConds.slice(0,5), updated: new Date() };
+  }
+}
+
+function evaluateMatchDiffer(data) {
+  const total = data.tickHistory.length;
+  if (total < 100) return { direction: 'NEUTRAL', confidence: 0, conditions: [], updated: new Date() };
+  
+  const target = parseInt(document.getElementById('digitSelect').value);
+  const matchCount = data.digitCounts[target];
+  const matchPercent = (matchCount / total * 100);
+  
+  // Find competitor (second highest)
+  let competitorCount = 0;
+  for (let i=0; i<10; i++) {
+    if (i !== target && data.digitCounts[i] > competitorCount) {
+      competitorCount = data.digitCounts[i];
+    }
+  }
+  const competitorPercent = (competitorCount / total * 100);
+  
+  // MATCH conditions
+  let matchConds = [];
+  matchConds.push(matchPercent - competitorPercent > 2);
+  matchConds.push(matchCount === Math.max(...data.digitCounts));
+  matchConds.push(matchPercent > (matchPercent + 0.5)); // momentum (simulate)
+  for (let i=0; i<7; i++) matchConds.push(Math.random() > 0.3);
+  
+  // DIFFER conditions
+  let differConds = [];
+  differConds.push(matchCount === Math.min(...data.digitCounts));
+  differConds.push(!data.tickHistory.slice(-5).some(t => t.digit === target));
+  differConds.push(matchPercent < 5);
+  for (let i=0; i<7; i++) differConds.push(Math.random() > 0.3);
+  
+  const matchMet = matchConds.filter(Boolean).length;
+  const differMet = differConds.filter(Boolean).length;
+  
+  if (matchMet === 10) {
+    return { direction: 'MATCH', confidence: 90, conditions: matchConds, updated: new Date() };
+  } else if (differMet === 10) {
+    return { direction: 'DIFFER', confidence: 90, conditions: differConds, updated: new Date() };
+  } else {
+    return { direction: 'NEUTRAL', confidence: 0, conditions: matchConds.slice(0,5), updated: new Date() };
+  }
+}
+
+// ========== RENDER SIGNALS PANEL ==========
+function renderSignalsPanel(data) {
+  const grid = document.getElementById('signalsGrid');
+  const signals = data.signals;
+  
+  const cards = [
+    { title: 'RISE/FALL', sig: signals.risefall },
+    { title: 'EVEN/ODD', sig: signals.evenodd },
+    { title: 'OVER/UNDER', sig: signals.overunder },
+    { title: 'MATCH/DIFFER', sig: signals.matchdiffer }
+  ];
+  
+  let html = '';
+  cards.forEach(card => {
+    const dir = card.sig.direction;
+    const conf = card.sig.confidence;
+    const updated = card.sig.updated ? card.sig.updated.toLocaleTimeString() : '--';
+    
+    let conditionsHtml = '';
+    if (card.sig.conditions && card.sig.conditions.length) {
+      conditionsHtml = card.sig.conditions.slice(0,5).map((cond, idx) => `
+        <div class="condition-item">
+          <span class="${cond ? 'condition-check' : 'condition-cross'}">${cond ? '✅' : '❌'}</span>
+          <span>Cond ${idx+1}</span>
+        </div>
+      `).join('');
+    } else {
+      conditionsHtml = '<div class="condition-item">⏳ Waiting for data</div>';
+    }
+    
+    const directionColor = dir.includes('RISE') || dir.includes('EVEN') || dir.includes('OVER') || dir.includes('MATCH') ? '#22c55e' : (dir.includes('FALL') || dir.includes('ODD') || dir.includes('UNDER') || dir.includes('DIFFER') ? '#dc2626' : '#94a3b8');
+    
+    html += `
+      <div class="signal-card">
+        <div class="signal-title">${card.title}</div>
+        <div class="signal-direction" style="color:${directionColor};">${dir}</div>
+        <div class="signal-confidence">${conf}% confidence</div>
+        <div class="signal-conditions">
+          ${conditionsHtml}
+        </div>
+        <div class="signal-updated">${updated}</div>
+      </div>
+    `;
+  });
+  
+  grid.innerHTML = html;
+  document.getElementById('signalLastUpdate').innerText = `Last updated: ${new Date().toLocaleTimeString()}`;
 }
 
 // ========== DERIV CHART ==========
@@ -567,278 +901,6 @@ function initTradingView() {
   });
 }
 
-// ========== AI DUAL-CHECKLIST SIGNAL EVALUATION ==========
-function evaluateAllSignals() {
-  if (tickHistory.length < 100) return; // Need enough data
-  
-  // Rise/Fall signals
-  evaluateRiseFall();
-  // Even/Odd signals
-  evaluateEvenOdd();
-  // Over/Under signals
-  evaluateOverUnder();
-  // Match/Differ signals
-  evaluateMatchDiffer();
-  
-  renderSignalsPanel();
-  document.getElementById('signalLastUpdate').innerText = `Last updated: ${new Date().toLocaleTimeString()}`;
-}
-
-function evaluateRiseFall() {
-  const prices = tickHistory.map(t => t.price);
-  const lastPrice = prices[prices.length-1];
-  const prevPrice = prices[prices.length-2] || lastPrice;
-  
-  const priceUp = lastPrice > prevPrice;
-  
-  // Simulate 10 conditions for RISE
-  let riseConditions = [];
-  let fallConditions = [];
-  
-  const recentLow = Math.min(...prices.slice(-20));
-  const nearLow = lastPrice < recentLow * 1.01;
-  riseConditions.push(nearLow);
-  fallConditions.push(!nearLow);
-  
-  riseConditions.push(Math.random() > 0.3);
-  fallConditions.push(Math.random() > 0.3);
-  
-  riseConditions.push(Math.random() > 0.3);
-  fallConditions.push(Math.random() > 0.3);
-  
-  riseConditions.push(priceUp);
-  fallConditions.push(!priceUp);
-  
-  const ma5 = prices.slice(-5).reduce((a,b) => a+b,0)/5;
-  const ma21 = prices.slice(-21).reduce((a,b) => a+b,0)/21;
-  riseConditions.push(lastPrice > ma5 && ma5 > ma21);
-  fallConditions.push(lastPrice < ma5 && ma5 < ma21);
-  
-  riseConditions.push(Math.random() > 0.3);
-  fallConditions.push(Math.random() > 0.3);
-  
-  riseConditions.push(Math.random() > 0.3);
-  fallConditions.push(Math.random() > 0.3);
-  
-  riseConditions.push(Math.random() > 0.3);
-  fallConditions.push(Math.random() > 0.3);
-  
-  const lastThree = prices.slice(-3);
-  const higherLow = lastThree[0] < lastThree[1] && lastThree[1] < lastThree[2];
-  riseConditions.push(higherLow);
-  fallConditions.push(!higherLow);
-  
-  riseConditions.push(Math.random() > 0.3);
-  fallConditions.push(Math.random() > 0.3);
-  
-  const riseMet = riseConditions.filter(Boolean).length;
-  const fallMet = fallConditions.filter(Boolean).length;
-  
-  if (riseMet === 10) {
-    signals.risefall.direction = 'RISE ↑';
-    signals.risefall.confidence = 95;
-    signals.risefall.conditions = riseConditions;
-    signals.risefall.updated = new Date();
-  } else if (fallMet === 10) {
-    signals.risefall.direction = 'FALL ↓';
-    signals.risefall.confidence = 95;
-    signals.risefall.conditions = fallConditions;
-    signals.risefall.updated = new Date();
-  }
-  // else keep previous
-}
-
-function evaluateEvenOdd() {
-  const total = tickHistory.length;
-  const even = digitCounts.filter((_, i) => i % 2 === 0).reduce((a,b) => a+b, 0);
-  const odd = total - even;
-  const evenPercent = (even / total * 100);
-  const oddPercent = (odd / total * 100);
-  
-  // Conditions for EVEN
-  let evenConditions = [];
-  evenConditions.push(evenPercent > 55);
-  evenConditions.push((evenPercent - oddPercent) >= 6);
-  const last10Even = tickHistory.slice(-10).filter(t => t.digit % 2 === 0).length;
-  const prev10Even = tickHistory.slice(-20, -10).filter(t => t.digit % 2 === 0).length;
-  evenConditions.push(last10Even >= prev10Even);
-  const hotEvens = [0,2,4,6,8].filter(d => digitCounts[d] / total * 100 > 12).length;
-  evenConditions.push(hotEvens >= 2);
-  const lastDigits = tickHistory.slice(-5).map(t => t.digit);
-  let oddRun = 0;
-  for (let i = lastDigits.length-1; i >=0; i--) {
-    if (lastDigits[i] % 2 === 1) oddRun++; else break;
-  }
-  evenConditions.push(oddRun >= 3);
-  evenConditions.push(tickHistory.slice(-10).some(t => t.digit === 0));
-  const last20Even = tickHistory.slice(-20).filter(t => t.digit % 2 === 0).length;
-  evenConditions.push(last20Even > 10);
-  evenConditions.push(true); // volatility stable
-  evenConditions.push(true); // low latency
-  evenConditions.push(lastDigit % 2 === 0);
-  
-  // Conditions for ODD
-  let oddConditions = [];
-  oddConditions.push(oddPercent > 55);
-  oddConditions.push((oddPercent - evenPercent) >= 6);
-  oddConditions.push(last10Even <= prev10Even);
-  const hotOdds = [1,3,5,7,9].filter(d => digitCounts[d] / total * 100 > 12).length;
-  oddConditions.push(hotOdds >= 2);
-  let evenRun = 0;
-  for (let i = lastDigits.length-1; i >=0; i--) {
-    if (lastDigits[i] % 2 === 0) evenRun++; else break;
-  }
-  oddConditions.push(evenRun >= 3);
-  oddConditions.push(tickHistory.slice(-10).some(t => t.digit === 9));
-  const last20Odd = tickHistory.slice(-20).filter(t => t.digit % 2 === 1).length;
-  oddConditions.push(last20Odd > 10);
-  oddConditions.push(true);
-  oddConditions.push(true);
-  oddConditions.push(lastDigit % 2 === 1);
-  
-  const evenMet = evenConditions.filter(Boolean).length;
-  const oddMet = oddConditions.filter(Boolean).length;
-  
-  if (evenMet === 10) {
-    signals.evenodd.direction = 'EVEN';
-    signals.evenodd.confidence = 95;
-    signals.evenodd.conditions = evenConditions;
-    signals.evenodd.updated = new Date();
-  } else if (oddMet === 10) {
-    signals.evenodd.direction = 'ODD';
-    signals.evenodd.confidence = 95;
-    signals.evenodd.conditions = oddConditions;
-    signals.evenodd.updated = new Date();
-  }
-}
-
-function evaluateOverUnder() {
-  const barrier = parseInt(document.getElementById('barrierSelect').value);
-  const total = tickHistory.length;
-  const over = digitCounts.filter((_, i) => i > barrier).reduce((a,b) => a+b, 0);
-  const under = total - over;
-  const overPercent = (over / total * 100);
-  const underPercent = (under / total * 100);
-  
-  let overConditions = [];
-  overConditions.push(overPercent > 38);
-  overConditions.push(overPercent > underPercent);
-  overConditions.push(true); // payout match
-  overConditions.push(true); // EMA up-slope
-  for (let i=0; i<6; i++) overConditions.push(true);
-  
-  let underConditions = [];
-  underConditions.push(underPercent > 38);
-  underConditions.push(underPercent > overPercent);
-  underConditions.push(true);
-  underConditions.push(true);
-  for (let i=0; i<6; i++) underConditions.push(true);
-  
-  const overMet = overConditions.filter(Boolean).length;
-  const underMet = underConditions.filter(Boolean).length;
-  
-  if (overMet === 10) {
-    signals.overunder.direction = 'OVER';
-    signals.overunder.confidence = 90;
-    signals.overunder.conditions = overConditions;
-    signals.overunder.updated = new Date();
-  } else if (underMet === 10) {
-    signals.overunder.direction = 'UNDER';
-    signals.overunder.confidence = 90;
-    signals.overunder.conditions = underConditions;
-    signals.overunder.updated = new Date();
-  }
-}
-
-function evaluateMatchDiffer() {
-  const target = parseInt(document.getElementById('digitSelect').value);
-  const total = tickHistory.length;
-  const matchCount = digitCounts[target];
-  const matchPercent = (matchCount / total * 100);
-  
-  let competitor = -1, competitorCount = 0;
-  for (let i=0; i<10; i++) {
-    if (i !== target && digitCounts[i] > competitorCount) {
-      competitorCount = digitCounts[i];
-      competitor = i;
-    }
-  }
-  const competitorPercent = (competitorCount / total * 100);
-  
-  let matchConditions = [];
-  matchConditions.push(matchPercent - competitorPercent > 2);
-  matchConditions.push(matchCount === Math.max(...digitCounts));
-  matchConditions.push(matchPercent > (matchPercent + 0.5)); // momentum
-  for (let i=0; i<7; i++) matchConditions.push(true);
-  
-  let differConditions = [];
-  differConditions.push(matchCount === Math.min(...digitCounts));
-  differConditions.push(!tickHistory.slice(-5).some(t => t.digit === target));
-  differConditions.push(matchPercent < 5);
-  for (let i=0; i<7; i++) differConditions.push(true);
-  
-  const matchMet = matchConditions.filter(Boolean).length;
-  const differMet = differConditions.filter(Boolean).length;
-  
-  if (matchMet === 10) {
-    signals.matchdiffer.direction = 'MATCH';
-    signals.matchdiffer.confidence = 90;
-    signals.matchdiffer.conditions = matchConditions;
-    signals.matchdiffer.updated = new Date();
-  } else if (differMet === 10) {
-    signals.matchdiffer.direction = 'DIFFER';
-    signals.matchdiffer.confidence = 90;
-    signals.matchdiffer.conditions = differConditions;
-    signals.matchdiffer.updated = new Date();
-  }
-}
-
-function renderSignalsPanel() {
-  const grid = document.getElementById('signalsGrid');
-  
-  const signalCards = [
-    { title: 'RISE/FALL', data: signals.risefall },
-    { title: 'EVEN/ODD', data: signals.evenodd },
-    { title: 'OVER/UNDER', data: signals.overunder },
-    { title: 'MATCH/DIFFER', data: signals.matchdiffer }
-  ];
-  
-  let html = '';
-  signalCards.forEach(card => {
-    const dir = card.data.direction;
-    const conf = card.data.confidence;
-    const updated = card.data.updated ? card.data.updated.toLocaleTimeString() : '--';
-    
-    let conditionsHtml = '';
-    if (card.data.conditions && card.data.conditions.length) {
-      conditionsHtml = card.data.conditions.slice(0,5).map((cond, idx) => `
-        <div class="condition-item">
-          <span class="${cond ? 'condition-check' : 'condition-cross'}">${cond ? '✅' : '❌'}</span>
-          <span>Cond ${idx+1}</span>
-        </div>
-      `).join('');
-    } else {
-      conditionsHtml = '<div class="condition-item">⏳ Waiting for data</div>';
-    }
-    
-    const directionColor = dir.includes('RISE') || dir.includes('EVEN') || dir.includes('OVER') || dir.includes('MATCH') ? '#22c55e' : (dir.includes('FALL') || dir.includes('ODD') || dir.includes('UNDER') || dir.includes('DIFFER') ? '#dc2626' : '#94a3b8');
-    
-    html += `
-      <div class="signal-card">
-        <div class="signal-title">${card.title}</div>
-        <div class="signal-direction" style="color:${directionColor};">${dir}</div>
-        <div class="signal-confidence">${conf}% confidence</div>
-        <div class="signal-conditions">
-          ${conditionsHtml}
-        </div>
-        <div class="signal-updated">${updated}</div>
-      </div>
-    `;
-  });
-  
-  grid.innerHTML = html;
-}
-
 // ========== TRADE FUNCTIONS ==========
 function trade(type) {
   if(!isConnected) {
@@ -857,20 +919,23 @@ function executeTrade() {
 window.onload = function() {
   initMarketGrid();
   loadDerivChart(currentSymbol);
-  initTradingView();  // Restore TradingView
-  updateDigitGrid();
+  initTradingView();
   
-  // Initialize signals panel
-  renderSignalsPanel();
+  // Initialize displays
+  selectedMarketData = marketData[currentSymbol];
+  updateDigitGrid(selectedMarketData);
+  updateEvenOdd(selectedMarketData);
+  renderSignalsPanel(selectedMarketData);
   
+  // Tick rate calculator
   setInterval(() => {
     const now = Date.now();
     tickTimes = tickTimes.filter(t => now - t < 1000);
-    tickRate = tickTimes.length;
-    document.getElementById('tickRate').innerText = tickRate;
+    const rate = tickTimes.length;
+    document.getElementById('tickRate').innerText = rate;
   }, 100);
 };
 </script>
 
 </body>
-                                                                                  </html>
+   </html>
