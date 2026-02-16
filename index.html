@@ -113,7 +113,7 @@
 
   <!-- connection -->
   <div class="connection-bar">
-    <input type="password" class="token-input" id="token" placeholder="Deriv API Token" value="rbQgwOkbsfDoKw2">
+    <input type="password" class="token-input" id="token" placeholder="Deriv API Token">
     <select class="token-input" style="flex:1;" id="appSelect">
       <option value="126973">App ID: 126973</option>
       <option value="1089">App ID: 1089</option>
@@ -136,6 +136,7 @@
     <div class="status-card"><div class="status-label">CURRENT</div><div class="status-value" id="currentMarket">1HZ100V</div></div>
     <div class="status-card"><div class="status-label">PRICE</div><div class="status-value" id="currentPrice">0.00</div></div>
     <div class="status-card"><div class="status-label">BALANCE</div><div class="status-value" id="balance">10,000</div></div>
+    <div class="status-card"><div class="status-label">TOTAL TICKS</div><div class="status-value" id="totalTicks">0</div></div>
   </div>
 
   <!-- main area -->
@@ -154,8 +155,9 @@
         <div id="derivChartContainer" class="deriv-chart"></div>
       </div>
 
-      <!-- HEARTBEAT + 1-MINUTE SIGNALS (NON-FLICKER) -->
+      <!-- HEARTBEAT + 1-MINUTE SIGNALS -->
       <div class="heartbeat-panel">
+        <button id="muteBtn" style="padding:8px 12px;border-radius:12px;border:none;background:#334155;color:white;margin-bottom:10px;cursor:pointer;">🔊 UNMUTED</button>
         <div class="panel-header">
           <div class="heartbeat-title">
             <h2>🔴 1‑MINUTE SIGNAL LAB</h2>
@@ -180,23 +182,20 @@
         <!-- 0-9 grid -->
         <div class="live-grid" id="liveDigitGrid"></div>
 
-        <!-- ========== SIGNALS (1-MINUTE WINDOW, NO FLICKER) ========== -->
+        <!-- SIGNALS -->
         <div class="signal-row">
-          <!-- RISE / FALL (based on last digit vs 1-min avg) -->
           <div class="signal-panel">
             <div class="title"><span>📈 RISE / FALL</span> <span class="signal-badge" id="rfBadge">NEUTRAL</span></div>
             <div class="value" id="rfValue">--</div>
             <div class="confidence-bar"><div class="confidence-fill" id="rfConfidence" style="width:0%"></div></div>
             <div class="sub">vs 1m average · <span id="rfDesc">stable</span></div>
           </div>
-          <!-- OVER / UNDER (threshold 4.5) -->
           <div class="signal-panel">
             <div class="title"><span>🎯 OVER / UNDER</span> <span class="signal-badge" id="ouBadge">NEUTRAL</span></div>
             <div class="value" id="ouValue">--</div>
             <div class="confidence-bar"><div class="confidence-fill" id="ouConfidence" style="width:0%"></div></div>
             <div class="sub">threshold 4.5 · <span id="ouDesc">--</span></div>
           </div>
-          <!-- MATCHES / DIFFERS (last digit vs predicted digit) -->
           <div class="signal-panel">
             <div class="title"><span>🔄 MATCH / DIFFER</span> <span class="signal-badge" id="mdBadge">NEUTRAL</span></div>
             <div class="value" id="mdValue">--</div>
@@ -209,274 +208,141 @@
         <div class="tick-stream" id="tickStream"><div style="color:#94a3b8; text-align:center;">Waiting for ticks...</div></div>
       </div>
     </div>
-
-    <!-- RIGHT: trade panel (quick) -->
-    <div>
-      <div class="trade-panel">
-        <h3 style="margin-bottom:20px;">QUICK TRADE</h3>
-        <label>Amount (USD)</label>
-        <input type="number" id="amount" class="amount-input" value="10.00" min="1" max="10000">
-        <div class="trade-buttons">
-          <button class="trade-btn btn-buy" onclick="trade('rise')">RISE ↑</button>
-          <button class="trade-btn btn-sell" onclick="trade('fall')">FALL ↓</button>
-          <button class="trade-btn btn-buy" onclick="trade('even')">EVEN</button>
-          <button class="trade-btn btn-buy" onclick="trade('odd')">ODD</button>
-          <button class="trade-btn btn-buy" onclick="trade('over')">OVER</button>
-          <button class="trade-btn btn-buy" onclick="trade('under')">UNDER</button>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0;">
-          <select id="barrierSelect" style="padding:12px;background:#1e293b;border:1px solid #334155;border-radius:8px;color:white;">
-            <option>Barrier 1</option><option>Barrier 2</option><option>Barrier 3</option><option>Barrier 4</option>
-            <option>Barrier 5</option><option>Barrier 6</option><option>Barrier 7</option><option selected>Barrier 8</option>
-          </select>
-          <select id="digitSelect" style="padding:12px;background:#1e293b;border:1px solid #334155;border-radius:8px;color:white;">
-            <option>Digit 0</option><option>Digit 1</option><option>Digit 2</option><option>Digit 3</option><option>Digit 4</option>
-            <option>Digit 5</option><option>Digit 6</option><option>Digit 7</option><option>Digit 8</option><option selected>Digit 9</option>
-          </select>
-        </div>
-        <div style="background:#1e293b;border-radius:12px;padding:15px;margin:15px 0;">
-          <div style="display:flex;justify-content:space-between;"><span>Stake:</span><span style="color:#22c55e;" id="stakeDisplay">$10.00</span></div>
-          <div style="display:flex;justify-content:space-between;margin-top:8px;"><span>Potential Payout:</span><span style="color:#22c55e;" id="payoutDisplay">$95.00</span></div>
-        </div>
-        <button class="btn btn-green" style="width:100%;padding:15px;" onclick="executeTrade()">PLACE TRADE</button>
+<!-- RIGHT: trade panel -->
+    <div class="trade-panel">
+      <div style="font-weight:600;font-size:16px;margin-bottom:10px;">💰 TRADE PANEL</div>
+      <input type="number" class="amount-input" id="tradeAmount" placeholder="Stake / Amount">
+      <div class="trade-buttons">
+        <button class="trade-btn btn-buy" onclick="executeTrade('buy')">BUY ⬆</button>
+        <button class="trade-btn btn-sell" onclick="executeTrade('sell')">SELL ⬇</button>
+      </div>
+      <div class="risk-warning">
+        ⚠️ Trading synthetic indices carries risk. Only use what you can afford to lose.
       </div>
     </div>
   </div>
-  <div class="risk-warning">⚠️ 1-minute non‑flicker signals · live 1s data · high risk</div>
 </div>
 
 <script>
-// ========== 13 INDICES ==========
-const VOLATILITY_INDICES = [
-  { name: "Volatility 10 (1s) Index", symbol: "1HZ10V", type: "1s" },
-  { name: "Volatility 10 Index", symbol: "R_10", type: "normal" },
-  { name: "Volatility 15 (1s) Index", symbol: "1HZ15V", type: "1s" },
-  { name: "Volatility 25 (1s) Index", symbol: "1HZ25V", type: "1s" },
-  { name: "Volatility 25 Index", symbol: "R_25", type: "normal" },
-  { name: "Volatility 30 (1s) Index", symbol: "1HZ30V", type: "1s" },
-  { name: "Volatility 50 (1s) Index", symbol: "1HZ50V", type: "1s" },
-  { name: "Volatility 50 Index", symbol: "R_50", type: "normal" },
-  { name: "Volatility 75 (1s) Index", symbol: "1HZ75V", type: "1s" },
-  { name: "Volatility 75 Index", symbol: "R_75", type: "normal" },
-  { name: "Volatility 90 (1s) Index", symbol: "1HZ90V", type: "1s" },
-  { name: "Volatility 100 (1s) Index", symbol: "1HZ100V", type: "1s" },
-  { name: "Volatility 100 Index", symbol: "R_100", type: "normal" }
-];
+  // ========== SETTINGS ==========
+  const markets = [
+    "Volatility 10 (1s)","Volatility 10","Volatility 15 (1s)","Volatility 25 (1s)",
+    "Volatility 25","Volatility 30 (1s)","Volatility 50 (1s)","Volatility 50",
+    "Volatility 75 (1s)","Volatility 75","Volatility 100 (1s)","Volatility 100",
+    "Volatility 200 (1s)"
+  ];
+  const liveVoice = new SpeechSynthesisUtterance();
+  let mute = false;
 
-// ========== STATE ==========
-let ws = null;
-let isConnected = false;
-let currentSymbol = "1HZ100V";
-let currentMarket = VOLATILITY_INDICES[11]; 
-let tickHistory = [];           // full history (all ticks)
-let oneMinuteTicks = [];        // rolling 60s window (for signals, no flicker)
-let digitCounts = Array(10).fill(0);
-let lastDigit = 0;
-let tickTimes = [];
-let totalTicks = 0;
-let lastTickTime = Date.now();
-
-// signal state (updated every tick but derived from oneMinuteTicks)
-let lastSignals = { rf: '--', ou: '--', md: '--', rfConf:0, ouConf:0, mdConf:0, rfBadge:'NEUTRAL', ouBadge:'NEUTRAL', mdBadge:'NEUTRAL', modeDigit:0, avg:0.0 };
-
-// ========== UI INIT ==========
-function initMarketGrid() {
-  const grid = document.getElementById('marketGrid');
-  grid.innerHTML = '';
-  VOLATILITY_INDICES.forEach((market, index) => {
-    const btn = document.createElement('button');
-    btn.className = `market-btn ${market.type === '1s' ? 'vol-1s' : ''}`;
-    btn.textContent = market.name;
-    btn.onclick = () => selectMarket(market, index);
-    if(market.symbol === currentSymbol) btn.classList.add('active');
-    grid.appendChild(btn);
+  // ========== MUTE TOGGLE ==========
+  const muteBtn = document.getElementById('muteBtn');
+  muteBtn.addEventListener('click', ()=>{
+    mute = !mute;
+    muteBtn.innerText = mute ? '🔇 MUTED' : '🔊 UNMUTED';
   });
-}
 
-function selectMarket(market, index) {
-  currentSymbol = market.symbol;
-  currentMarket = market;
-  document.querySelectorAll('.market-btn').forEach(btn => btn.classList.remove('active'));
-  document.querySelectorAll('.market-btn')[index].classList.add('active');
-  document.getElementById('marketDisplay').innerText = market.name;
-  document.getElementById('currentMarket').innerText = market.symbol;
-  loadDerivChart(market.symbol);
-  if(isConnected && ws) {
-    ws.send(JSON.stringify({ forget_all: 'ticks' }));
-    ws.send(JSON.stringify({ ticks: market.symbol, subscribe: 1 }));
+  // ========== MARKET BUTTONS ==========
+  const marketGrid = document.getElementById('marketGrid');
+  markets.forEach((m,i)=>{
+    const btn = document.createElement('button');
+    btn.classList.add('market-btn');
+    if(i%2==0) btn.classList.add('vol-1s');
+    btn.innerText = m;
+    btn.addEventListener('click', ()=>selectMarket(m, btn));
+    marketGrid.appendChild(btn);
+  });
+  function selectMarket(name, btn){
+    document.querySelectorAll('.market-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('marketDisplay').innerText = name;
+    currentMarket = name;
   }
-  resetDigits();
-}
 
-function resetDigits() {
-  tickHistory = [];
-  oneMinuteTicks = [];
-  digitCounts = Array(10).fill(0);
-  totalTicks = 0;
-  updateDigitGrid(); updateEvenOdd(); updateSignalPanels();
-}
+  // ========== LIVE DIGIT GRID ==========
+  const liveDigitGrid = document.getElementById('liveDigitGrid');
+  for(let i=0;i<=9;i++){
+    const div = document.createElement('div');
+    div.className = 'live-cell';
+    div.innerHTML = `<div class="cell-digit" id="digit${i}">${i}</div>
+                     <div class="cell-count" id="count${i}">0</div>
+                     <div class="cell-percent" id="percent${i}">0%</div>
+                     <div class="cell-bar" id="bar${i}"></div>`;
+    liveDigitGrid.appendChild(div);
+  }
 
-// ========== WEBSOCKET ==========
-function connectWebSocket() {
-  const token = document.getElementById('token').value;
-  const appId = document.getElementById('appSelect').value;
-  if(!token) { alert('Token required'); return; }
-  if(ws) ws.close();
-  ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${appId}`);
-  ws.onopen = () => {
-    isConnected = true;
-    document.getElementById('connStatus').innerText = 'LIVE';
-    document.getElementById('liveStatus').innerText = '🔴 LIVE STREAMING';
-    document.getElementById('connStatus').style.color = '#22c55e';
-    ws.send(JSON.stringify({ authorize: token }));
-  };
-  ws.onmessage = (msg) => {
-    const data = JSON.parse(msg.data);
-    if(data.msg_type === 'authorize') {
-      ws.send(JSON.stringify({ ticks: currentSymbol, subscribe: 1 }));
-      ws.send(JSON.stringify({ balance: 1, subscribe: 1 }));
+  // ========== STATE ==========
+  let ws = null;
+  let totalTicks = 0;
+  let lastDigit = 0;
+  let evenCount = 0;
+  let oddCount = 0;
+  let currentMarket = markets[0];
+  let digitCounts = Array(10).fill(0);
+
+  // ========== CONNECT / DISCONNECT ==========
+  function connectWebSocket(){
+    const token = document.getElementById('token').value;
+    if(!token){alert('Enter API token!');return;}
+    ws = new WebSocket('wss://ws.derivws.com/websockets/v3?app_id=126973');
+    ws.onopen = ()=>{
+      document.getElementById('connStatus').innerText='Connected';
+      document.getElementById('liveStatus').innerText='LIVE';
+    };
+    ws.onmessage = msg=>{
+      const data = JSON.parse(msg.data);
+      if(data && data.tick){
+        handleTick(data.tick);
+      }
+    };
+    ws.onclose = ()=>document.getElementById('connStatus').innerText='Offline';
+    ws.onerror = ()=>document.getElementById('connStatus').innerText='Error';
+  }
+  function disconnectWebSocket(){
+    if(ws) ws.close();
+    document.getElementById('connStatus').innerText='Offline';
+    document.getElementById('liveStatus').innerText='DISCONNECTED';
+  }
+
+  // ========== HANDLE TICK ==========
+  function handleTick(tick){
+    const price = parseFloat(tick.quote);
+    totalTicks++;
+    lastDigit = Math.floor(price%10);
+    digitCounts[lastDigit]++;
+    if(lastDigit%2===0) evenCount++; else oddCount++;
+
+    document.getElementById('priceDisplay').innerText=price.toFixed(2);
+    document.getElementById('lastDigit').innerText=lastDigit;
+    document.getElementById('totalTicks').innerText=totalTicks;
+    document.getElementById('evenBar').style.width=((evenCount/totalTicks)*100).toFixed(1)+'%';
+    document.getElementById('oddBar').style.width=((oddCount/totalTicks)*100).toFixed(1)+'%';
+    document.getElementById('evenPercent').innerText=((evenCount/totalTicks)*100).toFixed(1)+'%';
+    document.getElementById('oddPercent').innerText=((oddCount/totalTicks)*100).toFixed(1)+'%';
+
+    // update 0-9 cells
+    for(let i=0;i<=9;i++){
+      document.getElementById('count'+i).innerText = digitCounts[i];
+      const pct = (digitCounts[i]/totalTicks)*100;
+      document.getElementById('percent'+i).innerText = pct.toFixed(1)+'%';
+      document.getElementById('bar'+i).style.width = pct.toFixed(1)+'%';
+      document.getElementById('bar'+i).parentNode.classList.toggle('highlight', i===lastDigit);
     }
-    if(data.msg_type === 'tick' && data.tick) processTick(data.tick);
-    if(data.balance) document.getElementById('balance').innerText = data.balance.balance?.toFixed(2) || '0.00';
-  };
-  ws.onclose = () => { isConnected = false; document.getElementById('connStatus').innerText = 'OFFLINE'; document.getElementById('liveStatus').innerText = 'CONNECT TO START'; };
-}
-function disconnectWebSocket() { if(ws) ws.close(); }
 
-// ========== PROCESS TICK (update 1-minute rolling window) ==========
-function processTick(tick) {
-  const price = parseFloat(tick.quote);
-  const digit = parseInt(price.toString().replace('.', '').slice(-1));
-  const now = Date.now();
-
-  // last digit & price
-  lastDigit = digit;
-  document.getElementById('lastDigit').innerText = digit;
-  document.getElementById('priceDisplay').innerText = price.toFixed(2);
-  document.getElementById('currentPrice').innerText = price.toFixed(2);
-  
-  // tick rate
-  tickTimes.push(now);
-  tickTimes = tickTimes.filter(t => now - t < 1000);
-  document.getElementById('tickRate').innerText = tickTimes.length;
-
-  // push to full history & counts
-  tickHistory.push({ time: new Date().toLocaleTimeString(), price, digit, ts: now });
-  digitCounts[digit]++;
-  totalTicks++;
-  document.getElementById('totalTicks').innerText = totalTicks;
-
-  // ----- 1-minute rolling window (non‑flicker signal base) -----
-  oneMinuteTicks.push({ digit, ts: now });
-  // remove ticks older than 60 seconds
-  oneMinuteTicks = oneMinuteTicks.filter(t => now - t.ts <= 60000);
-  document.getElementById('oneMinTicks').innerText = oneMinuteTicks.length;
-
-  // update UI elements
-  updateDigitGrid();
-  updateEvenOdd();
-  updateTickStream();
-  updateSignalPanels();     // uses oneMinuteTicks, stable
-
-  document.getElementById('lastUpdate').innerText = `updated ${new Date().toLocaleTimeString()}`;
-}
-
-// ========== SIGNAL PANELS (based on last 60s) ==========
-function updateSignalPanels() {
-  const ticks = oneMinuteTicks;  // array of {digit}
-  if (ticks.length === 0) {
-    setSignalDefaults();
-    return;
+    // AI Voice announce
+    if(!mute){
+      liveVoice.text = `Last digit is ${lastDigit}`;
+      speechSynthesis.speak(liveVoice);
+    }
   }
 
-  const digits = ticks.map(t => t.digit);
-  const len = digits.length;
-  const sum = digits.reduce((a,b)=>a+b,0);
-  const avg = sum / len;                     // average digit (float)
-  const last = digits[digits.length-1];       // current (last) digit
-
-  // ----- RISE / FALL (compare last digit to average) -----
-  let rfSignal = last > avg ? 'RISE' : (last < avg ? 'FALL' : 'NEUTRAL');
-  let rfConf = Math.min(100, Math.abs(last - avg) * 35); // confidence 0..100
-  rfConf = Math.min(100, Math.round(rfConf));
-  let rfBadge = rfSignal==='RISE'?'RISE':(rfSignal==='FALL'?'FALL':'NEUTRAL');
-  let rfDesc = rfSignal==='RISE'?`last > avg (${avg.toFixed(2)})`:(rfSignal==='FALL'?`last < avg (${avg.toFixed(2)})`:'same as avg');
-
-  // ----- OVER / UNDER (threshold 4.5) -----
-  let overUnder = last > 4.5 ? 'OVER' : (last < 4.5 ? 'UNDER' : 'NEUTRAL');
-  let ouConf = Math.min(100, Math.abs(last - 4.5) * 35);
-  ouConf = Math.min(100, Math.round(ouConf));
-  let ouBadge = overUnder;
-  let ouDesc = overUnder==='OVER'?'>4.5':(overUnder==='UNDER'?'<4.5':'=4.5');
-
-  // ----- MATCH / DIFFER (mode digit of last 60s) -----
-  let freq = Array(10).fill(0);
-  digits.forEach(d => freq[d]++);
-  let modeDigit = freq.indexOf(Math.max(...freq));   // most frequent digit
-  let matchDiff = last === modeDigit ? 'MATCH' : 'DIFFER';
-  let mdConf = matchDiff==='MATCH' ? (freq[modeDigit]/len*100) : ((len-freq[modeDigit])/len*100);
-  mdConf = Math.round(mdConf);
-  let mdBadge = matchDiff;
-  let mdDesc = matchDiff==='MATCH' ? `= mode ${modeDigit}` : `≠ mode ${modeDigit}`;
-
-  // update DOM (with stable values, no flicker)
-  document.getElementById('rfValue').innerText = rfSignal;
-  document.getElementById('rfBadge').innerText = rfBadge;
-  document.getElementById('rfConfidence').style.width = rfConf + '%';
-  document.getElementById('rfDesc').innerText = rfDesc;
-
-  document.getElementById('ouValue').innerText = overUnder;
-  document.getElementById('ouBadge').innerText = ouBadge;
-  document.getElementById('ouConfidence').style.width = ouConf + '%';
-  document.getElementById('ouDesc').innerText = ouDesc;
-
-  document.getElementById('mdValue').innerText = matchDiff;
-  document.getElementById('mdBadge').innerText = mdBadge;
-  document.getElementById('mdConfidence').style.width = mdConf + '%';
-  document.getElementById('mdDesc').innerText = mdDesc;
-}
-
-function setSignalDefaults() {
-  document.getElementById('rfValue').innerText = '--'; document.getElementById('rfBadge').innerText = 'NEUTRAL'; document.getElementById('rfConfidence').style.width='0%'; document.getElementById('rfDesc').innerText='no data';
-  document.getElementById('ouValue').innerText = '--'; document.getElementById('ouBadge').innerText = 'NEUTRAL'; document.getElementById('ouConfidence').style.width='0%'; document.getElementById('ouDesc').innerText='no data';
-  document.getElementById('mdValue').innerText = '--'; document.getElementById('mdBadge').innerText = 'NEUTRAL'; document.getElementById('mdConfidence').style.width='0%'; document.getElementById('mdDesc').innerText='no data';
-}
-
-// ========== GRID / EVEN-ODD / TICK STREAM ==========
-function updateDigitGrid() {
-  const grid = document.getElementById('liveDigitGrid');
-  const total = tickHistory.length || 1;
-  let html = '';
-  for(let i=0;i<10;i++) {
-    const count = digitCounts[i] || 0;
-    const percent = (count / total * 100).toFixed(1);
-    const barWidth = percent * 10;
-    const isLastDigit = i === lastDigit;
-    html += `<div class="live-cell ${isLastDigit?'highlight':''}"><div class="cell-digit">${i}</div><div class="cell-count">${count} ticks</div><div class="cell-percent">${percent}%</div><div class="cell-bar" style="width:${Math.min(barWidth,100)}%"></div></div>`;
+  // ========== TRADE MOCK ==========
+  function executeTrade(type){
+    alert(`Executed ${type.toUpperCase()} on ${currentMarket} with stake ${document.getElementById('tradeAmount').value}`);
   }
-  grid.innerHTML = html;
-}
-function updateEvenOdd() {
-  const total = tickHistory.length || 1;
-  let even=0, odd=0;
-  for(let i=0;i<10;i++) { if(i%2===0) even+=digitCounts[i]; else odd+=digitCounts[i]; }
-  const evenPercent = (even/total*100).toFixed(1);
-  const oddPercent = (odd/total*100).toFixed(1);
-  document.getElementById('evenBar').style.width = evenPercent+'%';
-  document.getElementById('oddBar').style.width = oddPercent+'%';
-  document.getElementById('evenPercent').innerText = evenPercent+'%';
-  document.getElementById('oddPercent').innerText = oddPercent+'%';
-}
-function updateTickStream() {
-  const stream = document.getElementById('tickStream');
-  let html = '';
-  tickHistory.slice(0,20).forEach(t => { html += `<div class="tick-row"><span class="tick-time">${t.time}</span><span class="tick-price">${t.price.toFixed(2)}</span><span class="tick-digit">${t.digit}</span></div>`; });
-  stream.innerHTML = html || '<div style="color:#94a3b8; text-align:center;">Waiting for ticks...</div>';
-}
-function loadDerivChart(symbol) { document.getElementById('derivChartContainer').innerHTML = `<iframe src="https://charts.deriv.com/deriv?symbol=${symbol}&theme=dark&chart_type=candle&interval=1" class="deriv-chart" allowfullscreen></iframe>`; }
-function trade(type) { if(!isConnected) alert('connect first'); else alert(`${type.toUpperCase()} trade (demo) amount $${document.getElementById('amount').value}`); }
-function executeTrade() { trade('custom'); }
-window.onload = function() { initMarketGrid(); loadDerivChart(currentSymbol); updateDigitGrid(); setSignalDefaults(); };
+
+  // ========== INIT ==========
+  document.getElementById('marketGrid').children[0].classList.add('active');
 </script>
 </body>
-                                            </html>
+</html>
+    
