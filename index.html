@@ -1,200 +1,530 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
+<title>Deriv Pro AI System v2.0</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Zion AI Dashboard · Deriv</title>
-<script src="https://cdn.tailwindcss.com"></script>
+
 <style>
-body { background:#0f172a; color:white; font-family:'Inter',Arial; margin:0; }
-.card { background:#1e293b; padding:15px; border-radius:12px; margin-bottom:15px; border:1px solid #334155; }
-.group-tabs { display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; margin-bottom: 20px; }
-.group-tab { padding:12px; border-radius:12px; text-align:center; cursor:pointer; transition: all 0.3s; border:2px solid transparent; background:#1e293b; }
-.group-tab:hover { transform:translateY(-2px); }
-.group-tab.active { border-color:#fbbf24; box-shadow:0 0 20px rgba(251,191,36,0.3); }
-.group-tab.rf { border-left:5px solid #22c55e; }
-.group-tab.eo { border-left:5px solid #f59e0b; }
-.group-tab.ou { border-left:5px solid #3b82f6; }
-.group-tab.md { border-left:5px solid #a855f7; }
-.tab-title { font-size:1.1rem; font-weight:bold; margin-bottom:5px; }
-.tab-count { font-size:0.8rem; color:#94a3b8; }
-.market-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:15px; margin-top:10px; }
-.market-card { background:#1e293b; border-radius:12px; padding:15px; border-left:6px solid; transition:all 0.3s; border:1px solid #334155; }
-.market-card:hover { transform:translateY(-2px); box-shadow:0 10px 25px rgba(0,0,0,0.3); }
-.signal-badge { display:inline-block; padding:6px 16px; border-radius:30px; font-size:0.9rem; font-weight:700; margin-top:5px; }
-.badge-rise { background:#22c55e; color:black; }
-.badge-fall { background:#ef4444; color:white; }
-.badge-even { background:#22c55e; color:black; }
-.badge-odd { background:#f59e0b; color:black; }
-.badge-over { background:#3b82f6; color:white; }
-.badge-under { background:#f59e0b; color:black; }
-.badge-match { background:#a855f7; color:white; }
-.badge-differ { background:#ec4899; color:white; }
-.group-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; }
-.group-title { font-size:1.5rem; font-weight:bold; background:linear-gradient(135deg,#60a5fa,#a78bfa); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-.scanning-badge { animation:pulse 2s infinite; background:#22c55e; color:black; padding:4px 12px; border-radius:20px; font-weight:bold; }
-@keyframes pulse { 0%{opacity:0.8}50%{opacity:1;box-shadow:0 0 15px #22c55e;}100%{opacity:0.8} }
-iframe.tradingview-widget { width:100%; height:250px; border-radius:12px; border:none; }
+*{box-sizing:border-box;}
+body{margin:0;font-family:'Segoe UI',Arial;background:#0f172a;color:white;}
+header{padding:15px;background:#111827;text-align:center;font-weight:bold;font-size:20px;border-bottom:1px solid #334155;}
+.container{padding:10px;max-width:600px;margin:0 auto;}
+.tabs{display:flex;overflow-x:auto;margin-bottom:15px;gap:5px;padding-bottom:5px;}
+.tab{padding:12px 18px;background:#1e293b;border-radius:12px;cursor:pointer;white-space:nowrap;font-weight:500;transition:all 0.2s;}
+.tab.active{background:#22c55e;color:#0f172a;font-weight:bold;}
+.tab:hover{background:#334155;}
+.section{display:none;animation:fadeIn 0.3s;}
+.section.active{display:block;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+
+select,input,button{width:100%;padding:12px;margin-top:8px;border-radius:12px;border:none;font-size:14px;}
+select{background:#1e293b;color:white;cursor:pointer;}
+input{background:#1e293b;color:white;border:1px solid #334155;}
+button{background:#22c55e;font-weight:bold;cursor:pointer;transition:all 0.2s;}
+button:hover{background:#16a34a;}
+button.danger{background:#dc2626;}
+button.danger:hover{background:#b91c1c;}
+
+.signal-box{margin-top:15px;padding:15px;border-radius:12px;font-weight:bold;text-align:center;font-size:18px;}
+.buy{background:#16a34a;color:white;}
+.sell{background:#dc2626;color:white;}
+.neutral{background:#475569;color:white;}
+
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
+.stat-card{background:#1e293b;padding:10px;border-radius:8px;text-align:center;}
+.stat-label{font-size:11px;color:#94a3b8;}
+.stat-value{font-size:18px;font-weight:bold;}
+
+.countdown-timer{font-size:14px;text-align:center;margin:5px 0;color:#22c55e;}
+
+iframe{width:100%;height:300px;border:none;margin-top:15px;border-radius:12px;}
+
+.trade-history{background:#1e293b;border-radius:12px;padding:12px;margin-top:15px;max-height:200px;overflow-y:auto;}
+.trade-item{display:flex;justify-content:space-between;padding:8px;border-bottom:1px solid #334155;font-size:13px;}
+.trade-profit{color:#22c55e;}
+.trade-loss{color:#dc2626;}
+
+.auto-trade{display:flex;gap:5px;align-items:center;margin-top:10px;}
+.auto-trade label{flex:1;}
+.auto-trade input[type="number"]{width:80px;margin:0;}
+.auto-trade button{width:auto;margin:0;}
+
+.probability-bar{height:6px;background:#334155;border-radius:3px;margin:10px 0;overflow:hidden;}
+.probability-fill{height:100%;background:#22c55e;width:0%;transition:width 0.3s;}
+
+.status-badge{padding:4px 8px;border-radius:20px;font-size:12px;background:#1e293b;display:inline-block;}
+.connected{background:#22c55e;color:#0f172a;}
+.disconnected{background:#dc2626;color:white;}
+
+@media(max-width:480px){.tabs{font-size:13px;}.tab{padding:10px;}}
 </style>
 </head>
-<body class="p-4">
+<body>
 
-<h1 class="text-2xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Zion AI Dashboard · Deriv</h1>
+<header>⚡ DERIV PRO AI SYSTEM v2.0 ⚡</header>
 
-<!-- Connection -->
-<div class="card flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-  <div class="flex items-center gap-4">
-    <div class="scanning-badge" id="scanStatus">🔄 SCANNING: ALL MARKETS</div>
-    <span id="lastScan" class="text-gray-400">--:--:--</span>
-  </div>
-  <div class="flex gap-4 flex-wrap">
-    <input id="token" type="password" class="p-2 rounded text-black" placeholder="API Token">
-    <button onclick="connectWS()" class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700">Connect</button>
-    <span id="status" class="text-yellow-400">Disconnected</span>
-  </div>
+<div class="container">
+
+<div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;">
+<input type="text" id="token" placeholder="Enter your Deriv API token" value="" style="flex:2;">
+<select id="app_id" style="width:100px;">
+<option value="1089">App 1089</option>
+<option value="16303">App 16303</option>
+<option value="29115">App 29115</option>
+</select>
 </div>
 
-<!-- Tabs -->
-<div class="group-tabs">
-  <div id="groupRF" class="group-tab rf active" onclick="switchGroup('rf')"><div class="tab-title">📈 RISE/FALL</div><div class="tab-count" id="countRF">0</div></div>
-  <div id="groupEO" class="group-tab eo" onclick="switchGroup('eo')"><div class="tab-title">🔢 EVEN/ODD</div><div class="tab-count" id="countEO">0</div></div>
-  <div id="groupOU" class="group-tab ou" onclick="switchGroup('ou')"><div class="tab-title">⚖️ OVER/UNDER</div><div class="tab-count" id="countOU">0</div></div>
-  <div id="groupMD" class="group-tab md" onclick="switchGroup('md')"><div class="tab-title">🎯 MATCH/DIFFER</div><div class="tab-count" id="countMD">0</div></div>
+<div style="display:flex;gap:5px;margin-bottom:15px;">
+<button onclick="connectWS()" style="flex:2;background:#22c55e;">🔌 Connect</button>
+<button onclick="disconnectWS()" style="flex:1;background:#64748b;">⛔ Disconnect</button>
 </div>
 
-<!-- Group Header -->
-<div class="group-header">
-  <div class="group-title" id="groupTitle">RISE/FALL STRATEGY</div>
-  <div id="marketCount" class="text-gray-400">0 active</div>
+<div id="connectionStatus" class="status-badge disconnected" style="margin-bottom:10px;text-align:center;">🔴 Disconnected</div>
+
+<!-- Performance Dashboard -->
+<div class="stats-grid">
+<div class="stat-card"><span class="stat-label">Win Rate</span><div class="stat-value" id="winRate">0%</div></div>
+<div class="stat-card"><span class="stat-label">Total Trades</span><div class="stat-value" id="totalTrades">0</div></div>
+<div class="stat-card"><span class="stat-label">Balance</span><div class="stat-value" id="balance">$1000</div></div>
+<div class="stat-card"><span class="stat-label">Accuracy</span><div class="stat-value" id="accuracy">0%</div></div>
 </div>
 
-<!-- Market Grid -->
-<div id="marketGrid" class="market-grid"></div>
+<div class="tabs">
+<div class="tab active" onclick="openTab('rise')">📈 Rise/Fall</div>
+<div class="tab" onclick="openTab('evenodd')">🔢 Even/Odd</div>
+<div class="tab" onclick="openTab('overunder')">🎯 Over/Under</div>
+<div class="tab" onclick="openTab('matchdiff')">🎲 Match/Differ</div>
+</div>
 
-<!-- Log -->
-<div class="card"><div id="log" class="h-24 overflow-y-auto text-sm font-mono text-gray-300"></div></div>
+<!-- RISE/FALL -->
+<div id="rise" class="section active">
+<select id="riseMarket"></select>
+<div class="auto-trade">
+<label>Stake ($)</label>
+<input type="number" id="riseStake" value="10" min="1" max="1000">
+<button onclick="toggleAutoTrade('rise')" class="danger" id="riseAutoBtn">🤖 Auto</button>
+</div>
+<div class="countdown-timer" id="riseTimer">Next signal in: --s</div>
+<div class="probability-bar"><div class="probability-fill" id="riseProb"></div></div>
+<div id="riseSignal" class="signal-box neutral">📊 Analyzing market...</div>
+<div id="riseChart"></div>
+</div>
+
+<!-- EVEN/ODD -->
+<div id="evenodd" class="section">
+<select id="eoMarket"></select>
+<div class="auto-trade">
+<label>Stake ($)</label>
+<input type="number" id="eoStake" value="10" min="1" max="1000">
+<button onclick="toggleAutoTrade('eo')" class="danger" id="eoAutoBtn">🤖 Auto</button>
+</div>
+<div class="countdown-timer" id="eoTimer">Next signal in: --s</div>
+<div class="probability-bar"><div class="probability-fill" id="eoProb"></div></div>
+<div id="eoSignal" class="signal-box neutral">🔮 Calculating probability...</div>
+<div id="eoChart"></div>
+</div>
+
+<!-- OVER/UNDER -->
+<div id="overunder" class="section">
+<select id="ouMarket"></select>
+<select id="barrier">
+<option value="1">🎯 Barrier 1</option><option value="2">🎯 Barrier 2</option>
+<option value="3">🎯 Barrier 3</option><option value="4">🎯 Barrier 4</option>
+<option value="5">🎯 Barrier 5</option><option value="6">🎯 Barrier 6</option>
+<option value="7">🎯 Barrier 7</option><option value="8">🎯 Barrier 8</option>
+</select>
+<div class="auto-trade">
+<label>Stake ($)</label>
+<input type="number" id="ouStake" value="10" min="1" max="1000">
+<button onclick="toggleAutoTrade('ou')" class="danger" id="ouAutoBtn">🤖 Auto</button>
+</div>
+<div class="countdown-timer" id="ouTimer">Next signal in: --s</div>
+<div class="probability-bar"><div class="probability-fill" id="ouProb"></div></div>
+<div id="ouSignal" class="signal-box neutral">📈 Loading data...</div>
+<div id="ouChart"></div>
+</div>
+
+<!-- MATCH/DIFFER -->
+<div id="matchdiff" class="section">
+<select id="mdMarket"></select>
+<select id="digitSelect">
+<option value="0">0️⃣ Digit 0</option><option value="1">1️⃣ Digit 1</option>
+<option value="2">2️⃣ Digit 2</option><option value="3">3️⃣ Digit 3</option>
+<option value="4">4️⃣ Digit 4</option><option value="5">5️⃣ Digit 5</option>
+<option value="6">6️⃣ Digit 6</option><option value="7">7️⃣ Digit 7</option>
+<option value="8">8️⃣ Digit 8</option><option value="9">9️⃣ Digit 9</option>
+</select>
+<div class="auto-trade">
+<label>Stake ($)</label>
+<input type="number" id="mdStake" value="10" min="1" max="1000">
+<button onclick="toggleAutoTrade('md')" class="danger" id="mdAutoBtn">🤖 Auto</button>
+</div>
+<div class="countdown-timer" id="mdTimer">Next signal in: --s</div>
+<div class="probability-bar"><div class="probability-fill" id="mdProb"></div></div>
+<div id="mdSignal" class="signal-box neutral">🎲 Analyzing digits...</div>
+<div id="mdChart"></div>
+</div>
+
+<!-- Trade History -->
+<div class="trade-history" id="tradeHistory">
+<div style="font-weight:bold;margin-bottom:8px;">📜 Recent Trades</div>
+<div id="historyList">No trades yet</div>
+</div>
+
+</div>
 
 <script>
-// =================== SETTINGS ===================
-const APP_ID = 126973;
-const VOLATILITIES = [
-  {name:'Volatility 10 (1s)', symbol:'1HZ10V', type:'1s'},
-  {name:'Volatility 15 (1s)', symbol:'1HZ15V', type:'1s'},
-  {name:'Volatility 25 (1s)', symbol:'1HZ25V', type:'1s'},
-  {name:'Volatility 30 (1s)', symbol:'1HZ30V', type:'1s'},
-  {name:'Volatility 50 (1s)', symbol:'1HZ50V', type:'1s'},
-  {name:'Volatility 75 (1s)', symbol:'1HZ75V', type:'1s'},
-  {name:'Volatility 90 (1s)', symbol:'1HZ90V', type:'1s'},
-  {name:'Volatility 100 (1s)', symbol:'1HZ100V', type:'1s'},
-  {name:'Volatility 10', symbol:'R_10', type:'standard'},
-  {name:'Volatility 25', symbol:'R_25', type:'standard'},
-  {name:'Volatility 50', symbol:'R_50', type:'standard'},
-  {name:'Volatility 75', symbol:'R_75', type:'standard'},
-  {name:'Volatility 100', symbol:'R_100', type:'standard'}
-];
-
-// State
-let marketSignals = {}, currentGroup='rf';
-VOLATILITIES.forEach(v=>marketSignals[v.symbol]={signal:'--',type:'neutral',strategy:'none',confidence:0,price:0,digit:0});
-
-// DOM
-const els = {
-  marketGrid:document.getElementById('marketGrid'),
-  countRF:document.getElementById('countRF'),
-  countEO:document.getElementById('countEO'),
-  countOU:document.getElementById('countOU'),
-  countMD:document.getElementById('countMD'),
-  groupTitle:document.getElementById('groupTitle'),
-  marketCount:document.getElementById('marketCount'),
-  scanStatus:document.getElementById('scanStatus'),
-  lastScan:document.getElementById('lastScan'),
-  status:document.getElementById('status'),
-  log:document.getElementById('log')
+const markets = {
+"Volatility 10 (1s)":"1HZ10V", 
+"Volatility 10":"R_10", 
+"Volatility 15 (1s)":"1HZ15V",
+"Volatility 25 (1s)":"1HZ25V", 
+"Volatility 25":"R_25", 
+"Volatility 30 (1s)":"1HZ30V",
+"Volatility 50 (1s)":"1HZ50V", 
+"Volatility 50":"R_50", 
+"Volatility 75 (1s)":"1HZ75V",
+"Volatility 75":"R_75", 
+"Volatility 90 (1s)":"1HZ90V", 
+"Volatility 100 (1s)":"1HZ100V",
+"Volatility 100":"R_100"
 };
 
-// ===== LOG =====
-function log(msg){ els.log.innerHTML=`[${new Date().toLocaleTimeString()}] ${msg}<br>`+els.log.innerHTML; console.log(msg); }
+let ws;
+let tickHistory = {};
+let confirmCount = {};
+let lastSignal = {};
+let probabilities = {};
+let balance = 1000;
+let trades = [];
+let autoTradeStates = {rise: false, eo: false, ou: false, md: false};
+let countdownIntervals = {};
+let pingInterval;
 
-// ===== SWITCH GROUP =====
-function switchGroup(group){
-  currentGroup=group;
-  ['groupRF','groupEO','groupOU','groupMD'].forEach(id=>document.getElementById(id).classList.remove('active'));
-  document.getElementById('group'+group.toUpperCase()).classList.add('active');
-  const titles={rf:'RISE/FALL',eo:'EVEN/ODD',ou:'OVER/UNDER',md:'MATCH/DIFFER'};
-  els.groupTitle.textContent=titles[group]+' STRATEGY';
-  els.scanStatus.textContent='🔄 SCANNING: '+titles[group];
-  renderGrid();
+function populateSelect(id){
+let sel = document.getElementById(id);
+for(let name in markets){
+let opt = document.createElement("option");
+opt.value = markets[name];
+opt.text = name;
+sel.appendChild(opt);
+}
+}
+populateSelect("riseMarket");
+populateSelect("eoMarket");
+populateSelect("ouMarket");
+populateSelect("mdMarket");
+
+function openTab(tab){
+document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+event.target.classList.add("active");
+document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+document.getElementById(tab).classList.add("active");
 }
 
-// ===== CONNECT WS =====
-let ws=null, authorized=false;
 function connectWS(){
-  const token=document.getElementById('token').value;
-  if(!token){ alert('Enter API token'); return; }
-  ws=new WebSocket('wss://ws.derivws.com/websockets/v3?app_id='+APP_ID);
-  ws.onopen=()=>{ log('WebSocket connected'); els.status.textContent='Connected'; els.status.className='text-green-400'; ws.send(JSON.stringify({authorize:token})); };
-  ws.onmessage=(e)=>{
-    const data=JSON.parse(e.data);
-    if(data.msg_type==='authorize'){ authorized=true; log('✅ Authorized: '+data.authorize.loginid); subscribeAll(); }
-    else if(data.msg_type==='tick') handleTick(data.tick);
-    else if(data.error) log('❌ Error: '+data.error.message);
-  };
+let token = document.getElementById("token").value.trim();
+let app_id = document.getElementById("app_id").value;
+
+if(!token){
+alert("Please enter your API token");
+return;
 }
-function subscribeAll(){ VOLATILITIES.forEach(v=>ws.send(JSON.stringify({ticks:v.symbol,subscribe:1}))); log('📡 Subscribed to '+VOLATILITIES.length+' markets'); }
 
-// ===== HANDLE TICK & SIGNAL (AI simplified) =====
-function handleTick(tick){
-  const sym=tick.symbol, price=tick.quote;
-  const digit=parseInt(price.toString().split('.').pop()[0]||0);
-  let signal='--', type='neutral', strategy='none', confidence=Math.floor(Math.random()*40)+60;
+// Close existing connection if any
+if(ws) ws.close();
 
-  // Simple AI: RISE/FALL
-  signal=(Math.random()>0.5?'RISE':'FALL'); type=(signal==='RISE'?'rise':'fall'); strategy='rf';
+// Deriv WebSocket endpoint with app_id
+ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${app_id}`);
+
+ws.onopen = () => {
+document.getElementById("connectionStatus").innerHTML = "🟢 Connected";
+document.getElementById("connectionStatus").className = "status-badge connected";
+console.log("WebSocket connected");
   
-  // EVEN/ODD
-  const eo=(digit%2===0?'EVEN':'ODD'); if(currentGroup==='eo'){ signal=eo; type=eo.toLowerCase(); strategy='eo'; confidence+=10; }
+// Authorize first
+ws.send(JSON.stringify({authorize: token}));
 
-  // OVER/UNDER
-  const ou=(digit>4?'OVER 5':'UNDER 4'); if(currentGroup==='ou'){ signal=ou; type=(digit>4?'over':'under'); strategy='ou'; confidence+=10; }
+// Send ping every 30 seconds to keep connection alive
+pingInterval = setInterval(() => {
+if(ws && ws.readyState === WebSocket.OPEN){
+ws.send(JSON.stringify({ping: 1}));
+}
+}, 30000);
+};
 
-  // MATCH/DIFFER (based on last digit for demo)
-  const md=(digit>5?'MATCH '+digit:'DIFFER '+digit); if(currentGroup==='md'){ signal=md; type=(digit>5?'match':'differ'); strategy='md'; confidence+=10; }
+ws.onmessage = (msg) => {
+let data = JSON.parse(msg.data);
 
-  marketSignals[sym]={signal,type,strategy,confidence,price,digit};
+// Handle authorization response
+if(data.msg_type === 'authorize'){
+console.log("Authorization successful");
+// Subscribe to ticks after authorization
+for(let key in markets){
+ws.send(JSON.stringify({ticks: markets[key], subscribe: 1}));
+tickHistory[markets[key]] = [];
+confirmCount[markets[key]] = 0;
+lastSignal[markets[key]] = "";
+}
+startCountdowns();
+}
+// Handle tick data
+else if(data.tick){
+let sym = data.tick.symbol;
+let price = parseFloat(data.tick.quote);
+if(!tickHistory[sym]) tickHistory[sym] = [];
+tickHistory[sym].push(price);
+if(tickHistory[sym].length > 50) tickHistory[sym].shift();
+runAdvancedAI(sym, price);
+}
+// Handle errors
+else if(data.error){
+console.error("Deriv API Error:", data.error.message);
+alert("Error: " + data.error.message);
+}
+};
 
-  renderGrid();
-  updateCounts();
-  els.lastScan.textContent=new Date().toLocaleTimeString();
+ws.onclose = () => {
+document.getElementById("connectionStatus").innerHTML = "🔴 Disconnected";
+document.getElementById("connectionStatus").className = "status-badge disconnected";
+clearInterval(pingInterval);
+clearAllCountdowns();
+console.log("WebSocket disconnected");
+};
+
+ws.onerror = (error) => {
+console.error("WebSocket error:", error);
+document.getElementById("connectionStatus").innerHTML = "🔴 Connection Error";
+};
 }
 
-// ===== UPDATE COUNTS =====
-function updateCounts(){
-  let counts={rf:0,eo:0,ou:0,md:0};
-  Object.values(marketSignals).forEach(s=>{ if(s.strategy!=='none') counts[s.strategy]++; });
-  els.countRF.textContent=counts.rf; els.countEO.textContent=counts.eo; els.countOU.textContent=counts.ou; els.countMD.textContent=counts.md;
+function disconnectWS(){
+if(ws) {
+ws.close();
+}
+clearInterval(pingInterval);
+clearAllCountdowns();
 }
 
-// ===== RENDER GRID =====
-function renderGrid(){
-  let html=''; let count=0;
-  VOLATILITIES.forEach(v=>{
-    const s=marketSignals[v.symbol]||{signal:'--',type:'neutral',confidence:0,price:0,digit:0,strategy:'none'};
-    if(s.strategy!==currentGroup && currentGroup!=='rf') return;
-    count++;
-    const badgeClass='badge-'+s.type;
-    html+=`<div class="market-card"><div class="font-bold text-lg">${v.name}</div>
-    <div class="text-xs text-gray-400">${v.type} · ${v.symbol}</div>
-    <span class="signal-badge ${badgeClass}">${s.signal} (${s.confidence}%)</span>
-    <div class="text-sm mt-1">Price: ${s.price.toFixed(2)} | Digit: ${s.digit}</div>
-    <iframe class="tradingview-widget" src="https://s.tradingview.com/widgetembed/?symbol=DERIV:${v.symbol}&interval=1&theme=dark"></iframe>
-    </div>`;
-  });
-  els.marketGrid.innerHTML=html||'<div class="text-center text-gray-500 py-10">Waiting for signals...</div>';
-  els.marketCount.textContent=count+' active';
+function startCountdowns(){
+["rise","eo","ou","md"].forEach(engine => {
+let seconds = 5;
+if(countdownIntervals[engine]) clearInterval(countdownIntervals[engine]);
+countdownIntervals[engine] = setInterval(() => {
+seconds--;
+if(seconds < 0) seconds = 5;
+let timerEl = document.getElementById(engine + "Timer");
+if(timerEl) timerEl.innerHTML = `⏱️ Next signal in: ${seconds}s`;
+}, 1000);
+});
 }
 
-// ===== INIT =====
-renderGrid(); log('🚀 Dashboard initialized');
+function clearAllCountdowns(){
+for(let key in countdownIntervals){
+clearInterval(countdownIntervals[key]);
+}
+}
+
+function calculateProbability(history, type, params = {}){
+if(!history || history.length < 20) return 50;
+let recent = history.slice(-20);
+let count = 0;
+if(type === "rise"){
+for(let i = 1; i < recent.length; i++){
+if(recent[i] > recent[i-1]) count++;
+}
+return Math.round((count / (recent.length-1)) * 100);
+}
+else if(type === "eo"){
+let even = recent.filter(p => parseInt(p.toString().slice(-1)) % 2 === 0).length;
+return Math.round((even / recent.length) * 100);
+}
+else if(type === "ou"){
+let barrier = params.barrier || 4;
+let over = recent.filter(p => parseInt(p.toString().slice(-1)) > barrier).length;
+return Math.round((over / recent.length) * 100);
+}
+else if(type === "md"){
+let digit = params.digit || 0;
+let matches = recent.filter(p => parseInt(p.toString().slice(-1)) === digit).length;
+return Math.round((matches / recent.length) * 100);
+}
+return 50;
+}
+
+function runAdvancedAI(symbol, price){
+let digit = parseInt(price.toString().slice(-1));
+let history = tickHistory[symbol];
+if(!history || history.length < 20) return;
+
+// Rise/Fall
+let riseMarket = document.getElementById("riseMarket").value;
+if(symbol === riseMarket){
+let prob = calculateProbability(history, "rise");
+let probEl = document.getElementById("riseProb");
+if(probEl) probEl.style.width = prob + "%";
+let prev = history[history.length-2];
+let signal = price > prev ? "BUY" : "SELL";
+confirmAdvanced("riseSignal", symbol, signal, prob, "rise");
+loadChart("riseChart", symbol);
+}
+
+// Even/Odd
+let eoMarket = document.getElementById("eoMarket").value;
+if(symbol === eoMarket){
+let prob = calculateProbability(history, "eo");
+let probEl = document.getElementById("eoProb");
+if(probEl) probEl.style.width = prob + "%";
+let signal = prob > 50 ? "EVEN" : "ODD";
+confirmAdvanced("eoSignal", symbol, signal, prob, "eo");
+loadChart("eoChart", symbol);
+}
+
+// Over/Under
+let ouMarket = document.getElementById("ouMarket").value;
+if(symbol === ouMarket){
+let barrier = parseInt(document.getElementById("barrier").value);
+let prob = calculateProbability(history, "ou", {barrier});
+let probEl = document.getElementById("ouProb");
+if(probEl) probEl.style.width = prob + "%";
+let signal = prob > 50 ? "OVER" : "UNDER";
+confirmAdvanced("ouSignal", symbol, signal, prob, "ou");
+loadChart("ouChart", symbol);
+}
+
+// Match/Differ
+let mdMarket = document.getElementById("mdMarket").value;
+if(symbol === mdMarket){
+let selDigit = parseInt(document.getElementById("digitSelect").value);
+let prob = calculateProbability(history, "md", {digit: selDigit});
+let probEl = document.getElementById("mdProb");
+if(probEl) probEl.style.width = prob + "%";
+let signal = prob > 50 ? "MATCH" : "DIFFER";
+confirmAdvanced("mdSignal", symbol, signal, prob, "md");
+loadChart("mdChart", symbol);
+}
+}
+
+function confirmAdvanced(elementId, symbol, signal, probability, engine){
+if(!confirmCount[symbol]) confirmCount[symbol] = 0;
+if(!lastSignal[symbol]) lastSignal[symbol] = "";
+
+if(signal === lastSignal[symbol]){
+confirmCount[symbol]++;
+} else {
+confirmCount[symbol] = 1;
+lastSignal[symbol] = signal;
+}
+if(confirmCount[symbol] >= 3){
+let el = document.getElementById(elementId);
+if(!el) return;
+let displaySignal = signal + " (✅ Confirmed)";
+if(probability > 70) displaySignal += " ⚡ High Probability";
+el.innerHTML = displaySignal;
+el.className = "signal-box " + (signal.includes("BUY")||signal.includes("EVEN")||signal.includes("OVER")||signal.includes("MATCH")?"buy":"sell");
+
+// Auto-trade if probability > 75% and auto-trade is active for this engine
+if(probability > 75 && autoTradeStates[engine]){
+executeTrade(engine, signal, probability);
+}
+}
+}
+
+function toggleAutoTrade(engine){
+autoTradeStates[engine] = !autoTradeStates[engine];
+let btn = document.getElementById(engine + "AutoBtn");
+if(btn){
+btn.innerHTML = autoTradeStates[engine] ? "⏹️ Stop" : "🤖 Auto";
+btn.className = autoTradeStates[engine] ? "danger" : "";
+}
+}
+
+function executeTrade(engine, signal, probability){
+let stake = parseFloat(document.getElementById(engine + "Stake").value) || 10;
+let market = document.getElementById(engine + "Market").value;
+
+// In production, this would call the Deriv API to place a real trade
+// For demo, we'll simulate with 70% win rate based on probability
+let win = Math.random() * 100 < probability * 0.8; // Adjusted win probability
+let potential = Math.round(stake * 0.95 * 100) / 100;
+
+let trade = {
+time: new Date().toLocaleTimeString(),
+engine: engine.toUpperCase(),
+signal: signal,
+stake: stake,
+result: win ? "WIN" : "LOSS",
+profit: win ? potential : -stake,
+probability: probability
+};
+
+balance = Math.max(0, balance + (win ? potential : -stake));
+trades.unshift(trade);
+if(trades.length > 10) trades.pop();
+
+updateDashboard();
+displayTradeHistory();
+
+// In production, you would send a buy request:
+/*
+ws.send(JSON.stringify({
+  buy: 1,
+  subscribe: 1,
+  price: stake,
+  parameters: {
+    amount: stake,
+    basis: "stake",
+    contract_type: signal.includes("BUY") ? "CALL" : "PUT",
+    currency: "USD",
+    duration: 1,
+    duration_unit: "t",
+    symbol: market
+  }
+}));
+*/
+}
+
+function updateDashboard(){
+let wins = trades.filter(t => t.result === "WIN").length;
+let total = trades.length;
+document.getElementById("winRate").innerHTML = total ? Math.round((wins/total)*100) + "%" : "0%";
+document.getElementById("totalTrades").innerHTML = total;
+document.getElementById("balance").innerHTML = "$" + balance.toFixed(2);
+document.getElementById("accuracy").innerHTML = total ? Math.round((wins/total)*100) + "%" : "0%";
+}
+
+function displayTradeHistory(){
+let list = document.getElementById("historyList");
+if(trades.length === 0){
+list.innerHTML = "No trades yet";
+return;
+}
+list.innerHTML = trades.map(t => `
+<div class="trade-item">
+<span>${t.time} - ${t.engine} ${t.signal} (${t.probability}%)</span>
+<span class="${t.result === 'WIN' ? 'trade-profit' : 'trade-loss'}">
+${t.result === 'WIN' ? '+' : '-'}$${Math.abs(t.profit)}
+</span>
+</div>
+`).join("");
+}
+
+function loadChart(container, symbol){
+let chartDiv = document.getElementById(container);
+if(chartDiv){
+// Use Deriv's chart widget
+chartDiv.innerHTML = `
+<iframe src="https://charts.deriv.com/deriv?symbol=${symbol}&theme=dark" 
+style="width:100%;height:300px;border:none;border-radius:12px;"></iframe>
+`;
+}
+}
+
+// Initialize
+window.onload = function() {
+updateDashboard();
+};
 </script>
 </body>
-</html>
+  </html>
