@@ -1,0 +1,100 @@
+:root {
+    --bg-color: #050505;
+    --card-bg: #111111;
+    --accent: #3b82f6;
+    --text-main: #ffffff;
+    --text-dim: #888888;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin: 0;
+}
+
+header {
+    padding: 2rem;
+    border-bottom: 1px solid #222;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    position: sticky;
+    top: 0;
+    background: rgba(5, 5, 5, 0.8);
+    backdrop-filter: blur(10px);
+    z-index: 100;
+}
+
+#connection-status {
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.status-online { color: #10b981; }
+.status-offline { color: #f59e0b; }
+
+#filters {
+    display: flex;
+    gap: 0.5rem;
+}
+
+#filters button {
+    background: #222;
+    border: none;
+    color: var(--text-dim);
+    padding: 0.5rem 1.2rem;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    transition: 0.2s;
+}
+
+#filters button.active {
+    background: var(--accent);
+    color: white;
+}
+
+#market-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1rem;
+    padding: 2rem;
+}
+
+.market-card {
+    background: var(--card-bg);
+    border: 1px solid #222;
+    padding: 1.5rem;
+    border-radius: 12px;
+    text-align: center;
+    transition: 0.3s;
+}
+
+.market-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-3px);
+}
+
+.market-card .category {
+    font-size: 9px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.market-card h3 {
+    margin: 0;
+    font-size: 14px;
+}
+
+.market-card .symbol {
+    font-size: 10px;
+    color: var(--accent);
+    font-family: monospace;
+}
