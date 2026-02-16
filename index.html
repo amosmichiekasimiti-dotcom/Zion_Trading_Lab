@@ -1,565 +1,375 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ZION GLOBAL SCANNER • REDESIGN</title>
-    <!-- Fonts & Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background: #0b0e14;
-            color: #e9edf5;
-            line-height: 1.5;
-        }
-
-        .app {
-            max-width: 1600px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        /* Glassmorphism panels */
-        .glass {
-            background: rgba(18, 24, 36, 0.85);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 24px;
-            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6);
-        }
-
-        /* Header */
-        .top-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-            padding: 12px 24px;
-            background: #10161f;
-            border-radius: 60px;
-            border: 1px solid #2a3440;
-        }
-
-        .logo {
-            font-weight: 700;
-            font-size: 1.6rem;
-            background: linear-gradient(145deg, #a0f0b0, #60b0ff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -0.5px;
-        }
-
-        .live-indicator {
-            background: #1f2a3a;
-            padding: 8px 20px;
-            border-radius: 40px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: #6fcf97;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .pulse-dot {
-            width: 10px;
-            height: 10px;
-            background: #2ecc71;
-            border-radius: 50%;
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.2); }
-            100% { opacity: 1; transform: scale(1); }
-        }
-
-        /* Connection row */
-        .connection-row {
-            display: flex;
-            gap: 16px;
-            flex-wrap: wrap;
-            margin-bottom: 30px;
-            padding: 18px 24px;
-            background: #131b26;
-            border-radius: 40px;
-            align-items: center;
-        }
-
-        .token-field {
-            flex: 2;
-            min-width: 280px;
-            background: #1f2b38;
-            border: 1px solid #2d3c4b;
-            border-radius: 50px;
-            padding: 14px 20px;
-            color: white;
-            font-family: 'SF Mono', monospace;
-            font-size: 0.9rem;
-        }
-
-        .token-field::placeholder {
-            color: #5c7388;
-        }
-
-        .btn {
-            padding: 14px 32px;
-            border-radius: 50px;
-            border: none;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-            font-size: 0.95rem;
-            background: #2c3e50;
-            color: white;
-        }
-
-        .btn-primary {
-            background: #2b8c5e;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #1f6e4a;
-        }
-
-        .btn-danger {
-            background: #b03a4a;
-        }
-
-        .btn-danger:hover {
-            background: #902f3c;
-        }
-
-        /* Market grid */
-        .market-bar {
-            margin-bottom: 30px;
-        }
-
-        .market-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 8px;
-        }
-
-        .market-btn {
-            padding: 10px 12px;
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 40px;
-            color: #a0b3cc;
-            font-size: 0.85rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.15s;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .market-btn.active {
-            background: #2b8c5e;
-            border-color: #2b8c5e;
-            color: white;
-            font-weight: 600;
-        }
-
-        .market-btn.vol-1s {
-            border-left: 4px solid #f39c12;
-        }
-
-        /* Stats row */
-        .stats-row {
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            gap: 12px;
-            margin-bottom: 30px;
-        }
-
-        .stat-card {
-            background: #131b26;
-            border-radius: 20px;
-            padding: 18px 12px;
-            text-align: center;
-            border-left: 4px solid #2b8c5e;
-        }
-
-        .stat-label {
-            color: #7f95b0;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .stat-value {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin-top: 6px;
-            font-family: 'SF Mono', monospace;
-        }
-
-        /* Main two columns */
-        .main-panels {
-            display: grid;
-            grid-template-columns: 2.5fr 1.2fr;
-            gap: 24px;
-            margin-bottom: 30px;
-        }
-
-        /* Left column cards */
-        .card {
-            background: #131b26;
-            border-radius: 28px;
-            padding: 24px;
-            margin-bottom: 24px;
-            border: 1px solid #25313f;
-        }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-
-        .card-title {
-            font-weight: 600;
-            font-size: 1.2rem;
-            color: #bcd0f0;
-        }
-
-        .badge {
-            background: #1f2e3c;
-            padding: 4px 12px;
-            border-radius: 40px;
-            font-size: 0.8rem;
-            color: #a0b3cc;
-        }
-
-        /* Deriv chart */
-        .deriv-frame {
-            width: 100%;
-            height: 300px;
-            border: none;
-            border-radius: 20px;
-            background: #0c121c;
-        }
-
-        /* Live heartbeat */
-        .heartbeat-grid {
-            display: flex;
-            gap: 30px;
-            align-items: center;
-            flex-wrap: wrap;
-            margin-bottom: 25px;
-        }
-
-        .last-digit-block {
-            background: #1f2b38;
-            border-radius: 40px;
-            padding: 20px 30px;
-            text-align: center;
-            min-width: 200px;
-        }
-
-        .last-digit-label {
-            color: #9bb5d4;
-            font-size: 0.9rem;
-        }
-
-        .last-digit-number {
-            font-size: 7rem;
-            font-weight: 800;
-            line-height: 1;
-            color: #f1c40f;
-            text-shadow: 0 0 20px #f1c40f60;
-        }
-
-        .even-odd-bars {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 18px;
-        }
-
-        .bar-line {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .bar-label {
-            width: 60px;
-            font-weight: 600;
-            color: #afc5e0;
-        }
-
-        .bar-track {
-            flex: 1;
-            height: 28px;
-            background: #1a2532;
-            border-radius: 30px;
-            overflow: hidden;
-        }
-
-        .bar-fill {
-            height: 100%;
-            transition: width 0.1s;
-        }
-
-        .green-fill { background: #2b8c5e; }
-        .red-fill { background: #c44545; }
-
-        .bar-percent {
-            min-width: 70px;
-            text-align: right;
-            font-weight: 600;
-            font-family: monospace;
-        }
-
-        /* Digit grid */
-        .digit-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 12px;
-            margin: 25px 0 20px;
-        }
-
-        .digit-tile {
-            background: #1e2a37;
-            border-radius: 20px;
-            padding: 15px 8px;
-            text-align: center;
-            border: 1px solid #2f3e4e;
-            transition: 0.1s;
-        }
-
-        .digit-tile.highlight {
-            background: #2b8c5e30;
-            border-color: #2b8c5e;
-            transform: scale(1.02);
-        }
-
-        .digit-tile .digit {
-            font-size: 2.2rem;
-            font-weight: 700;
-            color: #2b8c5e;
-        }
-
-        .digit-tile .count {
-            font-size: 0.9rem;
-            color: #b0c6df;
-        }
-
-        .digit-tile .percent {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: #f39c12;
-        }
-
-        /* Tick stream */
-        .tick-stream {
-            background: #1a2532;
-            border-radius: 24px;
-            padding: 16px;
-            max-height: 140px;
-            overflow-y: auto;
-        }
-
-        .tick-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 6px 0;
-            border-bottom: 1px solid #2d3f4f;
-            font-family: monospace;
-            font-size: 0.9rem;
-        }
-
-        /* Right column – trade panel */
-        .trade-panel {
-            background: #131b26;
-            border-radius: 28px;
-            padding: 24px;
-            border: 1px solid #25313f;
-        }
-
-        .trade-panel h3 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 20px;
-        }
-
-        .amount-input {
-            width: 100%;
-            background: #1f2b38;
-            border: 1px solid #34495e;
-            border-radius: 30px;
-            padding: 16px 20px;
-            font-size: 1.2rem;
-            color: white;
-            margin: 15px 0;
-        }
-
-        .button-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin: 15px 0;
-        }
-
-        .trade-action {
-            padding: 16px;
-            border-radius: 40px;
-            border: none;
-            font-weight: 600;
-            cursor: pointer;
-            background: #1e2f3d;
-            color: white;
-            transition: 0.1s;
-        }
-
-        .trade-action.buy { background: #2b8c5e; }
-        .trade-action.sell { background: #c44545; }
-
-        .select-row {
-            display: flex;
-            gap: 12px;
-            margin: 20px 0;
-        }
-
-        .select-row select {
-            flex: 1;
-            background: #1f2b38;
-            border: 1px solid #34495e;
-            border-radius: 30px;
-            padding: 12px 16px;
-            color: white;
-        }
-
-        /* Signals panel (4 cards) */
-        .signals-panel {
-            margin-top: 30px;
-        }
-
-        .signals-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 18px;
-        }
-
-        .signals-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 18px;
-        }
-
-        .signal-card {
-            background: #16212e;
-            border-radius: 24px;
-            padding: 18px;
-            border-left: 6px solid #3a4c62;
-        }
-
-        .signal-card .title {
-            color: #90a9c2;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .signal-card .direction {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin: 8px 0;
-        }
-
-        .signal-card .confidence {
-            color: #2b8c5e;
-            font-weight: 600;
-            font-size: 0.95rem;
-        }
-
-        .conditions {
-            margin-top: 12px;
-            font-size: 0.8rem;
-        }
-
-        .condition-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 3px 0;
-        }
-
-        .cond-true { color: #2b8c5e; }
-        .cond-false { color: #c0392b; }
-
-        .signal-footer {
-            margin-top: 10px;
-            font-size: 0.7rem;
-            color: #6b85a0;
-            text-align: right;
-        }
-
-        /* Alert banner */
-        .alert-banner {
-            background: #f39c1230;
-            border: 1px solid #f39c12;
-            border-radius: 60px;
-            padding: 12px 24px;
-            margin-bottom: 20px;
-            display: none;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .alert-banner.show { display: flex; }
-
-        .alert-close {
-            margin-left: auto;
-            cursor: pointer;
-            color: #aaa;
-        }
-
-        /* Risk warning */
-        .risk-warning {
-            background: #c4454515;
-            border: 1px solid #c44545;
-            border-radius: 40px;
-            padding: 12px 24px;
-            font-size: 0.85rem;
-            text-align: center;
-            margin-top: 30px;
-            color: #d5b0b0;
-        }
-    </style>
-    <!-- TradingView -->
-    <script src="https://s3.tradingview.com/tv.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ZION TRADING LAB • GLOBAL SCANNER 13</title>
+<!-- Fonts & Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<!-- TradingView -->
+<script src="https://s3.tradingview.com/tv.js"></script>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    body {
+        font-family: 'Inter', sans-serif;
+        background: #0a0e17;
+        color: #f0f4fa;
+        line-height: 1.5;
+    }
+    .app {
+        max-width: 1600px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    /* header */
+    .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #111927;
+        border-radius: 40px;
+        padding: 12px 24px;
+        margin-bottom: 24px;
+        border: 1px solid #253445;
+    }
+    .logo {
+        font-weight: 700;
+        font-size: 1.5rem;
+        background: linear-gradient(135deg, #8be9b0, #60a5fa);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .live-badge {
+        background: #1e2c3a;
+        padding: 8px 20px;
+        border-radius: 40px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #6bd48b;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .pulse {
+        width: 10px;
+        height: 10px;
+        background: #2ecc71;
+        border-radius: 50%;
+        animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse { 0% { opacity:1; transform:scale(1); } 50% { opacity:0.5; transform:scale(1.2); } 100% { opacity:1; transform:scale(1); } }
+
+    /* connection row */
+    .conn-row {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 25px;
+        background: #111927;
+        border-radius: 50px;
+        padding: 16px 24px;
+        align-items: center;
+    }
+    .token-field {
+        flex: 2;
+        min-width: 280px;
+        background: #1f2b38;
+        border: 1px solid #2e4053;
+        border-radius: 40px;
+        padding: 14px 20px;
+        color: white;
+        font-family: monospace;
+    }
+    .btn {
+        padding: 14px 28px;
+        border-radius: 40px;
+        border: none;
+        font-weight: 600;
+        cursor: pointer;
+        background: #2d3e55;
+        color: white;
+        transition: 0.15s;
+    }
+    .btn-primary { background: #1f8b4c; }
+    .btn-primary:hover { background: #166e3c; }
+    .btn-danger { background: #b13e4b; }
+    .btn-danger:hover { background: #902f3a; }
+
+    /* market grid – 13 buttons */
+    .market-bar {
+        margin-bottom: 25px;
+    }
+    .market-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 8px;
+    }
+    .market-btn {
+        padding: 10px 6px;
+        background: #1a2633;
+        border: 1px solid #2f3f50;
+        border-radius: 30px;
+        color: #b6cae5;
+        font-size: 0.8rem;
+        font-weight: 500;
+        cursor: pointer;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        transition: 0.1s;
+    }
+    .market-btn.active {
+        background: #1f8b4c;
+        border-color: #1f8b4c;
+        color: white;
+        font-weight: 600;
+    }
+    .market-btn.vol-1s { border-left: 4px solid #f59e0b; }
+
+    /* stats row */
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 12px;
+        margin-bottom: 30px;
+    }
+    .stat-card {
+        background: #111927;
+        border-radius: 20px;
+        padding: 18px 8px;
+        text-align: center;
+        border-left: 4px solid #1f8b4c;
+    }
+    .stat-label { color: #8ba0bc; font-size: 0.7rem; text-transform: uppercase; }
+    .stat-value { font-size: 1.8rem; font-weight: 700; font-family: monospace; }
+
+    /* main grid: chart + heartbeat (left) / trade panel (right) */
+    .main-panels {
+        display: grid;
+        grid-template-columns: 2.5fr 1.2fr;
+        gap: 24px;
+        margin-bottom: 30px;
+    }
+    .card {
+        background: #111927;
+        border-radius: 28px;
+        padding: 24px;
+        margin-bottom: 20px;
+        border: 1px solid #253445;
+    }
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 16px;
+    }
+    .card-title { font-weight: 600; font-size: 1.2rem; color: #d0e0ff; }
+
+    /* Deriv chart placeholder */
+    .deriv-frame {
+        width: 100%;
+        height: 280px;
+        background: #0d141f;
+        border-radius: 20px;
+        border: none;
+    }
+
+    /* heartbeat block */
+    .heartbeat-row {
+        display: flex;
+        gap: 30px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 25px;
+    }
+    .last-digit-box {
+        background: #1a2735;
+        border-radius: 40px;
+        padding: 20px 30px;
+        text-align: center;
+        min-width: 200px;
+    }
+    .last-digit-label { color: #a3bbd9; font-size: 0.9rem; }
+    .last-digit-number {
+        font-size: 5.5rem;
+        font-weight: 800;
+        line-height: 1;
+        color: #f5b342;
+        text-shadow: 0 0 15px #f5b34280;
+    }
+    .even-odd-bars {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+    .bar-line {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .bar-label { width: 55px; font-weight: 600; color: #b4cdf0; }
+    .bar-track {
+        flex: 1;
+        height: 28px;
+        background: #1d2b3a;
+        border-radius: 40px;
+        overflow: hidden;
+    }
+    .bar-fill { height: 100%; transition: width 0.1s; }
+    .green-fill { background: #1f8b4c; }
+    .red-fill { background: #c44545; }
+    .bar-percent { min-width: 70px; text-align: right; font-weight: 600; }
+
+    /* digit grid 0‑9 */
+    .digit-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 12px;
+        margin: 25px 0;
+    }
+    .digit-tile {
+        background: #1b2938;
+        border-radius: 20px;
+        padding: 12px 5px;
+        text-align: center;
+        border: 1px solid #2e4055;
+    }
+    .digit-tile.highlight { background: #1f8b4c30; border-color: #1f8b4c; }
+    .digit-tile .digit { font-size: 2rem; font-weight: 700; color: #1f8b4c; }
+    .digit-tile .count { font-size: 0.85rem; color: #afc9e7; }
+    .digit-tile .percent { font-size: 1.2rem; font-weight: 600; color: #f5b342; }
+
+    /* tick stream */
+    .tick-stream {
+        background: #1a2735;
+        border-radius: 24px;
+        padding: 16px;
+        max-height: 130px;
+        overflow-y: auto;
+    }
+    .tick-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 5px 0;
+        border-bottom: 1px solid #2d4055;
+        font-family: monospace;
+        font-size: 0.9rem;
+    }
+
+    /* trade panel */
+    .trade-panel { background: #111927; border-radius: 28px; padding: 24px; }
+    .amount-input {
+        width: 100%;
+        background: #1f2b38;
+        border: 1px solid #2f4055;
+        border-radius: 40px;
+        padding: 16px 20px;
+        font-size: 1.2rem;
+        color: white;
+        margin: 15px 0;
+    }
+    .button-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin: 20px 0;
+    }
+    .trade-action {
+        padding: 14px;
+        border-radius: 40px;
+        border: none;
+        font-weight: 600;
+        cursor: pointer;
+        background: #263544;
+        color: white;
+    }
+    .trade-action.buy { background: #1f8b4c; }
+    .trade-action.sell { background: #c44545; }
+    .select-row {
+        display: flex;
+        gap: 12px;
+        margin: 20px 0;
+    }
+    .select-row select {
+        flex: 1;
+        background: #1f2b38;
+        border: 1px solid #2f4055;
+        border-radius: 40px;
+        padding: 12px 16px;
+        color: white;
+    }
+
+    /* signals panel – four cards */
+    .signals-panel { margin-top: 30px; }
+    .signals-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    .signals-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 18px;
+    }
+    .signal-card {
+        background: #15212e;
+        border-radius: 24px;
+        padding: 18px;
+        border-left: 6px solid #3a4f68;
+    }
+    .signal-card .title { color: #9bb5d9; font-size: 0.8rem; text-transform: uppercase; }
+    .signal-card .direction { font-size: 1.8rem; font-weight: 700; margin: 6px 0; }
+    .signal-card .confidence { color: #1f8b4c; font-weight: 600; }
+    .conditions { margin-top: 12px; font-size: 0.8rem; }
+    .condition-item { display: flex; align-items: center; gap: 5px; padding: 2px 0; }
+    .cond-true { color: #1f8b4c; }
+    .cond-false { color: #c44545; }
+    .signal-footer { margin-top: 8px; font-size: 0.7rem; color: #6b8bb0; text-align: right; }
+
+    /* alert banner */
+    .alert-banner {
+        background: #f5b34220;
+        border: 1px solid #f5b342;
+        border-radius: 60px;
+        padding: 12px 24px;
+        margin-bottom: 20px;
+        display: none;
+        align-items: center;
+        gap: 15px;
+    }
+    .alert-banner.show { display: flex; }
+
+    .risk-warning {
+        background: #c4454520;
+        border: 1px solid #c44545;
+        border-radius: 40px;
+        padding: 12px 24px;
+        font-size: 0.85rem;
+        text-align: center;
+        margin-top: 30px;
+        color: #e0b3b3;
+    }
+</style>
 </head>
 <body>
 <div class="app">
-    <!-- Top bar -->
+    <!-- top bar -->
     <div class="top-bar">
-        <span class="logo">ZION GLOBAL SCANNER</span>
-        <div class="live-indicator">
-            <span class="pulse-dot"></span>
+        <span class="logo">ZION GLOBAL SCANNER • 13 VOLATILITIES</span>
+        <div class="live-badge">
+            <span class="pulse"></span>
             <span id="liveStatus">CONNECT</span>
         </div>
     </div>
 
-    <!-- Connection row -->
-    <div class="connection-row">
+    <!-- connection row -->
+    <div class="conn-row">
         <input type="password" class="token-field" id="token" placeholder="Deriv API Token" value="rbQgwOkbsfDoKw2">
         <select class="token-field" style="flex:0.6;" id="appSelect">
             <option value="126973">App 126973</option>
@@ -569,20 +379,20 @@
         <button class="btn btn-danger" onclick="disconnectWebSocket()">⏹ STOP</button>
     </div>
 
-    <!-- Global alert -->
+    <!-- global alert -->
     <div id="globalAlert" class="alert-banner">
-        <i class="fas fa-bell" style="color:#f39c12;"></i>
+        <i class="fas fa-bell" style="color:#f5b342;"></i>
         <span id="alertMessage">Signal detected</span>
         <span class="alert-close" onclick="this.parentElement.classList.remove('show')">✕</span>
     </div>
 
-    <!-- Market selector -->
+    <!-- 13 volatility buttons -->
     <div class="market-bar">
-        <div style="margin-bottom:10px; color:#9bb5d4;">📊 13 Volatility Indices</div>
+        <div style="margin-bottom:8px; color:#9bb5d9;">📊 SELECT MARKET</div>
         <div class="market-grid" id="marketGrid"></div>
     </div>
 
-    <!-- Stats row -->
+    <!-- stats row -->
     <div class="stats-row">
         <div class="stat-card"><div class="stat-label">STATUS</div><div class="stat-value" id="connStatus">Offline</div></div>
         <div class="stat-card"><div class="stat-label">TICKS/SEC</div><div class="stat-value" id="tickRate">0</div></div>
@@ -592,68 +402,47 @@
         <div class="stat-card"><div class="stat-label">BALANCE</div><div class="stat-value" id="balance">10,000</div></div>
     </div>
 
-    <!-- Main two columns -->
+    <!-- main columns -->
     <div class="main-panels">
-        <!-- Left column -->
+        <!-- left side -->
         <div>
-            <!-- Deriv chart -->
-            <div class="card">
+            <!-- TradingView chart card -->
+            <div class="card" style="padding:16px;">
                 <div class="card-header">
                     <span class="card-title" id="marketDisplay">Volatility 100 (1s)</span>
-                    <span class="badge"><span id="priceDisplay">0.00</span> <span id="changeDisplay">+0.00%</span></span>
+                    <span><span id="priceDisplay">0.00</span> <span id="changeDisplay" style="color:#8bc34a;">+0.00%</span></span>
                 </div>
-                <div id="derivChartContainer" class="deriv-frame"></div>
+                <div id="tradingviewContainer" style="height:300px; border-radius:16px; overflow:hidden;"></div>
             </div>
 
-            <!-- TradingView -->
-            <div class="card" style="padding:0; overflow:hidden;">
-                <div id="tradingviewContainer" style="height:350px;"></div>
-            </div>
-
-            <!-- Live heartbeat -->
+            <!-- live heartbeat -->
             <div class="card">
                 <div class="card-header">
                     <span class="card-title">🔴 LIVE DIGIT HEARTBEAT</span>
-                    <span class="badge" id="lastUpdate">updating...</span>
+                    <span id="lastUpdate">updating...</span>
                 </div>
-
-                <div class="heartbeat-grid">
-                    <div class="last-digit-block">
+                <div class="heartbeat-row">
+                    <div class="last-digit-box">
                         <div class="last-digit-label">LAST DIGIT</div>
                         <div class="last-digit-number" id="lastDigit">0</div>
-                        <div style="color:#2b8c5e; margin-top:5px;" id="tickSpeed">1s</div>
+                        <div style="color:#6bd48b;" id="tickSpeed">1s</div>
                     </div>
                     <div class="even-odd-bars">
-                        <div class="bar-line">
-                            <span class="bar-label">EVEN</span>
-                            <div class="bar-track"><div class="bar-fill green-fill" id="evenBar" style="width:0%"></div></div>
-                            <span class="bar-percent" id="evenPercent">0.0%</span>
-                        </div>
-                        <div class="bar-line">
-                            <span class="bar-label">ODD</span>
-                            <div class="bar-track"><div class="bar-fill red-fill" id="oddBar" style="width:0%"></div></div>
-                            <span class="bar-percent" id="oddPercent">0.0%</span>
-                        </div>
+                        <div class="bar-line"><span class="bar-label">EVEN</span><div class="bar-track"><div class="bar-fill green-fill" id="evenBar" style="width:0%"></div></div><span class="bar-percent" id="evenPercent">0.0%</span></div>
+                        <div class="bar-line"><span class="bar-label">ODD</span><div class="bar-track"><div class="bar-fill red-fill" id="oddBar" style="width:0%"></div></div><span class="bar-percent" id="oddPercent">0.0%</span></div>
                     </div>
                 </div>
-
-                <!-- Digit grid -->
                 <div class="digit-grid" id="liveDigitGrid"></div>
-
-                <!-- Tick stream -->
-                <div class="tick-stream" id="tickStream">
-                    <div style="color:#7f95b0; text-align:center;">Waiting for ticks...</div>
-                </div>
+                <div class="tick-stream" id="tickStream"><div style="color:#8ba0bc; text-align:center;">Waiting for ticks...</div></div>
             </div>
         </div>
 
-        <!-- Right column (trade) -->
+        <!-- right trade panel -->
         <div>
             <div class="trade-panel">
-                <h3>QUICK TRADE</h3>
+                <h3 style="margin-bottom:15px;">QUICK TRADE</h3>
                 <label>Amount (USD)</label>
                 <input type="number" id="amount" class="amount-input" value="10.00" min="1" max="10000">
-
                 <div class="button-grid">
                     <button class="trade-action buy" onclick="trade('rise')">RISE ↑</button>
                     <button class="trade-action sell" onclick="trade('fall')">FALL ↓</button>
@@ -664,7 +453,6 @@
                     <button class="trade-action buy" onclick="trade('match')">MATCH</button>
                     <button class="trade-action buy" onclick="trade('differ')">DIFFER</button>
                 </div>
-
                 <div class="select-row">
                     <select id="barrierSelect">
                         <option value="1">Barrier 1</option><option value="2">Barrier 2</option><option value="3">Barrier 3</option>
@@ -678,64 +466,56 @@
                         <option value="9" selected>Digit 9</option>
                     </select>
                 </div>
-
-                <div style="background:#1f2b38; border-radius:30px; padding:16px; margin:20px 0;">
-                    <div style="display:flex; justify-content:space-between;">
-                        <span>Stake:</span>
-                        <span style="color:#2b8c5e;" id="stakeDisplay">$10.00</span>
-                    </div>
-                    <div style="display:flex; justify-content:space-between; margin-top:8px;">
-                        <span>Potential Payout:</span>
-                        <span style="color:#2b8c5e;" id="payoutDisplay">$95.00</span>
-                    </div>
+                <div style="background:#1f2b38; border-radius:30px; padding:16px; margin:15px 0;">
+                    <div style="display:flex; justify-content:space-between;"><span>Stake:</span><span style="color:#1f8b4c;" id="stakeDisplay">$10.00</span></div>
+                    <div style="display:flex; justify-content:space-between; margin-top:5px;"><span>Potential Payout:</span><span style="color:#1f8b4c;" id="payoutDisplay">$95.00</span></div>
                 </div>
-
                 <button class="btn btn-primary" style="width:100%;" onclick="executeTrade()">PLACE TRADE</button>
             </div>
         </div>
     </div>
 
-    <!-- Signals panel (4 cards) -->
+    <!-- 10-point signals panel -->
     <div class="signals-panel">
         <div class="signals-header">
-            <h2 style="font-size:1.6rem; font-weight:600;">🤖 10‑POINT DUAL CHECKLIST</h2>
+            <h2 style="font-size:1.5rem;">🤖 10‑POINT DUAL CHECKLIST</h2>
             <span class="badge" id="signalMarket">Volatility 100 (1s)</span>
         </div>
-        <div class="signals-grid" id="signalsGrid">
-            <!-- JS populates -->
-        </div>
-        <div style="text-align:right; margin-top:12px; color:#6b85a0;" id="signalLastUpdate">Waiting for data...</div>
+        <div class="signals-grid" id="signalsGrid"></div>
+        <div style="text-align:right; margin-top:12px; color:#6b8bb0;" id="signalLastUpdate">Waiting for data...</div>
     </div>
 
-    <!-- Risk warning -->
+    <!-- risk warning -->
     <div class="risk-warning">
-        ⚠️ Live 1-second data across 13 indices. Trading carries significant risk.
+        ⚠️ Live streaming 1-second data across 13 synthetic indices. Trading carries significant risk.
     </div>
 </div>
 
 <script>
-    // ==================== CONFIG ====================
+    // ========== ALL 13 VOLATILITY INDICES ==========
     const VOLATILITY_INDICES = [
-        { name: "Volatility 10 (1s) Index", symbol: "1HZ10V", type: "1s" },
-        { name: "Volatility 10 Index", symbol: "R_10", type: "normal" },
-        { name: "Volatility 15 (1s) Index", symbol: "1HZ15V", type: "1s" },
-        { name: "Volatility 25 (1s) Index", symbol: "1HZ25V", type: "1s" },
-        { name: "Volatility 25 Index", symbol: "R_25", type: "normal" },
-        { name: "Volatility 30 (1s) Index", symbol: "1HZ30V", type: "1s" },
-        { name: "Volatility 50 (1s) Index", symbol: "1HZ50V", type: "1s" },
-        { name: "Volatility 50 Index", symbol: "R_50", type: "normal" },
-        { name: "Volatility 75 (1s) Index", symbol: "1HZ75V", type: "1s" },
-        { name: "Volatility 75 Index", symbol: "R_75", type: "normal" },
-        { name: "Volatility 90 (1s) Index", symbol: "1HZ90V", type: "1s" },
-        { name: "Volatility 100 (1s) Index", symbol: "1HZ100V", type: "1s" },
-        { name: "Volatility 100 Index", symbol: "R_100", type: "normal" }
+        { name: "Volatility 10 (1s)", symbol: "1HZ10V", type: "1s" },
+        { name: "Volatility 10", symbol: "R_10", type: "normal" },
+        { name: "Volatility 15 (1s)", symbol: "1HZ15V", type: "1s" },
+        { name: "Volatility 25 (1s)", symbol: "1HZ25V", type: "1s" },
+        { name: "Volatility 25", symbol: "R_25", type: "normal" },
+        { name: "Volatility 30 (1s)", symbol: "1HZ30V", type: "1s" },
+        { name: "Volatility 50 (1s)", symbol: "1HZ50V", type: "1s" },
+        { name: "Volatility 50", symbol: "R_50", type: "normal" },
+        { name: "Volatility 75 (1s)", symbol: "1HZ75V", type: "1s" },
+        { name: "Volatility 75", symbol: "R_75", type: "normal" },
+        { name: "Volatility 90 (1s)", symbol: "1HZ90V", type: "1s" },
+        { name: "Volatility 100 (1s)", symbol: "1HZ100V", type: "1s" },
+        { name: "Volatility 100", symbol: "R_100", type: "normal" }
     ];
 
-    // Global state
+    // ========== GLOBAL STATE ==========
     let ws = null;
     let isConnected = false;
     let currentSymbol = "1HZ100V";
-    let currentMarket = VOLATILITY_INDICES[11];
+    let currentMarket = VOLATILITY_INDICES[11]; // Vol 100 1s
+
+    // market data store
     let marketData = {};
     VOLATILITY_INDICES.forEach(m => {
         marketData[m.symbol] = {
@@ -756,20 +536,20 @@
     let tickTimes = [];
     let totalTicksAll = 0;
 
-    // UI elements
+    // DOM elements
     const marketGrid = document.getElementById('marketGrid');
     const liveDigitGrid = document.getElementById('liveDigitGrid');
     const signalsGrid = document.getElementById('signalsGrid');
     const tickStream = document.getElementById('tickStream');
 
-    // Init market grid
+    // ========== INIT MARKET GRID ==========
     function initMarketGrid() {
         marketGrid.innerHTML = '';
-        VOLATILITY_INDICES.forEach((m, i) => {
+        VOLATILITY_INDICES.forEach((m, idx) => {
             const btn = document.createElement('button');
-            btn.className = `market-btn ${m.type==='1s'?'vol-1s':''}`;
+            btn.className = `market-btn ${m.type==='1s' ? 'vol-1s' : ''}`;
             btn.textContent = m.name;
-            btn.onclick = () => selectMarket(m, i);
+            btn.onclick = () => selectMarket(m, idx);
             if (m.symbol === currentSymbol) btn.classList.add('active');
             marketGrid.appendChild(btn);
         });
@@ -784,11 +564,37 @@
         document.getElementById('marketDisplay').innerText = market.name;
         document.getElementById('currentMarket').innerText = market.symbol;
         document.getElementById('signalMarket').innerText = market.name;
-        loadDerivChart(market.symbol);
+        // TradingView widget symbol change (needs to re‑init or use widget's setSymbol)
+        if (window.tvWidget) {
+            tvWidget.setSymbol(market.symbol, '1');
+        } else {
+            initTradingView(market.symbol);
+        }
         refreshSelectedDisplay();
     }
 
-    // WebSocket
+    // ========== TRADINGVIEW ==========
+    let tvWidget;
+    function initTradingView(symbol) {
+        if (tvWidget) tvWidget.remove();
+        tvWidget = new TradingView.widget({
+            container_id: "tradingviewContainer",
+            width: "100%",
+            height: "300",
+            symbol: symbol,
+            interval: "1",
+            timezone: "Etc/UTC",
+            theme: "dark",
+            style: "1",
+            locale: "en",
+            toolbar_bg: "#111927",
+            enable_publishing: false,
+            allow_symbol_change: true,
+            studies: ["RSI@tv-basicstudies"]
+        });
+    }
+
+    // ========== WEBSOCKET ==========
     function connectWebSocket() {
         const token = document.getElementById('token').value;
         const appId = document.getElementById('appSelect').value;
@@ -798,7 +604,7 @@
         ws.onopen = () => {
             isConnected = true;
             document.getElementById('connStatus').innerText = 'LIVE';
-            document.getElementById('liveStatus').innerText = '🔴 LIVE STREAMING';
+            document.getElementById('liveStatus').innerText = '🔴 LIVE';
             ws.send(JSON.stringify({ authorize: token }));
         };
         ws.onmessage = (msg) => {
@@ -818,6 +624,7 @@
     }
     function disconnectWebSocket() { if (ws) ws.close(); }
 
+    // ========== PROCESS TICK ==========
     function processTick(tick) {
         const sym = tick.symbol;
         const price = parseFloat(tick.quote);
@@ -839,6 +646,7 @@
         if (data.totalTicks % 5 === 0) evaluateMarketSignals(sym);
     }
 
+    // ========== REFRESH UI FOR SELECTED MARKET ==========
     function refreshSelectedDisplay() {
         const d = selectedMarketData;
         if (!d || d.tickHistory.length === 0) return;
@@ -887,64 +695,62 @@
 
     function updateTickStream(d) {
         let html = '';
-        d.tickHistory.slice(-20).reverse().forEach(t => {
-            html += `<div class="tick-row"><span>${new Date(t.time).toLocaleTimeString()}</span><span>${t.price.toFixed(2)}</span><span style="color:#f39c12;">${t.digit}</span></div>`;
+        d.tickHistory.slice(-15).reverse().forEach(t => {
+            html += `<div class="tick-row"><span>${new Date(t.time).toLocaleTimeString()}</span><span>${t.price.toFixed(2)}</span><span style="color:#f5b342;">${t.digit}</span></div>`;
         });
-        tickStream.innerHTML = html || '<div style="color:#7f95b0;">Waiting...</div>';
+        tickStream.innerHTML = html || '<div style="color:#8ba0bc;">Waiting for ticks...</div>';
     }
 
-    // Signal evaluation (simplified with direction)
+    // ========== SIGNAL EVALUATIONS ==========
     function evaluateMarketSignals(sym) {
         const d = marketData[sym];
-        if (!d || d.tickHistory.length<100) return;
-        d.signals.risefall = evaluateRiseFall(d);
-        d.signals.evenodd = evaluateEvenOddSignal(d);
-        d.signals.overunder = evaluateOverUnderSignal(d);
-        d.signals.matchdiffer = evaluateMatchDifferSignal(d);
-        // Global alert (if any 10/10, but our simplified ones never hit 10)
+        if (!d || d.tickHistory.length < 100) return;
+        d.signals.risefall = evalRiseFall(d);
+        d.signals.evenodd = evalEvenOddSignal(d);
+        d.signals.overunder = evalOverUnder(d);
+        d.signals.matchdiffer = evalMatchDiffer(d);
         if (sym === currentSymbol) renderSignalsPanel(d);
     }
 
-    function evaluateRiseFall(d) {
+    function evalRiseFall(d) {
         const prices = d.tickHistory.map(t=>t.price);
         const last = prices[prices.length-1];
         const prev = prices[prices.length-2] || last;
         const up = last > prev;
         const ma5 = prices.slice(-5).reduce((a,b)=>a+b,0)/5;
         const ma21 = prices.slice(-21).reduce((a,b)=>a+b,0)/21;
-        let dir = 'NEUTRAL';
-        let conds = [];
+        let dir = 'NEUTRAL', conds = [];
         if (up && ma5>ma21) { dir = 'RISE ↑'; for (let i=0;i<10;i++) conds.push(i<7); }
         else if (!up && ma5<ma21) { dir = 'FALL ↓'; for (let i=0;i<10;i++) conds.push(i<6); }
         else { dir = 'NEUTRAL'; for (let i=0;i<10;i++) conds.push(i%2===0); }
         return { direction: dir, confidence: dir!=='NEUTRAL'?85:0, conditions: conds, updated: new Date() };
     }
 
-    function evaluateEvenOddSignal(d) {
+    function evalEvenOddSignal(d) {
         const total = d.tickHistory.length;
         const even = d.digitCounts.filter((_,i)=>i%2===0).reduce((a,b)=>a+b,0);
         const odd = total - even;
         const eP = even/total*100;
         const lastEven = d.lastDigit%2===0;
-        let dir = 'NEUTRAL', conds=[];
+        let dir = 'NEUTRAL', conds = [];
         if (eP>55 && lastEven) { dir='EVEN'; for (let i=0;i<10;i++) conds.push(i<8); }
         else if (eP<45 && !lastEven) { dir='ODD'; for (let i=0;i<10;i++) conds.push(i<7); }
         else { dir='NEUTRAL'; for (let i=0;i<10;i++) conds.push(i%2===0); }
         return { direction: dir, confidence: dir!=='NEUTRAL'?90:0, conditions: conds, updated: new Date() };
     }
 
-    function evaluateOverUnderSignal(d) {
+    function evalOverUnder(d) {
         const total = d.tickHistory.length;
         const barrier = +document.getElementById('barrierSelect').value;
         const over = d.digitCounts.filter((_,i)=>i>barrier).reduce((a,b)=>a+b,0);
         const overP = over/total*100;
         let dir = overP>40 ? 'OVER' : 'UNDER';
         let conds = [];
-        for (let i=0;i<10;i++) conds.push(i<6); // generic
+        for (let i=0;i<10;i++) conds.push(i<6);
         return { direction: dir, confidence: 75, conditions: conds, updated: new Date() };
     }
 
-    function evaluateMatchDifferSignal(d) {
+    function evalMatchDiffer(d) {
         const target = +document.getElementById('digitSelect').value;
         const match = d.digitCounts[target] || 0;
         const total = d.tickHistory.length;
@@ -968,44 +774,23 @@
             const dir = c.sig.direction;
             const conf = c.sig.confidence;
             const updated = c.sig.updated ? c.sig.updated.toLocaleTimeString() : '--';
-            let condsHtml = '';
+            let condHtml = '';
             if (c.sig.conditions && c.sig.conditions.length) {
-                condsHtml = c.sig.conditions.slice(0,5).map((cond,i)=>`
+                condHtml = c.sig.conditions.slice(0,5).map((cond,i)=>`
                     <div class="condition-item">
                         <span class="${cond?'cond-true':'cond-false'}">${cond?'✅':'❌'}</span>
                         <span>Cond ${i+1}</span>
                     </div>
                 `).join('');
-            } else condsHtml = '<div class="condition-item">⏳</div>';
-            const color = dir.includes('RISE')||dir.includes('EVEN')||dir.includes('OVER')||dir.includes('MATCH') ? '#2b8c5e' : (dir.includes('FALL')||dir.includes('ODD')||dir.includes('UNDER')||dir.includes('DIFFER') ? '#c44545' : '#90a9c2');
-            html += `<div class="signal-card"><div class="title">${c.title}</div><div class="direction" style="color:${color};">${dir}</div><div class="confidence">${conf}% confidence</div><div class="conditions">${condsHtml}</div><div class="signal-footer">${updated}</div></div>`;
+            } else condHtml = '<div class="condition-item">⏳</div>';
+            const color = dir.includes('RISE')||dir.includes('EVEN')||dir.includes('OVER')||dir.includes('MATCH') ? '#1f8b4c' : (dir.includes('FALL')||dir.includes('ODD')||dir.includes('UNDER')||dir.includes('DIFFER') ? '#c44545' : '#9bb5d9');
+            html += `<div class="signal-card"><div class="title">${c.title}</div><div class="direction" style="color:${color};">${dir}</div><div class="confidence">${conf}% confidence</div><div class="conditions">${condHtml}</div><div class="signal-footer">${updated}</div></div>`;
         });
         signalsGrid.innerHTML = html;
         document.getElementById('signalLastUpdate').innerText = `Last updated: ${new Date().toLocaleTimeString()}`;
     }
 
-    // Deriv chart
-    function loadDerivChart(sym) {
-        document.getElementById('derivChartContainer').innerHTML = `<iframe src="https://charts.deriv.com/deriv?symbol=${sym}&theme=dark&chart_type=candle&interval=1" class="deriv-frame"></iframe>`;
-    }
-
-    // TradingView
-    function initTradingView() {
-        new TradingView.widget({
-            "container_id": "tradingviewContainer",
-            "autosize": true,
-            "symbol": "BINANCE:BTCUSDT",
-            "interval": "1",
-            "theme": "dark",
-            "style": "1",
-            "locale": "en",
-            "hide_side_toolbar": false,
-            "allow_symbol_change": true,
-            "studies": ["MACD@tv-basicstudies","RSI@tv-basicstudies"]
-        });
-    }
-
-    // Trade helpers
+    // ========== TRADE HELPERS ==========
     function trade(type) {
         if (!isConnected) return alert('Connect first');
         alert(`${type.toUpperCase()} trade (demo)`);
@@ -1018,10 +803,10 @@
         document.getElementById('payoutDisplay').innerText = '$'+(amt*9.5).toFixed(2);
     });
 
+    // ========== INIT ==========
     window.onload = () => {
         initMarketGrid();
-        loadDerivChart(currentSymbol);
-        initTradingView();
+        initTradingView(currentSymbol);
         selectedMarketData = marketData[currentSymbol];
         updateDigitGrid(selectedMarketData);
         updateEvenOdd(selectedMarketData);
@@ -1034,4 +819,4 @@
     };
 </script>
 </body>
-     </html>
+  </html>
