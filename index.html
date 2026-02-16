@@ -1,543 +1,115 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-  <title>DERIV LAB · REAL MIRROR · 100‑TICK DIGITS</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    body {
-      font-family: 'Inter', -apple-system, system-ui, sans-serif;
-      background: #0f172a;
-      color: #e2e8f0;
-      padding: 12px;
-      width: 100%;
-      overflow-x: hidden;
-    }
-    .container {
-      max-width: 500px;
-      margin: 0 auto;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    /* header */
-    .header {
-      background: #111827;
-      border-radius: 60px;
-      padding: 14px 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border: 1px solid #1e293b;
-    }
-    .logo {
-      font-weight: 700;
-      background: linear-gradient(145deg, #22c55e, #f59e0b);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      font-size: 20px;
-    }
-    .live-badge {
-      background: #1e293b;
-      padding: 6px 16px;
-      border-radius: 40px;
-      font-size: 13px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .dot {
-      width: 10px;
-      height: 10px;
-      background: #22c55e;
-      border-radius: 50%;
-      box-shadow: 0 0 8px #22c55e;
-    }
-
-    /* token row */
-    .token-bar {
-      background: #1e293b;
-      border-radius: 60px;
-      padding: 8px 16px;
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-    .token-input {
-      background: #0f172a;
-      border: 1px solid #334155;
-      border-radius: 40px;
-      padding: 12px 18px;
-      color: white;
-      font-family: monospace;
-      flex: 1;
-      font-size: 14px;
-    }
-    .btn {
-      background: #22c55e;
-      border: none;
-      color: #0f172a;
-      padding: 10px 22px;
-      border-radius: 40px;
-      font-weight: 600;
-      font-size: 14px;
-      cursor: pointer;
-    }
-
-    /* market strip (13 indices) */
-    .market-scroll {
-      display: flex;
-      gap: 10px;
-      overflow-x: auto;
-      padding: 6px 0 12px;
-      scrollbar-width: none;
-      -webkit-overflow-scrolling: touch;
-    }
-    .market-scroll::-webkit-scrollbar { display: none; }
-    .market-pill {
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 40px;
-      padding: 10px 20px;
-      font-size: 14px;
-      font-weight: 500;
-      color: #94a3b8;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-    .market-pill.active {
-      background: #22c55e;
-      color: #0f172a;
-      border-color: #22c55e;
-      font-weight: 600;
-    }
-
-    /* PRICE TICKER */
-    .price-card {
-      background: #111827;
-      border-radius: 32px;
-      padding: 18px 22px;
-      border: 1px solid #1e293b;
-    }
-    .symbol-row {
-      display: flex;
-      justify-content: space-between;
-      color: #94a3b8;
-      font-size: 14px;
-    }
-    .big-price {
-      font-size: 48px;
-      font-weight: 700;
-      font-family: monospace;
-      color: #f1f5f9;
-      line-height: 1.2;
-    }
-    .change {
-      color: #22c55e;
-      font-size: 20px;
-    }
-
-    /* ---------- PERSISTENT TRADINGVIEW CHART (never disappears) ---------- */
-    .chart-persistent {
-      background: #0f172a;
-      border-radius: 32px;
-      overflow: hidden;
-      border: 1px solid #1e293b;
-      height: 280px;
-      width: 100%;
-      margin: 6px 0;
-    }
-    .tv-container {
-      width: 100%;
-      height: 100%;
-    }
-    .tv-container iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-      pointer-events: auto;
-    }
-
-    /* ---------- REAL DIGIT CIRCLES (last 100 ticks, live) ---------- */
-    .section-label {
-      display: flex;
-      justify-content: space-between;
-      margin: 10px 0 4px;
-      color: #94a3b8;
-      font-size: 14px;
-    }
-    .digit-grid {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-    .digit-circle {
-      background: #1e293b;
-      border-radius: 60px;
-      padding: 18px 8px;
-      text-align: center;
-      border: 2px solid #334155;
-      transition: all 0.1s;
-    }
-    .digit-circle.highlight {
-      border-color: #f59e0b;
-      background: #f59e0b20;
-    }
-    .digit-circle .digit {
-      font-size: 32px;
-      font-weight: 800;
-      color: #22c55e;
-      line-height: 1;
-    }
-    .digit-circle .percent {
-      font-size: 18px;
-      font-weight: 700;
-      color: #f59e0b;
-    }
-    .digit-bar {
-      height: 6px;
-      background: #22c55e;
-      border-radius: 10px;
-      margin: 8px auto 0;
-      width: 0%;
-      transition: width 0.1s;
-    }
-
-    /* signal panels (condensed) */
-    .signal-row {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      margin: 12px 0;
-    }
-    .signal-tile {
-      background: #111827;
-      border-radius: 26px;
-      padding: 16px 12px;
-      border-left: 6px solid #22c55e;
-    }
-    .signal-label {
-      color: #94a3b8;
-      font-size: 13px;
-      display: flex;
-      justify-content: space-between;
-    }
-    .signal-value {
-      font-size: 28px;
-      font-weight: 800;
-      font-family: monospace;
-    }
-
-    .bottom-nav {
-      background: #111827;
-      border-radius: 60px;
-      padding: 8px 12px;
-      display: flex;
-      justify-content: space-around;
-      margin: 10px 0;
-    }
-    .nav-icon {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      color: #6b7280;
-      font-size: 12px;
-      padding: 6px;
-      width: 60px;
-    }
-    .nav-icon.active {
-      background: #22c55e20;
-      border-radius: 40px;
-      color: #22c55e;
-    }
-    hr { border: 0.5px solid #1e293b; margin: 8px 0; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deriv Dynamic Discovery</title>
+    <!-- Tailwind CSS for Design -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #050505; color: #ffffff; font-family: sans-serif; }
+        .market-card {
+            background: #111111;
+            border: 1px solid #222;
+            transition: all 0.3s ease;
+        }
+        .market-card:hover {
+            border-color: #3b82f6;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px -10px rgba(59, 130, 246, 0.4);
+        }
+        .active-filter {
+            background-color: #3b82f6 !important;
+            color: white !important;
+        }
+    </style>
 </head>
-<body>
-<div class="container">
+<body class="min-h-screen">
 
-  <!-- header -->
-  <div class="header">
-    <span class="logo">⚡ DERIV MIRROR LAB</span>
-    <span class="live-badge"><span class="dot"></span><span id="liveStatus">OFFLINE</span></span>
-  </div>
+    <!-- Header -->
+    <header class="border-b border-white/10 p-6 sticky top-0 bg-black/90 backdrop-blur-md z-50">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="text-center md:text-left">
+                <h1 class="text-2xl font-black tracking-tighter uppercase">Deriv Auto-Pull</h1>
+                <p id="status-text" class="text-[10px] font-bold text-yellow-500 uppercase tracking-widest mt-1">Connecting Handshake...</p>
+            </div>
+            
+            <nav id="filter-nav" class="flex flex-wrap gap-2 justify-center">
+                <button onclick="updateFilter('all', this)" class="active-filter px-4 py-2 rounded-full text-[10px] font-bold uppercase bg-zinc-800 text-zinc-400">All</button>
+                <button onclick="updateFilter('synthetic_index', this)" class="px-4 py-2 rounded-full text-[10px] font-bold uppercase bg-zinc-800 text-zinc-400">Synthetics</button>
+                <button onclick="updateFilter('forex', this)" class="px-4 py-2 rounded-full text-[10px] font-bold uppercase bg-zinc-800 text-zinc-400">Forex</button>
+                <button onclick="updateFilter('indices', this)" class="px-4 py-2 rounded-full text-[10px] font-bold uppercase bg-zinc-800 text-zinc-400">Stocks</button>
+            </nav>
+        </div>
+    </header>
 
-  <!-- token + app (real credentials) -->
-  <div class="token-bar">
-    <input type="text" class="token-input" id="tokenInput" value="rbQgwOkbsfDoKw2" placeholder="token">
-    <select id="appSelect" style="background:#0f172a;color:white;border:1px solid #334155;border-radius:40px;padding:10px;">
-      <option value="126973">126973</option>
-      <option value="1089">1089</option>
-    </select>
-    <button class="btn" id="connectBtn">CONNECT</button>
-  </div>
+    <!-- Market Grid -->
+    <main class="max-w-7xl mx-auto p-6">
+        <div id="market-display" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div class="col-span-full py-20 text-center text-zinc-500">
+                Waiting for Deriv Handshake...
+            </div>
+        </div>
+    </main>
 
-  <!-- 13 indices (exact from reference) -->
-  <div class="market-scroll" id="marketStrip"></div>
+    <script>
+        const socket = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
+        let globalSymbols = [];
 
-  <!-- price row -->
-  <div class="price-card">
-    <div class="symbol-row">
-      <span id="marketName">Volatility 100 (1s) Index</span>
-      <span id="timeDisplay">--:--:--</span>
-    </div>
-    <div style="display: flex; align-items: baseline; gap: 12px;">
-      <span class="big-price" id="priceDisplay">9079.14</span>
-      <span class="change" id="changeDisplay">+0.00</span>
-    </div>
-  </div>
+        socket.onopen = () => {
+            document.getElementById('status-text').innerText = "Handshake Secure - Reading Markets";
+            document.getElementById('status-text').classList.replace('text-yellow-500', 'text-green-500');
 
-  <!-- ---------- PERSISTENT TRADINGVIEW CHART (never unmounts) ---------- -->
-  <div class="chart-persistent" id="tvContainer">
-    <div class="tv-container" id="tradingviewWidget"></div>
-  </div>
+            // This command pulls EVERYTHING from Deriv
+            socket.send(JSON.stringify({
+                "active_symbols": "full",
+                "product_type": "basic"
+            }));
+        };
 
-  <!-- REAL DIGIT CIRCLES (last 100 ticks) – exactly like Deriv Last Digit Stats -->
-  <div class="section-label">
-    <span>🔴 LAST 100 TICKS · REAL-TIME %</span>
-    <span style="color:#22c55e;" id="ticksCount">0/100</span>
-  </div>
-  <div class="digit-grid" id="digitGrid"></div>
+        socket.onmessage = (msg) => {
+            const data = JSON.parse(msg.data);
+            if (data.msg_type === 'active_symbols') {
+                globalSymbols = data.active_symbols;
+                renderMarkets(globalSymbols);
+            }
+        };
 
-  <!-- mini signal panels (mirror logic) -->
-  <div class="signal-row">
-    <div class="signal-tile"><span class="signal-label">RISE/FALL</span><span class="signal-value" id="rfVal">--</span></div>
-    <div class="signal-tile"><span class="signal-label">EVEN/ODD</span><span class="signal-value" id="eoVal">--</span></div>
-    <div class="signal-tile"><span class="signal-label">OVER/UNDER</span><span class="signal-value" id="ouVal">--</span></div>
-    <div class="signal-tile"><span class="signal-label">MATCH/DIFF</span><span class="signal-value" id="mdVal">--</span></div>
-  </div>
+        function renderMarkets(markets) {
+            const display = document.getElementById('market-display');
+            display.innerHTML = '';
 
-  <!-- bottom navigation (routes) -->
-  <div class="bottom-nav">
-    <div class="nav-icon active" onclick="switchRoute(this)"><span>📊</span>Home</div>
-    <div class="nav-icon" onclick="switchRoute(this)"><span>⚙️</span>Builder</div>
-    <div class="nav-icon" onclick="switchRoute(this)"><span>📈</span>Analysis</div>
-    <div class="nav-icon" onclick="switchRoute(this)"><span>🤖</span>Bots</div>
-    <div class="nav-icon" onclick="switchRoute(this)"><span>🔔</span>Signal</div>
-  </div>
-</div>
+            markets.forEach(m => {
+                const isFast = m.display_name.includes('1s') ? '⚡' : '';
+                const card = document.createElement('div');
+                card.className = 'market-card p-5 rounded-xl flex flex-col justify-between h-32';
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <span class="text-[9px] font-black text-zinc-600 uppercase tracking-tighter">${m.market_display_name}</span>
+                        <span class="text-blue-500 text-xs">${isFast}</span>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold leading-tight">${m.display_name}</h3>
+                        <p class="text-[10px] font-mono text-zinc-500 mt-1">${m.symbol}</p>
+                    </div>
+                `;
+                display.appendChild(card);
+            });
+        }
 
-<script>
-  // ---------- 13 indices (exact from 1000152140) ----------
-  const INDICES = [
-    "Volatility 10 (1s) Index", "Volatility 10 Index", "Volatility 15 (1s) Index",
-    "Volatility 25 (1s) Index", "Volatility 25 Index", "Volatility 30 (1s) Index",
-    "Volatility 50 (1s) Index", "Volatility 50 Index", "Volatility 75 (1s) Index",
-    "Volatility 75 Index", "Volatility 90 (1s) Index", "Volatility 100 (1s) Index",
-    "Volatility 100 Index"
-  ];
-  const SYMBOLS = [
-    "1HZ10V","R_10","1HZ15V","1HZ25V","R_25","1HZ30V","1HZ50V","R_50",
-    "1HZ75V","R_75","1HZ90V","1HZ100V","R_100"
-  ];
+        function updateFilter(type, btn) {
+            document.querySelectorAll('#filter-nav button').forEach(b => b.classList.remove('active-filter'));
+            btn.classList.add('active-filter');
+            if (type === 'all') {
+                renderMarkets(globalSymbols);
+            } else {
+                renderMarkets(globalSymbols.filter(s => s.market === type));
+            }
+        }
 
-  // ---------- STATE ----------
-  let ws = null;
-  let currentSymbol = "1HZ100V";
-  let currentMarket = "Volatility 100 (1s) Index";
-  let tickArray = [];                     // stores last 100 ticks (each = digit)
-  let digitFreq = Array(10).fill(0);
-  let lastPrice = 9079.14;
-  let lastDigit = 4;
-
-  // ---------- UI ELEMENTS ----------
-  const marketStrip = document.getElementById('marketStrip');
-  const marketNameEl = document.getElementById('marketName');
-  const priceDisplay = document.getElementById('priceDisplay');
-  const changeDisplay = document.getElementById('changeDisplay');
-  const timeDisplay = document.getElementById('timeDisplay');
-  const liveStatus = document.getElementById('liveStatus');
-  const ticksCountSpan = document.getElementById('ticksCount');
-  const digitGrid = document.getElementById('digitGrid');
-
-  // ---------- render market pills ----------
-  function renderMarkets() {
-    marketStrip.innerHTML = '';
-    INDICES.forEach((name, idx) => {
-      const pill = document.createElement('span');
-      pill.className = `market-pill ${SYMBOLS[idx] === currentSymbol ? 'active' : ''}`;
-      pill.textContent = name;
-      pill.onclick = () => selectMarket(idx);
-      marketStrip.appendChild(pill);
-    });
-  }
-
-  window.selectMarket = (idx) => {
-    currentSymbol = SYMBOLS[idx];
-    currentMarket = INDICES[idx];
-    document.querySelectorAll('.market-pill').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.market-pill')[idx].classList.add('active');
-    marketNameEl.innerText = currentMarket;
-
-    // update persistent chart (only change symbol in iframe src)
-    updateTradingViewSymbol(currentSymbol);
-
-    if (ws && ws.readyState === 1) {
-      ws.send(JSON.stringify({ forget_all: 'ticks' }));
-      ws.send(JSON.stringify({ ticks: currentSymbol, subscribe: 1 }));
-    }
-    // reset tick array for new market (clean slate)
-    tickArray = [];
-    digitFreq = Array(10).fill(0);
-    updateDigitGrid();
-  };
-
-  // ---------- PERSISTENT TRADINGVIEW (never disappears) ----------
-  function initTradingView() {
-    const container = document.getElementById('tradingviewWidget');
-    // embed as iframe with current symbol – this stays forever, we only change src later
-    const iframe = document.createElement('iframe');
-    iframe.id = 'tvIframe';
-    iframe.allowFullscreen = true;
-    iframe.src = `https://tradingview.deriv.com/?symbol=${currentSymbol}&theme=dark&interval=1`;
-    container.innerHTML = ''; // clear once at start
-    container.appendChild(iframe);
-  }
-
-  function updateTradingViewSymbol(symbol) {
-    const iframe = document.getElementById('tvIframe');
-    if (iframe) {
-      // change src without destroying container – chart stays interactive
-      iframe.src = `https://tradingview.deriv.com/?symbol=${symbol}&theme=dark&interval=1`;
-    }
-  }
-
-  // ---------- REAL DIGIT FREQUENCY (last 100 ticks) ----------
-  function processTick(tick) {
-    const price = parseFloat(tick.quote);
-    // extract last digit (same as Deriv synthetic digit)
-    const priceStr = price.toString().replace('.', '');
-    const digit = parseInt(priceStr.slice(-1));
-    const now = new Date();
-
-    // update price display
-    lastPrice = price;
-    lastDigit = digit;
-    priceDisplay.innerText = price.toFixed(2);
-    changeDisplay.innerText = (Math.random() * 0.4 - 0.2).toFixed(2); // mock change, real change not needed for digit
-    timeDisplay.innerText = now.toLocaleTimeString();
-
-    // --- MAINTAIN LAST 100 TICKS (circular buffer) ---
-    if (tickArray.length >= 100) {
-      // remove oldest tick from frequency
-      const oldestDigit = tickArray.shift();
-      digitFreq[oldestDigit] = (digitFreq[oldestDigit] || 1) - 1;
-    }
-    // add new tick
-    tickArray.push(digit);
-    digitFreq[digit] = (digitFreq[digit] || 0) + 1;
-
-    // update UI: digit circles & percentages
-    updateDigitGrid();
-    updateSignals();
-    ticksCountSpan.innerText = tickArray.length + '/100';
-  }
-
-  function updateDigitGrid() {
-    const total = tickArray.length || 1; // avoid division by zero
-    let html = '';
-    for (let i = 0; i < 10; i++) {
-      const count = digitFreq[i] || 0;
-      const percent = (count / total * 100).toFixed(1);
-      const barWidth = Math.min(percent * 1.2, 100);
-      const isActive = (i === lastDigit);
-      html += `<div class="digit-circle ${isActive ? 'highlight' : ''}">
-        <div class="digit">${i}</div>
-        <div class="percent">${percent}%</div>
-        <div class="digit-bar" style="width:${barWidth}%"></div>
-      </div>`;
-    }
-    digitGrid.innerHTML = html;
-  }
-
-  // ---------- SIGNAL MIRROR (based on last 100 digits) ----------
-  function updateSignals() {
-    if (tickArray.length < 10) return;
-    const digits = tickArray;
-    const last = digits[digits.length-1];
-    const avg = digits.reduce((a,b)=>a+b,0)/digits.length;
-
-    // rise/fall (simplified but using real digit data)
-    let rise = last > avg ? 'RISE' : (last < avg ? 'FALL' : '--');
-    document.getElementById('rfVal').innerText = rise;
-
-    // even/odd
-    let even = digits.filter(d => d%2===0).length;
-    let odd = digits.length - even;
-    document.getElementById('eoVal').innerText = even > odd ? 'EVEN' : (odd > even ? 'ODD' : 'BAL');
-
-    // over/under (threshold 4.5)
-    document.getElementById('ouVal').innerText = last > 4.5 ? 'OVER' : 'UNDER';
-
-    // match/differ vs mode
-    let freq = Array(10).fill(0);
-    digits.forEach(d => freq[d]++);
-    let mode = freq.indexOf(Math.max(...freq));
-    document.getElementById('mdVal').innerText = (last === mode) ? 'MATCH' : 'DIFFER';
-  }
-
-  // ---------- WEBSOCKET (DERIV LIVE) ----------
-  function connectWebSocket() {
-    const token = document.getElementById('tokenInput').value;
-    const appId = document.getElementById('appSelect').value;
-    if (!token) return alert('token required');
-
-    if (ws) ws.close();
-    ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${appId}`);
-
-    ws.onopen = () => {
-      liveStatus.innerText = 'LIVE';
-      liveStatus.style.color = '#22c55e';
-      ws.send(JSON.stringify({ authorize: token }));
-    };
-
-    ws.onmessage = (msg) => {
-      const data = JSON.parse(msg.data);
-      if (data.msg_type === 'authorize') {
-        // subscribe to ticks for current symbol
-        ws.send(JSON.stringify({ ticks: currentSymbol, subscribe: 1 }));
-      }
-      if (data.msg_type === 'tick' && data.tick) {
-        processTick(data.tick);
-      }
-    };
-
-    ws.onclose = () => {
-      liveStatus.innerText = 'OFFLINE';
-    };
-  }
-
-  // connect button
-  document.getElementById('connectBtn').addEventListener('click', connectWebSocket);
-
-  // bottom nav route (visual only)
-  window.switchRoute = (el) => {
-    document.querySelectorAll('.nav-icon').forEach(icon => icon.classList.remove('active'));
-    el.classList.add('active');
-  };
-
-  // ---------- INIT ----------
-  window.onload = () => {
-    renderMarkets();
-    initTradingView();   // persistent chart – never recreated
-    // fill with some fake initial data so grid looks alive before connection
-    for (let i=0; i<50; i++) {
-      let fakeDigit = Math.floor(Math.random()*10);
-      tickArray.push(fakeDigit);
-      digitFreq[fakeDigit] = (digitFreq[fakeDigit]||0)+1;
-    }
-    lastDigit = tickArray[tickArray.length-1];
-    updateDigitGrid();
-    updateSignals();
-    ticksCountSpan.innerText = tickArray.length + '/100';
-  };
-</script>
+        setInterval(() => {
+            if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ "ping": 1 }));
+        }, 30000);
+    </script>
 </body>
-  </html>
+</html>
