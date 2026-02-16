@@ -43,10 +43,41 @@
   .digit-cell .percent { font-size:14px; color:#94a3b8; margin:5px 0; }
   .digit-cell .bar { height:4px; background:#22c55e; border-radius:2px; margin-top:5px; transition:width 0.3s; }
   
+  /* Trade Panel - New */
+  .trade-panel { background:#111827; border-radius:20px; padding:20px; width:100%; border:1px solid #1e293b; margin-top:20px; }
+  .trade-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+  .trade-price { font-size:42px; font-weight:700; color:#22c55e; }
+  .trade-price small { font-size:14px; color:#94a3b8; margin-left:10px; }
+  
+  .order-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  @media (max-width:768px) { .order-grid { grid-template-columns:1fr; } }
+  
+  .order-box { background:#1e293b; border-radius:16px; padding:20px; }
+  .order-box h4 { color:#94a3b8; font-size:16px; margin-bottom:15px; }
+  
+  .input-group { margin-bottom:20px; }
+  .input-group label { display:block; color:#94a3b8; font-size:14px; margin-bottom:8px; }
+  .input-group input { width:100%; padding:15px; background:#0f172a; border:1px solid #334155; border-radius:12px; color:white; font-size:18px; }
+  .input-group .hint { color:#64748b; font-size:12px; margin-top:5px; }
+  
+  .multiplier-buttons { display:flex; gap:10px; flex-wrap:wrap; }
+  .multiplier-btn { flex:1; min-width:60px; padding:12px; background:#0f172a; border:1px solid #334155; border-radius:10px; color:white; cursor:pointer; text-align:center; }
+  .multiplier-btn.active { background:#22c55e; color:#0f172a; border-color:#22c55e; font-weight:600; }
+  
+  .trade-type-buttons { display:flex; gap:10px; margin:20px 0; flex-wrap:wrap; }
+  .trade-type-btn { flex:1; padding:15px; border-radius:12px; border:none; font-weight:600; cursor:pointer; font-size:16px; }
+  .trade-type-btn.buy { background:#22c55e; color:#0f172a; }
+  .trade-type-btn.sell { background:#dc2626; color:white; }
+  
+  .payout-info { display:flex; justify-content:space-between; background:#0f172a; padding:15px; border-radius:12px; margin:15px 0; }
+  .payout-label { color:#94a3b8; }
+  .payout-value { font-weight:700; color:#22c55e; }
+  
   .controls { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:15px 0; }
   select { background:#1e293b; border:1px solid #334155; border-radius:12px; padding:10px 15px; color:white; font-size:14px; cursor:pointer; }
   button { background:#22c55e; color:#0f172a; border:none; border-radius:12px; padding:10px 20px; font-weight:600; cursor:pointer; }
   button.outline { background:transparent; border:1px solid #22c55e; color:#22c55e; }
+  button.danger { background:#dc2626; color:white; }
   
   .trade-history { background:#111827; border-radius:20px; padding:20px; width:100%; margin-top:20px; }
   .history-item { display:flex; justify-content:space-between; padding:12px; border-bottom:1px solid #1e293b; }
@@ -60,9 +91,9 @@
 
 <div id="dashboard">
   <!-- Header -->
-  <div style="width:100%; display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+  <div style="width:100%; display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:10px;">
     <h1 style="color:white; font-size:24px;">ZION <span style="color:#22c55e;">TRADING LAB</span></h1>
-    <div style="display:flex; gap:10px;">
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
       <select id="symbolSelect" onchange="changeSymbol()">
         <option value="1HZ10V">Volatility 10 (1s)</option>
         <option value="R_10">Volatility 10</option>
@@ -154,9 +185,103 @@
     <!-- Digit Distribution Grid -->
     <h3 style="margin:15px 0 10px;">Digit Distribution (Last 1000 ticks)</h3>
     <div class="digit-grid" id="digitGrid"></div>
-    
-    <!-- Controls -->
-    <div class="controls">
+  </div>
+
+  <!-- Trade Panel - New with Amount and Multiplier -->
+  <div class="trade-panel">
+    <div class="trade-header">
+      <div>
+        <span class="trade-price" id="currentPrice">3,591.07</span>
+        <small id="priceChange">+0.23%</small>
+      </div>
+      <div>
+        <span class="stat-box" style="display:inline-block; margin:0;">
+          <span class="label">Spread</span>
+          <span class="value" style="font-size:18px;">0.5</span>
+        </span>
+      </div>
+    </div>
+
+    <div class="order-grid">
+      <!-- Left Column - Order Form -->
+      <div class="order-box">
+        <h4>Set order</h4>
+        
+        <div class="input-group">
+          <label>Amount (USD)</label>
+          <input type="number" id="tradeAmount" value="10.00" min="1" max="10000" step="0.50">
+          <div class="hint">Min: $1.00 | Max: $10,000</div>
+        </div>
+
+        <div class="input-group">
+          <label>Multiplier</label>
+          <div class="multiplier-buttons" id="multiplierButtons">
+            <div class="multiplier-btn" onclick="setMultiplier(1)">x1</div>
+            <div class="multiplier-btn" onclick="setMultiplier(2)">x2</div>
+            <div class="multiplier-btn" onclick="setMultiplier(5)">x5</div>
+            <div class="multiplier-btn active" onclick="setMultiplier(10)">x10</div>
+            <div class="multiplier-btn" onclick="setMultiplier(20)">x20</div>
+            <div class="multiplier-btn" onclick="setMultiplier(50)">x50</div>
+          </div>
+          <input type="number" id="multiplierInput" value="10" min="1" max="100" style="margin-top:10px;" onchange="updateMultiplierFromInput()">
+        </div>
+
+        <div class="payout-info">
+          <span class="payout-label">Potential Payout:</span>
+          <span class="payout-value" id="potentialPayout">$95.00</span>
+        </div>
+
+        <div class="payout-info">
+          <span class="payout-label">Stop Loss:</span>
+          <span class="payout-value" id="stopLoss">$5.00</span>
+        </div>
+
+        <div class="payout-info">
+          <span class="payout-label">Take Profit:</span>
+          <span class="payout-value" id="takeProfit">$95.00</span>
+        </div>
+      </div>
+
+      <!-- Right Column - Trade Types -->
+      <div class="order-box">
+        <h4>Select trade type</h4>
+        
+        <div class="trade-type-buttons">
+          <button class="trade-type-btn buy" onclick="executeTrade('rise')">Rise ↑</button>
+          <button class="trade-type-btn sell" onclick="executeTrade('fall')">Fall ↓</button>
+        </div>
+
+        <div class="trade-type-buttons">
+          <button class="trade-type-btn buy" onclick="executeTrade('even')">Even</button>
+          <button class="trade-type-btn buy" onclick="executeTrade('odd')">Odd</button>
+        </div>
+
+        <div class="trade-type-buttons">
+          <button class="trade-type-btn buy" onclick="executeTrade('over')">Over</button>
+          <button class="trade-type-btn buy" onclick="executeTrade('under')">Under</button>
+        </div>
+
+        <div class="trade-type-buttons">
+          <button class="trade-type-btn buy" onclick="executeTrade('match')">Match</button>
+          <button class="trade-type-btn buy" onclick="executeTrade('differ')">Differ</button>
+        </div>
+
+        <!-- Quick stake buttons -->
+        <div style="margin-top:20px;">
+          <label style="color:#94a3b8; font-size:14px;">Quick Stake</label>
+          <div style="display:flex; gap:5px; margin-top:5px;">
+            <button class="outline" style="flex:1; padding:8px;" onclick="document.getElementById('tradeAmount').value=5">$5</button>
+            <button class="outline" style="flex:1; padding:8px;" onclick="document.getElementById('tradeAmount').value=10">$10</button>
+            <button class="outline" style="flex:1; padding:8px;" onclick="document.getElementById('tradeAmount').value=25">$25</button>
+            <button class="outline" style="flex:1; padding:8px;" onclick="document.getElementById('tradeAmount').value=50">$50</button>
+            <button class="outline" style="flex:1; padding:8px;" onclick="document.getElementById('tradeAmount').value=100">$100</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls for digit trading -->
+    <div class="controls" style="margin-top:20px;">
       <select id="barrierSelect">
         <option value="1">Barrier 1</option>
         <option value="2">Barrier 2</option>
@@ -179,9 +304,6 @@
         <option value="8">Digit 8</option>
         <option value="9" selected>Digit 9</option>
       </select>
-      <button onclick="placeTrade('evenodd')">Place Even/Odd Trade</button>
-      <button onclick="placeTrade('overunder')">Place Over/Under Trade</button>
-      <button onclick="placeTrade('matchdiff')">Place Match/Differ Trade</button>
     </div>
   </div>
 
@@ -205,6 +327,7 @@ const API_TOKEN = "YOUR_DERIV_API_TOKEN"; // Replace with your actual token
 let currentSymbol = "1HZ10V";
 let ws = null;
 let isConnected = false;
+let currentMultiplier = 10;
 
 // Data storage
 let tickHistory = [];
@@ -212,6 +335,7 @@ let digitCounts = Array(10).fill(0);
 let totalTicks = 0;
 let balance = 10000;
 let trades = [];
+let currentPrice = 3591.07;
 
 // ========== INITIALIZATION ==========
 window.onload = function() {
@@ -219,6 +343,10 @@ window.onload = function() {
   initTradingView();
   updateDigitGrid();
   updateDashboard();
+  updatePayout();
+  
+  // Start price simulator (remove when using real WebSocket)
+  startPriceSimulator();
 };
 
 // ========== TRADINGVIEW WIDGET ==========
@@ -239,6 +367,18 @@ function initTradingView() {
     "save_image": false,
     "studies": ["MACD@tv-basicstudies", "RSI@tv-basicstudies"]
   });
+}
+
+// ========== PRICE SIMULATOR (Temporary) ==========
+function startPriceSimulator() {
+  setInterval(() => {
+    currentPrice += (Math.random() - 0.5) * 10;
+    document.getElementById('currentPrice').innerText = currentPrice.toFixed(2);
+    
+    // Simulate price change
+    const change = ((Math.random() - 0.5) * 2).toFixed(2);
+    document.getElementById('priceChange').innerText = (change > 0 ? '+' : '') + change + '%';
+  }, 3000);
 }
 
 // ========== DERIV CHART ==========
@@ -266,20 +406,17 @@ function connectWebSocket() {
   ws.onmessage = (msg) => {
     const data = JSON.parse(msg.data);
     
-    // Handle authorization
     if(data.msg_type === 'authorize') {
       console.log("Authorization successful");
       subscribeBalance();
       subscribeTicks();
     }
     
-    // Handle balance updates
     if(data.balance) {
       balance = parseFloat(data.balance.balance);
       document.getElementById('balance').innerText = '$' + balance.toFixed(2);
     }
     
-    // Handle tick data
     if(data.tick) {
       processTick(data.tick);
     }
@@ -312,23 +449,20 @@ function subscribeTicks() {
 function processTick(tick) {
   const quote = parseFloat(tick.quote);
   const digit = parseInt(quote.toString().slice(-1));
+  currentPrice = quote;
   
-  // Update history
+  document.getElementById('currentPrice').innerText = currentPrice.toFixed(2);
+  
   tickHistory.push({ price: quote, digit: digit, time: tick.epoch });
   
-  // Keep last 1000 ticks
   if(tickHistory.length > 1000) {
     const removed = tickHistory.shift();
-    if(removed) {
-      digitCounts[removed.digit]--;
-    }
+    if(removed) digitCounts[removed.digit]--;
   }
   
-  // Update counts
   digitCounts[digit]++;
   totalTicks++;
   
-  // Update displays
   updateDigitDisplays(digit);
   updateDigitGrid();
 }
@@ -337,7 +471,6 @@ function processTick(tick) {
 function updateDigitDisplays(lastDigit) {
   const total = tickHistory.length || 1;
   
-  // Last digit
   document.getElementById('lastDigit').innerText = lastDigit;
   
   // Even/Odd
@@ -352,7 +485,7 @@ function updateDigitDisplays(lastDigit) {
   document.getElementById('evenPercent').innerText = evenPercent + '%';
   document.getElementById('oddPercent').innerText = oddPercent + '%';
   
-  // Over/Under with barrier 8
+  // Over/Under
   const barrier = parseInt(document.getElementById('barrierSelect').value);
   let over = 0, under = 0;
   for(let i = 0; i < 10; i++) {
@@ -365,7 +498,7 @@ function updateDigitDisplays(lastDigit) {
   document.getElementById('overPercent').innerText = overPercent + '%';
   document.getElementById('underPercent').innerText = underPercent + '%';
   
-  // Match/Differ with selected digit
+  // Match/Differ
   const selectedDigit = parseInt(document.getElementById('digitSelect').value);
   const matchCount = digitCounts[selectedDigit] || 0;
   const matchPercent = (matchCount / total * 100).toFixed(1);
@@ -384,7 +517,7 @@ function updateDigitGrid() {
   for(let i = 0; i < 10; i++) {
     const count = digitCounts[i] || 0;
     const percent = (count / total * 100).toFixed(1);
-    const barWidth = percent * 10; // Scale for visual
+    const barWidth = percent * 10;
     
     grid.innerHTML += `
       <div class="digit-cell">
@@ -397,76 +530,106 @@ function updateDigitGrid() {
   }
 }
 
-// ========== CHANGE SYMBOL ==========
-function changeSymbol() {
-  const select = document.getElementById('symbolSelect');
-  currentSymbol = select.value;
+// ========== MULTIPLIER FUNCTIONS ==========
+function setMultiplier(value) {
+  currentMultiplier = value;
+  document.getElementById('multiplierInput').value = value;
   
-  // Reset data for new symbol
-  tickHistory = [];
-  digitCounts = Array(10).fill(0);
-  totalTicks = 0;
+  // Update active state
+  document.querySelectorAll('.multiplier-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  event.target.classList.add('active');
   
-  // Update chart
-  loadDerivChart(currentSymbol);
-  
-  // Resubscribe if connected
-  if(isConnected && ws) {
-    ws.send(JSON.stringify({ "forget_all": "ticks" }));
-    ws.send(JSON.stringify({ "ticks": currentSymbol, "subscribe": 1 }));
-  }
-  
-  // Reset displays
-  updateDigitDisplays(0);
-  updateDigitGrid();
+  updatePayout();
 }
 
-// ========== PLACE TRADE ==========
-function placeTrade(type) {
-  if(!isConnected) {
-    alert('Please connect to WebSocket first');
+function updateMultiplierFromInput() {
+  const input = document.getElementById('multiplierInput');
+  currentMultiplier = parseInt(input.value) || 1;
+  
+  // Update button states
+  document.querySelectorAll('.multiplier-btn').forEach(btn => {
+    btn.classList.remove('active');
+    if(btn.innerText === 'x' + currentMultiplier) {
+      btn.classList.add('active');
+    }
+  });
+  
+  updatePayout();
+}
+
+function updatePayout() {
+  const amount = parseFloat(document.getElementById('tradeAmount').value) || 10;
+  const payout = amount * (currentMultiplier * 0.95);
+  const stopLoss = amount * 0.5; // 50% stop loss
+  const takeProfit = amount * currentMultiplier;
+  
+  document.getElementById('potentialPayout').innerText = '$' + payout.toFixed(2);
+  document.getElementById('stopLoss').innerText = '$' + stopLoss.toFixed(2);
+  document.getElementById('takeProfit').innerText = '$' + takeProfit.toFixed(2);
+}
+
+// ========== EXECUTE TRADE ==========
+function executeTrade(type) {
+  const amount = parseFloat(document.getElementById('tradeAmount').value) || 10;
+  
+  if(amount > balance) {
+    alert('Insufficient balance!');
     return;
   }
   
-  if(tickHistory.length < 10) {
-    alert('Not enough tick data yet. Wait for more ticks.');
-    return;
-  }
-  
-  const stake = 10; // Fixed stake for demo
-  const total = tickHistory.length;
+  const total = tickHistory.length || 1;
   let win = false;
-  let confidence = 0;
+  let confidence = 60;
   
-  if(type === 'evenodd') {
+  // Determine win based on actual digit data
+  if(type === 'rise' || type === 'fall') {
+    win = Math.random() < 0.6; // Simulated for rise/fall
+  } else if(type === 'even') {
     const even = digitCounts.filter((_, i) => i % 2 === 0).reduce((a, b) => a + b, 0);
     const evenPercent = even / total * 100;
-    const signal = evenPercent > 50 ? 'EVEN' : 'ODD';
-    confidence = Math.max(evenPercent, 100 - evenPercent);
-    win = (signal === 'EVEN' && evenPercent > 50) || (signal === 'ODD' && evenPercent < 50);
-  }
-  else if(type === 'overunder') {
+    win = evenPercent > 50;
+    confidence = evenPercent;
+  } else if(type === 'odd') {
+    const odd = digitCounts.filter((_, i) => i % 2 === 1).reduce((a, b) => a + b, 0);
+    const oddPercent = odd / total * 100;
+    win = oddPercent > 50;
+    confidence = oddPercent;
+  } else if(type === 'over') {
     const barrier = parseInt(document.getElementById('barrierSelect').value);
     const over = digitCounts.filter((_, i) => i > barrier).reduce((a, b) => a + b, 0);
     const overPercent = over / total * 100;
-    confidence = Math.max(overPercent, 100 - overPercent);
     win = overPercent > 50;
-  }
-  else if(type === 'matchdiff') {
+    confidence = overPercent;
+  } else if(type === 'under') {
+    const barrier = parseInt(document.getElementById('barrierSelect').value);
+    const under = digitCounts.filter((_, i) => i <= barrier).reduce((a, b) => a + b, 0);
+    const underPercent = under / total * 100;
+    win = underPercent > 50;
+    confidence = underPercent;
+  } else if(type === 'match') {
     const digit = parseInt(document.getElementById('digitSelect').value);
     const matchPercent = (digitCounts[digit] / total * 100);
-    confidence = Math.max(matchPercent, 100 - matchPercent);
     win = matchPercent > 50;
+    confidence = matchPercent;
+  } else if(type === 'differ') {
+    const digit = parseInt(document.getElementById('digitSelect').value);
+    const matchPercent = (digitCounts[digit] / total * 100);
+    const differPercent = 100 - matchPercent;
+    win = differPercent > 50;
+    confidence = differPercent;
   }
   
-  const payout = stake * 0.95;
-  const profit = win ? payout : -stake;
+  const payout = amount * (currentMultiplier * 0.95);
+  const profit = win ? payout : -amount;
   balance += profit;
   
   const trade = {
     time: new Date().toLocaleTimeString(),
     type: type,
-    stake: stake,
+    amount: amount,
+    multiplier: currentMultiplier,
     result: win ? 'WIN' : 'LOSS',
     profit: profit,
     confidence: Math.round(confidence)
@@ -499,7 +662,7 @@ function updateTradeHistory() {
   
   list.innerHTML = trades.map(t => `
     <div class="history-item">
-      <span>${t.time} - ${t.type} (${t.confidence}% AI)</span>
+      <span>${t.time} - ${t.type} (x${t.multiplier}) [${t.confidence}% AI]</span>
       <span class="${t.result === 'WIN' ? 'history-win' : 'history-loss'}">
         ${t.result === 'WIN' ? '+' : '-'}$${Math.abs(t.profit).toFixed(2)}
       </span>
@@ -507,7 +670,28 @@ function updateTradeHistory() {
   `).join('');
 }
 
-// Update displays when barrier/digit changes
+// ========== CHANGE SYMBOL ==========
+function changeSymbol() {
+  const select = document.getElementById('symbolSelect');
+  currentSymbol = select.value;
+  
+  tickHistory = [];
+  digitCounts = Array(10).fill(0);
+  totalTicks = 0;
+  
+  loadDerivChart(currentSymbol);
+  
+  if(isConnected && ws) {
+    ws.send(JSON.stringify({ "forget_all": "ticks" }));
+    ws.send(JSON.stringify({ "ticks": currentSymbol, "subscribe": 1 }));
+  }
+  
+  updateDigitDisplays(0);
+  updateDigitGrid();
+}
+
+// Event listeners
+document.getElementById('tradeAmount').addEventListener('input', updatePayout);
 document.getElementById('barrierSelect').addEventListener('change', () => {
   if(tickHistory.length > 0) {
     const lastDigit = tickHistory[tickHistory.length - 1]?.digit || 0;
@@ -524,4 +708,4 @@ document.getElementById('digitSelect').addEventListener('change', () => {
 </script>
 
 </body>
-</html>
+           </html>
