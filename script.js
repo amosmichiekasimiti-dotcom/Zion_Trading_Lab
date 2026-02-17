@@ -20,7 +20,7 @@ function renderCategories() {
     const grid = document.getElementById('display-grid');
     const backBtn = document.getElementById('back-btn');
     grid.innerHTML = '';
-    backBtn.style.display = 'none';
+    if(backBtn) backBtn.style.display = 'none';
 
     const groups = [...new Set(allAssets.map(a => a.market_display_name))];
     groups.forEach(groupName => {
@@ -36,19 +36,21 @@ function renderGroupAssets(groupName) {
     const grid = document.getElementById('display-grid');
     const backBtn = document.getElementById('back-btn');
     grid.innerHTML = '';
-    backBtn.style.display = 'block';
+    if(backBtn) backBtn.style.display = 'block';
 
     const filtered = allAssets.filter(a => a.market_display_name === groupName);
     filtered.forEach(asset => {
         const safeId = asset.symbol.replace(/\./g, '_');
         const card = document.createElement('div');
         card.className = 'card';
+        
+        // This puts the button inside the card correctly
         card.innerHTML = `
             <h4>${asset.submarket_display_name}</h4>
             <h3>${asset.display_name}</h3>
             <div class="price" id="price-${safeId}">---</div>
-            <div class="volatility-intel" id="vol-${safeId}">VOLATILITY: ANALYZING</div>
-            <button class="chart-btn" onclick="openLiveChart('${asset.symbol}')">ANALYZE CHART</button>
+            <div class="volatility-intel" id="vol-${safeId}">ANALYZING...</div>
+            <button class="chart-btn" onclick="openLiveChart('${asset.symbol}')">VIEW CANDLESTICKS</button>
         `;
         grid.appendChild(card);
         socket.send(JSON.stringify({ "ticks": asset.symbol, "subscribe": 1 }));
@@ -61,12 +63,13 @@ function updateLivePrice(tick) {
     const volEl = document.getElementById(`vol-${id}`);
     if (priceEl) {
         priceEl.innerText = tick.quote;
-        volEl.innerText = `VOLATILITY: ${tick.id.slice(0, 8)} (LIVE)`;
+        // Instruction: Announce volatility movement
+        volEl.innerText = `VOLATILITY: ${tick.id.slice(0, 12)} (LIVE)`;
     }
 }
 
 function openLiveChart(symbol) {
-    // This URL opens the Professional Trader with Candlesticks and Indicator support
+    // This URL triggers the professional DTrader interface with candlesticks
     const traderUrl = `https://app.deriv.com/trader?chart_type=candle&interval=1m&symbol=${symbol}`;
     window.open(traderUrl, '_blank');
 }
