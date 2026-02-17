@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zion Trading Lab | Strategy Switcher</title>
+    <title>Zion Trading Lab | Force Fixed</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,7 +11,7 @@
         <div id="ai-header">SYSTEM STATUS: LIVE SCANNER ACTIVE</div>
         <h1 id="hub-title">ZION MASTER HUB</h1>
         <nav id="navigation-bar">
-            <button id="back-btn" onclick="renderCategories()" style="display:none;">← BACK TO GROUPS</button>
+            <button id="back-btn" onclick="renderCategories()" style="display:none;">← BACK TO ALL GROUPS</button>
         </nav>
     </header>
 
@@ -24,14 +24,13 @@
             <span id="analysis-title">STRATEGY ANALYSIS</span>
             <span class="close-overlay" onclick="closeStrategy()">× CLOSE</span>
         </div>
-        
         <div id="digit-hub" class="digit-container" style="display:none;">
             <div id="digit-bars" class="digit-grid"></div>
         </div>
-
         <div id="chart-view"></div>
     </div>
 
     <script src="script.js"></script>
 </body>
 </html>
+
