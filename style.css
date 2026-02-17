@@ -1,70 +1,46 @@
 body {
-    background-color: #000; /* True black background */
+    background-color: #000;
     color: #fff;
-    font-family: sans-serif;
-    margin: 0;
-    padding: 20px;
-    text-align: center;
+    font-family: 'Inter', sans-serif;
+    margin: 0; padding: 20px;
 }
 
-.filter-nav {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-bottom: 30px;
-}
-
-.filter-btn {
-    background: #222;
-    border: none;
-    color: #888;
-    padding: 10px 20px;
-    border-radius: 20px;
+#path-tracker {
+    color: #3e7eff;
     cursor: pointer;
-    transition: 0.3s;
-}
-
-.filter-btn.active, .filter-btn:hover {
-    background: #3e7eff; /* Blue highlight from your image */
-    color: #fff;
+    font-size: 14px;
+    margin-bottom: 30px;
+    text-transform: uppercase;
+    font-weight: bold;
 }
 
 .grid-container {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 15px;
-    max-width: 1200px;
-    margin: 0 auto;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
 }
 
-.market-card {
+.discovery-card {
     background: #111;
-    border-radius: 15px;
-    padding: 20px;
-    text-align: left;
     border: 1px solid #222;
+    border-radius: 15px;
+    padding: 30px;
+    cursor: pointer;
+    transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.market-card h4 {
-    color: #666;
-    font-size: 10px;
-    text-transform: uppercase;
-    margin: 0;
+.discovery-card:hover {
+    background: #1a1a1a;
+    border-color: #3e7eff;
+    transform: translateY(-5px);
 }
 
-.market-card h2 {
-    font-size: 18px;
-    margin: 5px 0;
-}
+.discovery-card h4 { color: #666; font-size: 10px; margin: 0; }
+.discovery-card h2 { font-size: 20px; margin: 10px 0; }
 
-.market-card .symbol-code {
-    color: #3e7eff;
-    font-size: 12px;
-}
-
-.market-card .price {
-    font-size: 24px;
-    font-weight: bold;
+.live-price {
+    font-size: 32px;
+    font-weight: 900;
+    color: #00ff88;
     margin-top: 15px;
-    color: #00ff88; /* Green for live data */
 }
