@@ -1,140 +1,195 @@
 /**
- * Zion Trading Lab - Authoritative Direct Feed
- * Direct Sync with Deriv "Reef" Servers & Live Strategy Engine
+ * ZION TRADING LAB - AUTHORITATIVE ENGINE
+ * Logic: Physics Momentum + 100-Tick Reef Sync
  */
 
-const ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
+let ws;
 let activeSub = null;
 let allSymbols = [];
 let currentSymbol = '';
 let currentMode = 'rise_fall';
+let reefDigitWindow = []; 
+let physicsBuffer = []; 
 let lastPrice = 0;
-let reefDigitWindow = []; // Stores authoritative 100-digit history
-let physicsBuffer = [];   // Buffer for Velocity analysis
 
-ws.onopen = () => {
-    console.log("Zion Lab: Connected to Direct Reef Feed");
-    ws.send(JSON.stringify({ "active_symbols": "brief", "product_type": "basic" }));
-};
+// --- CONNECTION GUARD: Prevents "Stopped Functioning" ---
+function connect() {
+    ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
 
-ws.onmessage = (msg) => {
-    const data = JSON.parse(msg.data);
+    ws.onopen = () => {
+        console.log("Zion Lab: Connected to Reef Feed");
+        ws.send(JSON.stringify({ "active_symbols": "brief", "product_type": "basic" }));
+        
+        // Ping every 30s to keep connection alive
+        setInterval(() => { if(ws.readyState === 1) ws.send(JSON.stringify({ping:1})); }, 30000);
+    };
 
-    if (data.active_symbols) { 
-        allSymbols = data.active_symbols; 
-        loadCategory('volatility', document.querySelector('.nav-card')); 
-    }
+    ws.onmessage = (msg) => {
+        const data = JSON.parse(msg.data);
 
-    // Pull real history to ensure accurate starting percentages
-    if (data.history) {
-        reefDigitWindow = [];
-        data.history.prices.forEach(p => {
-            const digit = parseInt(p.toFixed(data.pip_size).slice(-1));
+        // Load Asset List
+        if (data.active_symbols) { 
+            allSymbols = data.active_symbols; 
+            loadCategory('volatility', document.querySelector('.nav-card')); 
+        }
+
+        // Pull Real History (Physics Baseline)
+        if (data.history) {
+            reefDigitWindow = [];
+            data.history.prices.forEach(p => {
+                const digit = parseInt(p.toFixed(data.pip_size).slice(-1));
+                reefDigitWindow.push(digit);
+            });
+            renderAnalysis();
+        }
+
+        // Live Authoritative Stream
+        if (data.tick) {
+            activeSub = data.tick.id;
+            const price = data.tick.quote;
+            const priceStr = price.toFixed(data.tick.pip_size);
+            const digit = parseInt(priceStr.slice(-1));
+
+            updatePriceUI(priceStr, price, digit);
+            
+            // Maintain 100-tick Reef Window
             reefDigitWindow.push(digit);
-        });
-        renderStrategyAnalysis();
-    }
+            if (reefDigitWindow.length > 100) reefDigitWindow.shift();
+            
+            // Update Physics Buffer
+            physicsBuffer.push(price);
+            if (physicsBuffer.length > 14) physicsBuffer.shift();
 
-    if (data.tick) {
-        activeSub = data.tick.id;
-        const currentPrice = data.tick.quote;
-        const priceStr = currentPrice.toFixed(data.tick.pip_size);
-        const lastDigit = parseInt(priceStr.slice(-1));
-        
-        // Update price display with Directional Arrows
-        updatePriceDisplay(priceStr, currentPrice, lastDigit);
-        
-        // Update buffers
-        reefDigitWindow.push(lastDigit);
-        if (reefDigitWindow.length > 100) reefDigitWindow.shift();
-        
-        physicsBuffer.push(currentPrice);
-        if (physicsBuffer.length > 14) physicsBuffer.shift();
+            renderAnalysis(digit);
+        }
+    };
 
-        renderStrategyAnalysis(lastDigit);
-    }
-};
+    ws.onclose = () => setTimeout(connect, 3000); // Auto-reconnect
+}
 
-function updatePriceDisplay(str, val, digit) {
-    const head = str.slice(0, -1);
-    let arrow = "";
-    let arrowCol = "#fff";
+// --- UI & CATEGORY LOGIC ---
+function loadCategory(cat, el) {
+    document.querySelectorAll('.nav-card').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    const list = document.getElementById('market-list');
+    list.innerHTML = '';
 
-    if (lastPrice > 0) {
-        if (val > lastPrice) { arrow = " ▲"; arrowCol = "#4caf50"; }
-        else if (val < lastPrice) { arrow = " ▼"; arrowCol = "#ff444f"; }
-    }
-    lastPrice = val;
+    const filtered = allSymbols.filter(s => {
+        const disp = s.display_name.toLowerCase();
+        if (cat === 'volatility') return s.market === 'synthetic_index' && !disp.includes('jump') && !disp.includes('step');
+        if (cat === 'crashboom') return disp.includes('crash') || disp.includes('boom');
+        if (cat === 'jump') return disp.includes('jump');
+        if (cat === 'range') return disp.includes('range') || disp.includes('step');
+        if (cat === 'forex') return s.market === 'forex';
+        return false;
+    });
 
-    const priceEl = document.getElementById('live-price');
-    if (priceEl) {
-        priceEl.innerHTML = `${head}<span>${digit}</span><span style="color:${arrowCol}; font-size:18px; margin-left:10px;">${arrow}</span>`;
+    filtered.forEach(s => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${s.display_name}</td>
+            <td>${s.symbol.toUpperCase()}</td>
+            <td><button class="btn-view" onclick="openAnalysis('${s.display_name}', '${s.symbol}')">ANALYZE</button></td>
+        `;
+        list.appendChild(tr);
+    });
+}
+
+function openAnalysis(name, symbol) {
+    currentSymbol = symbol;
+    reefDigitWindow = []; physicsBuffer = [];
+    document.getElementById('mTitle').innerText = name;
+    document.getElementById('price-symbol').innerText = symbol.toUpperCase();
+    document.getElementById('modal').style.display = 'block';
+    
+    switchContract('rise_fall', document.querySelector('.tab'));
+    
+    // Request Authoritative State
+    ws.send(JSON.stringify({ "ticks_history": symbol, "count": 100, "end": "latest", "style": "ticks" }));
+    if (activeSub) ws.send(JSON.stringify({ "forget": activeSub }));
+    ws.send(JSON.stringify({ "ticks": symbol, "subscribe": 1 }));
+}
+
+function switchContract(mode, el) {
+    currentMode = mode;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('digit-analysis-panel').style.display = (mode === 'rise_fall') ? 'none' : 'block';
+    
+    if (mode !== 'rise_fall') buildGrid();
+    
+    document.getElementById('chart-container').innerHTML = `
+        <iframe src="https://tradingview.binary.com/v2/main.php?symbol=${currentSymbol}&theme=dark" width="100%" height="100%" frameborder="0"></iframe>`;
+}
+
+function buildGrid() {
+    const grid = document.getElementById('digit-grid');
+    grid.innerHTML = '';
+    for (let i = 0; i <= 9; i++) {
+        grid.innerHTML += `
+            <div id="d-${i}" class="d-box">
+                <div class="d-num">${i}</div>
+                <div id="bar-${i}" class="d-bar" style="height:0%;"></div>
+                <div id="p-${i}" class="d-pct">0%</div>
+            </div>`;
     }
 }
 
-function renderStrategyAnalysis(activeDigit) {
+// --- PHYSICS & STRATEGY ENGINE ---
+function updatePriceUI(str, val, digit) {
+    const head = str.slice(0, -1);
+    let arrow = val > lastPrice ? " ▲" : " ▼";
+    let color = val > lastPrice ? "#4caf50" : "#ff444f";
+    lastPrice = val;
+
+    document.getElementById('live-price').innerHTML = `
+        ${head}<span>${digit}</span>
+        <span style="color:${color}; font-size:18px;">${arrow}</span>
+    `;
+}
+
+function renderAnalysis(activeDigit) {
     const counts = Array(10).fill(0);
     reefDigitWindow.forEach(d => counts[d]++);
     
-    const maxVal = Math.max(...counts);
-    const minVal = Math.min(...counts);
+    const max = Math.max(...counts);
+    const min = Math.min(...counts);
 
-    // Calculate velocity for Physics logic
+    // Physics Velocity Calculation
     let velocity = 0;
     if (physicsBuffer.length === 14) {
         velocity = (physicsBuffer[13] - physicsBuffer[0]) / 14;
+        const trend = velocity > 0 ? "BULLISH FORCE" : "BEARISH FORCE";
+        const color = velocity > 0 ? "#4caf50" : "#ff444f";
+        document.getElementById('market-strength').innerHTML = `<span style="color:${color}">${trend}</span>`;
     }
 
-    // Update Digit UI
     for (let i = 0; i <= 9; i++) {
         const pct = ((counts[i] / reefDigitWindow.length) * 100).toFixed(1);
         const bar = document.getElementById(`bar-${i}`);
-        const box = document.getElementById(`d-${i}`);
         const label = document.getElementById(`p-${i}`);
+        const box = document.getElementById(`d-${i}`);
 
         if (label) {
             label.innerText = pct + "%";
-            if (counts[i] === maxVal) label.style.color = "#4caf50"; // HOT
-            else if (counts[i] === minVal) label.style.color = "#ff444f"; // COLD
-            else label.style.color = "#333";
+            label.style.color = (counts[i] === max) ? "#4caf50" : (counts[i] === min) ? "#ff444f" : "#00f2fe";
         }
-
         if (bar) bar.style.height = pct + "%";
 
-        // Active Highlight
+        // Black Highlight Active State (Like screenshots)
         if (i === activeDigit) {
-            if (box) { box.style.background = "#000"; box.style.borderColor = "#fff"; }
-            if (bar) bar.style.background = "#ff444f";
+            box.style.background = "#000";
+            box.style.borderColor = "#fff";
         } else {
-            if (box) { box.style.background = "#1a1a1a"; box.style.borderColor = "#333"; }
-            if (bar) bar.style.background = "#323738";
+            box.style.background = "#161625";
+            box.style.borderColor = "#2e2e48";
         }
     }
-    
-    analyzeMarketConditions(velocity, counts, activeDigit);
 }
 
-function analyzeMarketConditions(vel, counts, active) {
-    // Strategy Logic based on 10 conditions per market
-    let signal = "NEUTRAL";
-    let color = "#888";
-
-    // Example logic for Even/Odd Parity
-    const evenSum = counts[0] + counts[2] + counts[4] + counts[6] + counts[8];
-    const oddSum = 100 - evenSum;
-
-    if (currentMode === 'even_odd') {
-        if (evenSum > 55 && active % 2 === 0 && vel > 0) {
-            signal = "STRONG EVEN TREND";
-            color = "#4caf50";
-        } else if (oddSum > 55 && active % 2 !== 0 && vel < 0) {
-            signal = "STRONG ODD TREND";
-            color = "#ff444f";
-        }
-    }
-    
-    // Log active signal for professional trading
-    console.log(`[Zion Engine] Signal: ${signal} | Parity: E${evenSum}/O${oddSum} | Vel: ${vel.toFixed(5)}`);
+function closeModal() {
+    document.getElementById('modal').style.display = 'none';
+    if (activeSub) ws.send(JSON.stringify({ "forget": activeSub }));
 }
 
-// ... rest of your UI helper functions (closeModal, loadCategory, etc.)
+connect();
