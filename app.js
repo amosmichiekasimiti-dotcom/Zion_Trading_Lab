@@ -1,68 +1,88 @@
 const socket = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
-let allAssets = [];
-let currentCategory = 'all';
+let masterData = [];
+let currentPath = ["Home"];
 
 socket.onopen = () => {
-    // Single command to pull every available asset
+    // THE MASTER COMMAND: Pulls every single asset available on Deriv
     socket.send(JSON.stringify({ "active_symbols": "brief", "product_type": "basic" }));
-    
-    // Keep connection alive
-    setInterval(() => socket.send(JSON.stringify({ "ping": 1 })), 30000);
 };
 
 socket.onmessage = (msg) => {
-    const data = JSON.parse(msg.data);
+    const response = JSON.parse(msg.data);
 
-    // Initial pull: Save all assets and start subscriptions
-    if (data.active_symbols) {
-        allAssets = data.active_symbols;
-        displayMarkets(); // Show 'all' by default
-        
-        // Subscribe to live price updates for every asset pulled
-        allAssets.forEach(asset => {
-            socket.send(JSON.stringify({ "ticks": asset.symbol, "subscribe": 1 }));
-        });
+    if (response.active_symbols) {
+        masterData = response.active_symbols;
+        renderLayer1(); // Group everything into top-level asset types
     }
 
-    // Live update: Update price on the correct card
-    if (data.tick) {
-        const priceTag = document.querySelector(`#card-${data.tick.symbol.replace(/\./g, '_')} .price`);
-        if (priceTag) {
-            priceTag.innerText = data.tick.quote.toString().slice(-1);
-        }
+    if (response.tick) {
+        const id = response.tick.symbol.replace(/\./g, '_');
+        const el = document.getElementById(`ticker-${id}`);
+        if (el) el.innerText = response.tick.quote.toString().slice(-1);
     }
 };
 
-function displayMarkets() {
-    const grid = document.getElementById('market-grid');
-    grid.innerHTML = ''; // Clear the grid for the new category
+// LAYER 1: Group by Market (Forex, Synthetic, etc.)
+function renderLayer1() {
+    updateUI("Home", () => {
+        const groups = [...new Set(masterData.map(a => a.market))];
+        return groups.map(g => ({
+            title: g.replace(/_/g, ' '),
+            subtitle: "MARKET TYPE",
+            action: () => renderLayer2(g)
+        }));
+    });
+}
 
-    const filtered = currentCategory === 'all' 
-        ? allAssets 
-        : allAssets.filter(a => a.market === currentCategory);
+// LAYER 2: Group by Sub-Category (Major Pairs, Volatility Indices, etc.)
+function renderLayer2(market) {
+    currentPath.push(market.replace(/_/g, ' '));
+    updateUI(currentPath.join(" > "), () => {
+        const items = masterData.filter(a => a.market === market);
+        const subGroups = [...new Set(items.map(a => a.submarket))];
+        
+        return subGroups.map(sg => ({
+            title: sg.replace(/_/g, ' '),
+            subtitle: "GROUP TYPE",
+            action: () => renderLayer3(items.filter(a => a.submarket === sg))
+        }));
+    });
+}
 
-    filtered.forEach(asset => {
+// LAYER 3: Show the individual pairs and start live digits
+function renderLayer3(assets) {
+    currentPath.push("Pairs");
+    updateUI(currentPath.join(" > "), () => {
+        return assets.map(asset => {
+            // Subscribe to live feed for these specific assets
+            socket.send(JSON.stringify({ "ticks": asset.symbol, "subscribe": 1 }));
+            
+            const safeId = asset.symbol.replace(/\./g, '_');
+            return {
+                title: asset.display_name,
+                subtitle: asset.symbol,
+                content: `<div class="live-price" id="ticker-${safeId}">...</div>`,
+                action: null
+            };
+        });
+    });
+}
+
+function updateUI(pathText, getItems) {
+    document.getElementById('path-tracker').innerText = pathText;
+    const grid = document.getElementById('journey-grid');
+    grid.innerHTML = '';
+    
+    getItems().forEach(item => {
         const card = document.createElement('div');
-        card.className = 'market-card';
-        // Use a safe ID for CSS/JS selection
-        card.id = `card-${asset.symbol.replace(/\./g, '_')}`;
-        card.innerHTML = `
-            <h4>${asset.market.replace(/_/g, ' ')}</h4>
-            <h2>${asset.display_name}</h2>
-            <div class="symbol-code">${asset.symbol}</div>
-            <div class="price">--</div>
-        `;
+        card.className = 'discovery-card';
+        card.innerHTML = `<h4>${item.subtitle}</h4><h2>${item.title}</h2>${item.content || ''}`;
+        if (item.action) card.onclick = item.action;
         grid.appendChild(card);
     });
 }
 
-function filterAssets(category, element) {
-    currentCategory = category;
-    
-    // UI: Update active button state
-    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-    element.classList.add('active');
-
-    // Logic: Redraw grid with only the chosen assets
-    displayMarkets();
+function resetToHome() {
+    currentPath = ["Home"];
+    renderLayer1();
 }
