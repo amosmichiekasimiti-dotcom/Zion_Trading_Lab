@@ -1,66 +1,68 @@
 const socket = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
-let currentFilter = 'all';
+let allAssets = [];
+let currentCategory = 'all';
 
 socket.onopen = () => {
-    // SINGLE COMMAND: Pulls all active symbols from the server
+    // Single command to pull every available asset
     socket.send(JSON.stringify({ "active_symbols": "brief", "product_type": "basic" }));
+    
+    // Keep connection alive
+    setInterval(() => socket.send(JSON.stringify({ "ping": 1 })), 30000);
 };
 
 socket.onmessage = (msg) => {
     const data = JSON.parse(msg.data);
 
-    // 1. DISCOVERY: Find every market and subscribe automatically
+    // Initial pull: Save all assets and start subscriptions
     if (data.active_symbols) {
-        data.active_symbols.forEach(asset => {
+        allAssets = data.active_symbols;
+        displayMarkets(); // Show 'all' by default
+        
+        // Subscribe to live price updates for every asset pulled
+        allAssets.forEach(asset => {
             socket.send(JSON.stringify({ "ticks": asset.symbol, "subscribe": 1 }));
         });
     }
 
-    // 2. LIVE DATA: Update cards when digits change
+    // Live update: Update price on the correct card
     if (data.tick) {
-        updateCard(data.tick);
+        const priceTag = document.querySelector(`#card-${data.tick.symbol.replace(/\./g, '_')} .price`);
+        if (priceTag) {
+            priceTag.innerText = data.tick.quote.toString().slice(-1);
+        }
     }
 };
 
-function updateCard(tick) {
+function displayMarkets() {
     const grid = document.getElementById('market-grid');
-    let card = document.getElementById(tick.symbol);
-    const digit = tick.quote.toString().slice(-1);
+    grid.innerHTML = ''; // Clear the grid for the new category
 
-    if (!card) {
-        card = document.createElement('div');
+    const filtered = currentCategory === 'all' 
+        ? allAssets 
+        : allAssets.filter(a => a.market === currentCategory);
+
+    filtered.forEach(asset => {
+        const card = document.createElement('div');
         card.className = 'market-card';
-        card.id = tick.symbol;
-        // In a real app, you'd match the 'market' property from active_symbols
-        // Here we'll guess based on common symbol prefixes
-        const category = tick.symbol.includes('frx') ? 'forex' : 'synthetic_index';
-        card.setAttribute('data-category', category);
+        // Use a safe ID for CSS/JS selection
+        card.id = `card-${asset.symbol.replace(/\./g, '_')}`;
+        card.innerHTML = `
+            <h4>${asset.market.replace(/_/g, ' ')}</h4>
+            <h2>${asset.display_name}</h2>
+            <div class="symbol-code">${asset.symbol}</div>
+            <div class="price">--</div>
+        `;
         grid.appendChild(card);
-    }
-
-    // Only show if it matches the current filter
-    card.style.display = (currentFilter === 'all' || card.getAttribute('data-category') === currentFilter) ? 'block' : 'none';
-
-    card.innerHTML = `
-        <h4>ASSET</h4>
-        <h2>${tick.symbol.replace(/_/g, ' ')}</h2>
-        <div class="symbol-code">${tick.symbol}</div>
-        <div class="price">${digit}</div>
-    `;
+    });
 }
 
-function filterAssets(category) {
-    currentFilter = category;
-    const buttons = document.querySelectorAll('.filter-btn');
-    buttons.forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
+function filterAssets(category, element) {
+    currentCategory = category;
+    
+    // UI: Update active button state
+    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+    element.classList.add('active');
 
-    const cards = document.querySelectorAll('.market-card');
-    cards.forEach(card => {
-        if (category === 'all' || card.getAttribute('data-category') === category) {
-            card.style.display = 'block';
-        } else {
-            card.style.display = 'none';
-        }
-    });
+    // Logic: Redraw grid with only the chosen assets
+    displayMarkets();
 }
