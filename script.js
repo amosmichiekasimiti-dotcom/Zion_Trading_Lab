@@ -3,7 +3,6 @@ let activeSub = null;
 let allSymbols = [];
 let tickHistory = [];
 
-// Automatic connection logic
 ws.onopen = () => {
     document.getElementById('status').innerText = '● Connected';
     document.getElementById('status').style.color = '#4caf50';
@@ -58,8 +57,11 @@ function openAnalysis(name, symbol, cat) {
     document.getElementById('modal').style.display = 'block';
     
     const digitArea = document.getElementById('digit-area');
+    const chartArea = document.getElementById('chart-area');
+
     if (cat === 'volatility') {
         digitArea.style.display = 'block';
+        chartArea.style.height = '350px'; // Shrink chart slightly for grid
         let gridHTML = '';
         for(let i=0; i<=9; i++) {
             gridHTML += `<div id="d-card-${i}" class="digit-box"><span class="d-val">${i}</span><span id="d-pct-${i}" class="d-pct">0%</span></div>`;
@@ -67,9 +69,10 @@ function openAnalysis(name, symbol, cat) {
         document.getElementById('digit-grid').innerHTML = gridHTML;
     } else {
         digitArea.style.display = 'none';
+        chartArea.style.height = '500px'; // Full size chart for non-digit markets
     }
 
-    document.getElementById('chart-area').innerHTML = `<iframe src="https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=light" width="100%" height="100%" frameborder="0"></iframe>`;
+    chartArea.innerHTML = `<iframe src="https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=light" width="100%" height="100%" frameborder="0"></iframe>`;
     
     if (activeSub) ws.send(JSON.stringify({ "forget": activeSub }));
     ws.send(JSON.stringify({ "ticks": symbol, "subscribe": 1 }));
@@ -98,7 +101,7 @@ function updateDigitAnalysis(tick) {
         if (label) {
             label.innerText = `${pct}%`;
             label.style.color = pct > 12 ? "var(--green)" : (pct < 8 ? "var(--red)" : "#999");
-            card.style.borderBottomColor = (i % 2 === 0) ? 'var(--green)' : 'var(--red)'; // Even/Odd indicators
+            card.style.borderBottomColor = (i % 2 === 0) ? 'var(--green)' : 'var(--red)'; // Green for Even, Red for Odd
         }
         if (card) card.classList.toggle('active', i === lastDigit);
     });
