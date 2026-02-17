@@ -28,15 +28,17 @@ function loadCategory(cat, el) {
         const sym = s.symbol.toLowerCase();
         const market = s.market;
 
-        // FIX: Technical identifiers for Volatility and Jump
+        // Corrected identifiers for Volatility and Jump
         if (cat === 'volatility') return market === 'synthetic_index' && (sym.includes('volatility') || sym.includes('1s'));
         if (cat === 'crashboom') return sym.includes('crash') || sym.includes('boom');
+        
+        // Matches Jump Indices starting with 'jd'
         if (cat === 'jump') return market === 'synthetic_index' && sym.startsWith('jd'); 
         
-        // FIX: Matches Range Break and Step Index ('stp')
+        // Matches Range Break and Step Index ('stp')
         if (cat === 'range') return market === 'synthetic_index' && (sym.includes('range') || sym.includes('stp'));
         
-        // FIX: Matches all Basket indices
+        // Matches all Basket indices
         if (cat === 'basket') return market === 'basket_index';
         
         if (cat === 'forex') return market === 'forex';
@@ -46,7 +48,7 @@ function loadCategory(cat, el) {
 
     list.innerHTML = '';
     if (filtered.length === 0) {
-        list.innerHTML = '<tr><td colspan="3" style="text-align:center;">No markets found for this category.</td></tr>';
+        list.innerHTML = '<tr><td colspan="3" style="text-align:center;">No markets found.</td></tr>';
         return;
     }
 
@@ -71,7 +73,7 @@ function openAnalysis(name, symbol) {
 function updatePriceUI(tick) {
     activeSub = tick.id;
     const priceDisplay = document.getElementById('mPrice');
-    const oldPrice = parseFloat(priceDisplay.innerText);
+    const oldPrice = parseFloat(priceDisplay.innerText) || 0;
     const newPrice = tick.quote;
     priceDisplay.innerText = newPrice;
     priceDisplay.style.color = (newPrice >= oldPrice) ? "#4CAF50" : "#ff444f";
