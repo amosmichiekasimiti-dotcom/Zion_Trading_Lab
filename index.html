@@ -1,36 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zion Trading Lab | Force Fixed</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zion AI Synthetic Hub</title>
+
+<link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 </head>
+
 <body>
-    <header>
-        <div id="ai-header">SYSTEM STATUS: LIVE SCANNER ACTIVE</div>
-        <h1 id="hub-title">ZION MASTER HUB</h1>
-        <nav id="navigation-bar">
-            <button id="back-btn" onclick="renderCategories()" style="display:none;">← BACK TO ALL GROUPS</button>
-        </nav>
-    </header>
 
-    <main id="display-grid">
-        <div class="init-msg">ESTABLISHING MASTER HANDSHAKE...</div>
-    </main>
+<header>
+    <div class="status">AI SYNTHETIC ENGINE CONNECTING...</div>
+    <h1>ZION MASTER HUB PRO</h1>
+</header>
 
-    <div id="strategy-overlay" class="overlay">
-        <div class="overlay-header">
-            <span id="analysis-title">STRATEGY ANALYSIS</span>
-            <span class="close-overlay" onclick="closeStrategy()">× CLOSE</span>
-        </div>
-        <div id="digit-hub" class="digit-container" style="display:none;">
-            <div id="digit-bars" class="digit-grid"></div>
-        </div>
-        <div id="chart-view"></div>
+<main id="display-grid">
+    <div class="loading">Initializing Universe...</div>
+</main>
+
+<button id="voice-toggle">🔊 Voice ON</button>
+
+<div id="overlay" class="overlay">
+    <div class="overlay-header">
+        <div id="analysis-title"></div>
+        <div onclick="closeOverlay()" class="close-btn">CLOSE</div>
     </div>
+    <div id="chart-view"></div>
+</div>
 
-    <script src="script.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
-
