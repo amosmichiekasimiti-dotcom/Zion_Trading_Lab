@@ -3,42 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zion Trading Lab | Full Direct Feed</title>
+    <title>Zion Trading Lab | Universal Feed</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --red: #ff444f; --dark: #1e1e1e; --green: #4caf50; }
-        body { font-family: sans-serif; background: #f4f7f6; margin: 0; padding: 10px; height: 100vh; display: flex; flex-direction: column; }
-        .nav-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 8px; margin-bottom: 15px; }
-        .nav-card { background: white; padding: 12px; border-radius: 10px; text-align: center; cursor: pointer; border: 1px solid #ddd; font-size: 11px; font-weight: bold; }
+        body { font-family: sans-serif; background: #f4f7f6; margin: 0; padding: 10px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        
+        /* Navigation */
+        .nav-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(85px, 1fr)); gap: 8px; margin-bottom: 15px; }
+        .nav-card { background: white; padding: 10px; border-radius: 10px; text-align: center; cursor: pointer; border: 1px solid #ddd; font-size: 10px; font-weight: 800; color: #666; }
         .nav-card.active { background: var(--red); color: white; border-color: var(--red); }
-        .table-container { background: white; border-radius: 12px; flex-grow: 1; overflow-y: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        
+        .card { background: white; border-radius: 12px; flex-grow: 1; overflow-y: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         table { width: 100%; border-collapse: collapse; }
-        td, th { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
-        .btn-view { background: var(--dark); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+        td, th { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 13px; }
+        .btn-view { background: var(--dark); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
 
-        /* Full Height Analysis Modal */
-        #modal { display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.95); }
-        .modal-body { background:white; margin:0; width:100%; height: 100%; display: flex; flex-direction: column; padding: 15px; box-sizing: border-box; }
+        /* Full Screen Modal */
+        #modal { display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; background:white; }
+        .modal-body { height: 100%; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box; }
         
-        .contract-selector { display: flex; gap: 5px; margin-bottom: 10px; overflow-x: auto; padding-bottom: 5px; }
-        .c-btn { padding: 8px 12px; border-radius: 20px; border: 1px solid #ddd; background: #f0f0f0; cursor: pointer; white-space: nowrap; font-size: 11px; font-weight: bold; }
-        .c-btn.active { background: var(--red); color: white; border-color: var(--red); }
+        /* Universal Price Header */
+        .price-header { background: #111; color: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        #live-price { font-size: 28px; font-family: 'Courier New', monospace; font-weight: bold; }
+        #live-price span { color: var(--red); border-bottom: 2px solid var(--red); }
 
-        /* Deriv-Style Direct Digit Panel */
-        #live-digit-panel { background: #111; color: white; padding: 12px; border-radius: 8px; margin-bottom: 10px; }
+        /* Digit Panel (Only for Even/Odd, etc.) */
+        #digit-analysis-panel { display: none; margin-bottom: 10px; }
         .digit-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; background: #000; padding: 5px; border-radius: 4px; }
-        .d-box { background: #1a1a1a; height: 50px; display: flex; flex-direction: column-reverse; align-items: center; position: relative; border: 1px solid #333; }
-        .d-bar { width: 100%; background: #323738; transition: height 0.3s ease; }
-        .d-num { position: absolute; top: 2px; font-weight: bold; font-size: 12px; color: #fff; z-index: 2; }
-        .d-pct { position: absolute; bottom: 2px; font-size: 9px; color: #999; z-index: 2; }
+        .d-box { background: #1a1a1a; height: 45px; display: flex; flex-direction: column-reverse; align-items: center; position: relative; border: 1px solid #333; }
+        .d-bar { width: 100%; background: #323738; transition: height 0.3s; }
+        .d-num { position: absolute; top: 2px; font-size: 11px; color: white; font-weight: bold; }
         
-        #chart-container { flex-grow: 1; width: 100%; border-radius: 8px; overflow: hidden; border: 1px solid #eee; }
+        #chart-container { flex-grow: 1; border-radius: 8px; overflow: hidden; border: 1px solid #ddd; }
+        .tabs { display: flex; gap: 5px; margin-bottom: 10px; overflow-x: auto; }
+        .tab { padding: 8px 15px; border-radius: 20px; border: 1px solid #ddd; background: #f0f0f0; font-size: 11px; font-weight: bold; cursor: pointer; }
+        .tab.active { background: var(--red); color: white; }
     </style>
 </head>
 <body>
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding: 0 5px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <h3 style="margin:0;">Zion Trading Lab</h3>
-        <div id="status" style="color: grey; font-size: 12px;">Connecting...</div>
+        <div id="status" style="color:#4caf50; font-weight:bold; font-size:12px;">● Connected</div>
     </div>
 
     <div class="nav-grid">
@@ -49,7 +55,7 @@
         <div class="nav-card" onclick="loadCategory('forex', this)">FOREX</div>
     </div>
 
-    <div class="table-container">
+    <div class="card">
         <table>
             <thead><tr><th>Market</th><th>Symbol</th><th>Action</th></tr></thead>
             <tbody id="market-list"></tbody>
@@ -58,23 +64,24 @@
 
     <div id="modal">
         <div class="modal-body">
-            <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                <h4 id="mTitle" style="margin:0;">Asset Name</h4>
-                <button onclick="closeModal()" style="background:var(--red); color:white; border:none; padding:4px 12px; border-radius:4px; font-size: 12px;">CLOSE</button>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h4 id="mTitle" style="margin:0;">Asset</h4>
+                <button onclick="closeModal()" style="background:var(--red); color:white; border:none; padding:5px 15px; border-radius:5px; font-weight:bold;">CLOSE</button>
             </div>
 
-            <div class="contract-selector">
-                <button class="c-btn active" onclick="setContract('rise_fall', this)">Rise/Fall</button>
-                <button class="c-btn" onclick="setContract('even_odd', this)">Even/Odd</button>
-                <button class="c-btn" onclick="setContract('matches_differs', this)">Matches/Differs</button>
-                <button class="c-btn" onclick="setContract('over_under', this)">Over/Under</button>
+            <div class="tabs">
+                <div class="tab active" onclick="switchContract('rise_fall', this)">Rise/Fall</div>
+                <div class="tab" onclick="switchContract('even_odd', this)">Even/Odd</div>
+                <div class="tab" onclick="switchContract('matches_differs', this)">Matches/Differs</div>
+                <div class="tab" onclick="switchContract('over_under', this)">Over/Under</div>
             </div>
 
-            <div id="live-digit-panel">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                    <div id="mPrice" style="font-size:22px; font-family:monospace; color: white; font-weight: bold;">0.0000</div>
-                    <div style="font-size: 10px; color: var(--red); font-weight: bold;">LIVE FEED</div>
-                </div>
+            <div class="price-header">
+                <div id="live-price">0.0000<span>0</span></div>
+                <div style="text-align:right;"><small style="color:#888; display:block;">LIVE FEED</small><span id="price-symbol" style="font-size:10px; font-weight:bold;">---</span></div>
+            </div>
+
+            <div id="digit-analysis-panel">
                 <div class="digit-grid" id="digit-grid"></div>
             </div>
 
