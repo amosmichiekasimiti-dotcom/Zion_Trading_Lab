@@ -3,25 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deriv Market Hub</title>
+    <title>Zion Trading Lab - Intelligence</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header>
         <h1>DERIV MARKET HUB</h1>
-        <p id="status">HANDSHAKE ACTIVE - PULLING DATA</p>
-        
-        <nav class="filter-nav">
-            <button class="filter-btn active" onclick="filterAssets('all', this)">All Markets</button>
-            <button class="filter-btn" onclick="filterAssets('synthetic_index', this)">Synthetics</button>
-            <button class="filter-btn" onclick="filterAssets('forex', this)">Forex</button>
-            <button class="filter-btn" onclick="filterAssets('indices', this)">Stock Indices</button>
-            <button class="filter-btn" onclick="filterAssets('cryptocurrency', this)">Cryptocurrencies</button>
-        </nav>
+        <div id="path-tracker" onclick="resetToHome()">Home</div>
     </header>
 
-    <main id="market-grid" class="grid-container">
-        </main>
+    <main id="journey-grid" class="grid-container">
+        <div class="loader">SYNCHRONIZING WITH DERIV...</div>
+    </main>
 
     <script src="script.js"></script>
 </body>
