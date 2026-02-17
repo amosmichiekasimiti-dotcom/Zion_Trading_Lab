@@ -2,41 +2,29 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Automated Synthetic Index Mirror</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automated Synthetic Hub</title>
+    <link rel="stylesheet" href="style.css">
     <script src="https://unpkg.com/@deriv/deriv-api/dist/DerivAPIBasic.js"></script>
 </head>
 <body>
-    <h1>Live Synthetic Assets</h1>
-    <div id="status">Connecting...</div>
-    <ul id="asset-list"></ul>
+    <header>
+        <h1>Live Synthetic Platform</h1>
+        <div id="connection-status">Connecting to Deriv...</div>
+    </header>
+    
+    <main>
+        <section id="platform-updates">
+            <h3>Platform Status: <span id="status-text">Checking...</span></h3>
+        </section>
 
-    <script>
-        // Initialize with your App ID
-        const api = new DerivAPIBasic({ 
-            endpoint: 'ws.derivws.com', 
-            app_id: 1089, // Replace with your own App ID from api.deriv.com
-            lang: 'EN' 
-        });
+        <section id="asset-container">
+            <h3>Available Indices (Auto-Detected)</h3>
+            <div id="loader">Reading platform data...</div>
+            <div id="indices-grid" class="grid"></div>
+        </section>
+    </main>
 
-        // 1. "Read Everything" - Automatically fetch all current assets
-        const listAssets = async () => {
-            const response = await api.active_symbols({ active_symbols: 'brief' });
-            const list = document.getElementById('asset-list');
-            list.innerHTML = response.active_symbols
-               .filter(s => s.market === 'synthetic_index')
-               .map(s => `<li>${s.display_name} (${s.symbol})</li>`)
-               .join('');
-        };
-
-        // 2. "Auto Update" - Listen for platform changes
-        api.websiteStatus().subscribe(status => {
-            console.log("Platform Update Detected:", status);
-            document.getElementById('status').innerText = "Platform Status: Online";
-            listAssets(); // Refresh list if something changes
-        });
-
-        // Initial launch
-        api.onOpen().subscribe(() => listAssets());
-    </script>
+    <script src="app.js"></script>
 </body>
 </html>
