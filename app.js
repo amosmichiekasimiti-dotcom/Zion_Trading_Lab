@@ -1,150 +1,101 @@
-const APP_ID = 1089;
-let socket;
-let universe = {};
-let digitStore = {};
-let tickHistory = {};
-let voiceEnabled = true;
+let ws;
+let allSymbols = [];
 
-function speak(text){
-    if(!voiceEnabled) return;
-    const msg = new SpeechSynthesisUtterance(text);
-    speechSynthesis.speak(msg);
-}
+// THE SINGLE MASTER COMMAND
+function initializeUniversalScavenger() {
+    const token = document.getElementById('apiToken').value;
+    ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
 
-document.getElementById("voice-toggle").onclick = ()=>{
-    voiceEnabled = !voiceEnabled;
-    document.getElementById("voice-toggle").innerText =
-        voiceEnabled ? "🔊 Voice ON" : "🔇 Voice OFF";
-};
-
-function connect(){
-    socket = new WebSocket(`wss://ws.binaryws.com/websockets/v3?app_id=${APP_ID}`);
-
-    socket.onopen = ()=>{
-        socket.send(JSON.stringify({
-            active_symbols:"brief",
-            product_type:"basic"
-        }));
+    ws.onopen = () => {
+        ws.send(JSON.stringify({ authorize: token }));
     };
 
-    socket.onmessage = (msg)=>{
+    ws.onmessage = (msg) => {
         const data = JSON.parse(msg.data);
 
-        if(data.active_symbols){
-            const synthetics = data.active_symbols
-                .filter(s=>s.market==="synthetic_index");
-            buildUniverse(synthetics);
-            renderUI();
+        if (data.msg_type === 'authorize') {
+            // SCAVENGE EVERYTHING: Ask for all symbols
+            ws.send(JSON.stringify({ active_symbols: "brief", product_type: "basic" }));
         }
 
-        if(data.tick){
-            processTick(data.tick);
+        if (data.active_symbols) {
+            allSymbols = data.active_symbols;
+            renderScavengerUI();
+        }
+
+        if (data.contracts_for) {
+            renderTradePanel(data.contracts_for);
+        }
+
+        if (data.tick) {
+            updateLiveTick(data.tick);
         }
     };
-
-    socket.onclose = ()=> setTimeout(connect,2000);
 }
 
-function buildUniverse(symbols){
-    universe = {};
+function renderScavengerUI() {
+    const grid = document.getElementById('discovery-wall');
+    grid.innerHTML = '';
 
-    symbols.forEach(asset=>{
-        if(!universe[asset.market_display_name])
-            universe[asset.market_display_name] = {};
-
-        if(!universe[asset.market_display_name][asset.submarket_display_name])
-            universe[asset.market_display_name][asset.submarket_display_name] = [];
-
-        universe[asset.market_display_name][asset.submarket_display_name]
-            .push(asset);
-
-        digitStore[asset.symbol] = [];
-        tickHistory[asset.symbol] = [];
-
-        socket.send(JSON.stringify({ticks:asset.symbol, subscribe:1}));
-    });
-}
-
-function renderUI(){
-    const grid = document.getElementById("display-grid");
-    grid.innerHTML = "";
-
-    Object.keys(universe).forEach(market=>{
-        const title = document.createElement("div");
-        title.className = "market-title";
-        title.innerText = market;
-        grid.appendChild(title);
-
-        Object.values(universe[market]).flat().forEach(asset=>{
-            const id = asset.symbol.replace(/\./g,"_");
-
-            const card = document.createElement("div");
-            card.className = "card";
+    // Grouping by Market automatically
+    const markets = [...new Set(allSymbols.map(s => s.market_display_name))];
+    
+    markets.forEach(mName => {
+        const marketAssets = allSymbols.filter(s => s.market_display_name === mName);
+        
+        marketAssets.forEach(asset => {
+            const card = document.createElement('div');
+            card.className = 'asset-card';
             card.innerHTML = `
-                <div><strong>${asset.display_name}</strong></div>
-                <div class="price" id="p-${id}">---</div>
-                <div class="stats" id="s-${id}">Analyzing...</div>
-                <button onclick="openChart('${asset.symbol}')">Analyze</button>
+                <div style="font-size:10px; opacity:0.5">${asset.submarket_display_name}</div>
+                <div style="font-weight:bold">${asset.display_name}</div>
+                <div class="price-box" id="price-${asset.symbol.replace(/\./g, '_')}">---</div>
+                <button onclick="scavengeAsset('${asset.symbol}', '${asset.display_name}')" class="scavenged-btn">SCAVENGE ASSET</button>
             `;
             grid.appendChild(card);
+            ws.send(JSON.stringify({ ticks: asset.symbol, subscribe: 1 }));
         });
     });
 }
 
-function processTick(tick){
-    const symbol = tick.symbol;
-    const id = symbol.replace(/\./g,"_");
-    const price = parseFloat(tick.quote);
-    const lastDigit = price.toString().slice(-1);
-
-    document.getElementById(`p-${id}`).innerText = price.toFixed(3);
-
-    // Digit store
-    digitStore[symbol].push(lastDigit);
-    if(digitStore[symbol].length>30) digitStore[symbol].shift();
-
-    // Tick history
-    tickHistory[symbol].push(price);
-    if(tickHistory[symbol].length>10) tickHistory[symbol].shift();
-
-    analyze(symbol);
+function scavengeAsset(symbol, name) {
+    document.getElementById('analysis-overlay').style.display = 'block';
+    document.getElementById('active-asset-name').innerText = `SCAVENGER ANALYZING: ${name}`;
+    
+    // Command to discover what trades are available for THIS specific asset
+    ws.send(JSON.stringify({ contracts_for: symbol }));
+    
+    // Initialize Professional Chart
+    document.getElementById('universal-chart').innerHTML = `
+        <iframe src="https://charts.deriv.com/deriv?symbol=${symbol}&theme=dark" width="100%" height="100%" frameborder="0"></iframe>
+    `;
 }
 
-function analyze(symbol){
-    const digits = digitStore[symbol];
-    const prices = tickHistory[symbol];
-    if(digits.length<10) return;
+function renderTradePanel(data) {
+    const container = document.getElementById('dynamic-trade-container');
+    container.innerHTML = '';
+    const tradeRow = document.createElement('div');
+    tradeRow.className = 'trade-row';
 
-    let even=0,odd=0;
-    digits.forEach(d=>parseInt(d)%2===0?even++:odd++);
+    // SCAVENGE CONTRACTS: Automatically create buttons for available trade types
+    const types = [...new Set(data.available.map(c => c.contract_category_display))];
+    
+    types.forEach(type => {
+        const btn = document.createElement('button');
+        btn.className = 'scavenged-btn';
+        btn.innerText = type.toUpperCase();
+        btn.onclick = () => alert(`Opening ${type} interface for ${data.contracts_for.symbol}`);
+        tradeRow.appendChild(btn);
+    });
 
-    const evenP = (even/digits.length)*100;
-    const oddP = (odd/digits.length)*100;
-
-    const volatility = Math.max(...prices)-Math.min(...prices);
-
-    const confidence = Math.max(evenP,oddP) + (volatility*10);
-    const id = symbol.replace(/\./g,"_");
-
-    document.getElementById(`s-${id}`).innerText =
-        `Even ${evenP.toFixed(0)}% | Odd ${oddP.toFixed(0)}% | AI ${confidence.toFixed(0)}%`;
-
-    if(confidence>90){
-        speak(`High probability signal on ${symbol}`);
-    }
+    container.appendChild(tradeRow);
 }
 
-function openChart(symbol){
-    document.getElementById("overlay").style.display="block";
-    document.getElementById("analysis-title").innerText = symbol;
-    document.getElementById("chart-view").innerHTML =
-        `<iframe src="https://tradingview.binary.com/v2.1.0/main.html?symbol=${symbol}&theme=dark"
-        style="width:100%;height:100%;border:none;"></iframe>`;
+function updateLiveTick(tick) {
+    const el = document.getElementById(`price-${tick.symbol.replace(/\./g, '_')}`);
+    if (el) el.innerText = tick.quote;
 }
 
-function closeOverlay(){
-    document.getElementById("overlay").style.display="none";
-    document.getElementById("chart-view").innerHTML="";
+function closeAnalysis() {
+    document.getElementById('analysis-overlay').style.display = 'none';
 }
-
-connect();
