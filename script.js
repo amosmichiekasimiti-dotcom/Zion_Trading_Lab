@@ -1,6 +1,6 @@
 /**
- * Zion Trading Lab - Professional Trading Script
- * Features: 100-tick stable percentages, Momentum Arrows, and TradingView Integration
+ * ZION TRADING LAB - Official Script
+ * Fixes: WebSocket Persistence, Realistic Percentages, and Asset Filtering
  */
 
 let ws;
@@ -8,20 +8,21 @@ let activeSub = null;
 let allSymbols = [];
 let currentSymbol = '';
 let currentMode = 'rise_fall';
-let reefDigitWindow = []; // Stores exactly 100 ticks for realistic %
+let reefDigitWindow = []; // Stores exactly 100 ticks for stable percentages
 let physicsBuffer = [];   // For momentum analysis
 
 function initWS() {
-    // Connect to Deriv WebSocket API
+    // Establishing connection to Deriv API
     ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
 
     ws.onopen = () => {
         document.getElementById('status').innerText = '● LIVE CONNECTED';
         document.getElementById('status').style.color = '#4caf50';
-        // Initial request for asset list
+        
+        // Immediate request for the asset list to prevent the empty table issue
         ws.send(JSON.stringify({ "active_symbols": "brief", "product_type": "basic" }));
         
-        // Keep-alive ping
+        // Keep-Alive Ping to prevent connection timeouts
         setInterval(() => {
             if (ws.readyState === 1) ws.send(JSON.stringify({ ping: 1 }));
         }, 30000);
@@ -30,13 +31,13 @@ function initWS() {
     ws.onmessage = (msg) => {
         const data = JSON.parse(msg.data);
 
-        // Handle Asset List
+        // Populate the asset list once data is received
         if (data.active_symbols) {
             allSymbols = data.active_symbols;
-            loadCategory('volatility'); // Default view
+            loadCategory('volatility'); 
         }
 
-        // Handle Initial History (Stabilizes percentages immediately)
+        // Use history data to immediately stabilize digit stats
         if (data.history) {
             reefDigitWindow = data.history.prices.map(p => 
                 parseInt(p.toFixed(data.pip_size).slice(-1))
@@ -44,18 +45,17 @@ function initWS() {
             render();
         }
 
-        // Handle Live Tick Stream
+        // Process live tick updates
         if (data.tick) {
             activeSub = data.tick.id;
             const price = data.tick.quote;
             const priceStr = price.toFixed(data.tick.pip_size);
             const digit = parseInt(priceStr.slice(-1));
 
-            // Update Physics (Momentum)
             physicsBuffer.push(price);
             if (physicsBuffer.length > 15) physicsBuffer.shift();
 
-            // Maintain stable 100-tick sample size for realistic 10-13% stats
+            // Maintain exactly 100 samples for realistic stats (approx 10-13% per digit)
             reefDigitWindow.push(digit);
             if (reefDigitWindow.length > 100) reefDigitWindow.shift();
 
@@ -65,11 +65,12 @@ function initWS() {
 
     ws.onclose = () => {
         document.getElementById('status').innerText = '● RECONNECTING...';
-        setTimeout(initWS, 3000);
+        document.getElementById('status').style.color = '#ff444f';
+        setTimeout(initWS, 3000); // Attempt to reconnect every 3 seconds
     };
 }
 
-// Category Management
+// Category Filtering logic for the Navigation Grid
 window.loadCategory = function(cat, el) {
     if (el) {
         document.querySelectorAll('.nav-card').forEach(c => c.classList.remove('active'));
@@ -99,7 +100,6 @@ window.loadCategory = function(cat, el) {
     });
 };
 
-// Open Analysis Modal & Load Chart
 window.openAnalysis = function(name, symbol) {
     currentSymbol = symbol;
     document.getElementById('mTitle').innerText = name;
@@ -107,10 +107,9 @@ window.openAnalysis = function(name, symbol) {
     
     switchContract('rise_fall', document.querySelector('.tab'));
 
-    // Unsubscribe from previous tick if active
     if (activeSub) ws.send(JSON.stringify({ "forget": activeSub }));
 
-    // Get 100 historical ticks for stable stats + subscribe
+    // Request history to fill the 100-tick window immediately
     ws.send(JSON.stringify({ 
         "ticks_history": symbol, 
         "count": 100, 
@@ -120,14 +119,12 @@ window.openAnalysis = function(name, symbol) {
     ws.send(JSON.stringify({ "ticks": symbol, "subscribe": 1 }));
 };
 
-// UI and Chart Switching
 window.switchContract = function(mode, el) {
     currentMode = mode;
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     el.classList.add('active');
 
-    const panel = document.getElementById('digit-analysis-panel');
-    panel.style.display = (mode === 'rise_fall') ? 'none' : 'block';
+    document.getElementById('digit-analysis-panel').style.display = (mode === 'rise_fall') ? 'none' : 'block';
 
     if (mode !== 'rise_fall') {
         const grid = document.getElementById('digit-grid');
@@ -142,7 +139,7 @@ window.switchContract = function(mode, el) {
         }
     }
 
-    // Embed Deriv TradingView Chart
+    // Dynamic Chart Loading
     const chartContainer = document.getElementById('chart-container');
     chartContainer.innerHTML = `<iframe src="https://tradingview.binary.com/v2/main.php?symbol=${currentSymbol}&theme=dark" width="100%" height="100%" frameborder="0"></iframe>`;
 };
@@ -157,19 +154,18 @@ function updateUI(str, val, digit) {
     let signal = "ANALYZING...";
     let color = "#00f2fe";
 
-    // SIGNAL LOGIC (Momentum Arrows Included)
+    // DIRECTIONAL SIGNAL ENGINE (Includes Arrows)
     if (currentMode === 'even_odd') {
         let evens = counts[0] + counts[2] + counts[4] + counts[6] + counts[8];
-        signal = evens > 53 ? `EVEN (${evens}%) ↑` : (evens < 47 ? `ODD (${100 - evens}%) ↓` : "NEUTRAL");
-        color = evens > 53 ? "#4caf50" : (evens < 47 ? "#ff444f" : "#8e8e9e");
+        signal = evens > 54 ? `EVEN (${evens}%) ↑` : (evens < 46 ? `ODD (${100 - evens}%) ↓` : "NEUTRAL");
+        color = evens > 54 ? "#4caf50" : (evens < 46 ? "#ff444f" : "#8e8e9e");
     } else if (currentMode === 'over_under') {
         let over = counts[6] + counts[7] + counts[8] + counts[9];
-        signal = over > 43 ? "OVER BIAS ↑" : "UNDER BIAS ↓";
-        color = over > 43 ? "#4caf50" : "#ff444f";
+        signal = over > 44 ? "OVER BIAS ↑" : "UNDER BIAS ↓";
+        color = over > 44 ? "#4caf50" : "#ff444f";
     } else {
-        // Trend Momentum via Physics Buffer
         let momentum = physicsBuffer[physicsBuffer.length - 1] - physicsBuffer[0];
-        signal = momentum > 0 ? "BULLISH MOMENTUM ↑" : "BEARISH MOMENTUM ↓";
+        signal = momentum > 0 ? "BULLISH ↑" : "BEARISH ↓";
         color = momentum > 0 ? "#4caf50" : "#ff444f";
     }
 
