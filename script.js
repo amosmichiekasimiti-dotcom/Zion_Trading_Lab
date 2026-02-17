@@ -1,4 +1,4 @@
-let ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
+const ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
 let activeSub = null;
 let allSymbols = [];
 let tickHistory = [];
@@ -16,7 +16,7 @@ ws.onmessage = (msg) => {
         allSymbols = res.active_symbols; 
         loadCategory('volatility'); 
     }
-    if (res.tick) updateDigitAnalysis(res.tick);
+    if (res.tick) updateTradingUI(res.tick);
 };
 
 function loadCategory(cat, el) {
@@ -26,18 +26,15 @@ function loadCategory(cat, el) {
     if(el) el.classList.add('active');
 
     const filtered = allSymbols.filter(s => {
-        const mkt = s.market.toLowerCase();
         const sym = s.symbol.toLowerCase();
-        
-        // FIXED: Range/Step and Volatility are both 'synthetic_index'
-        if (cat === 'volatility') return mkt === 'synthetic_index' && (sym.includes('vol') || sym.includes('1s'));
-        if (cat === 'range') return mkt === 'synthetic_index' && (sym.includes('range') || sym.includes('step'));
-        
-        // FIXED: Baskets can be 'forex_basket' or 'commodity_basket'
-        if (cat === 'basket') return mkt.includes('basket');
-        
-        if (cat === 'crashboom') return sym.includes('crash') || sym.includes('boom');
+        const mkt = s.market.toLowerCase();
+        const disp = s.display_name.toLowerCase();
+
+        if (cat === 'volatility') return mkt.includes('synthetic') && (sym.includes('v') || sym.includes('1s'));
+        if (cat === 'basket') return mkt.includes('basket') || disp.includes('basket');
+        if (cat === 'crashboom') return disp.includes('crash') || disp.includes('boom');
         if (cat === 'jump') return sym.startsWith('jd');
+        if (cat === 'range') return sym.includes('range') || sym.includes('step');
         if (cat === 'forex') return mkt === 'forex';
         if (cat === 'crypto') return mkt === 'cryptocurrency';
         return false;
@@ -46,53 +43,65 @@ function loadCategory(cat, el) {
     filtered.forEach(s => {
         const tr = document.createElement('tr');
         tr.innerHTML = `<td>${s.display_name}</td><td>${s.symbol.toUpperCase()}</td>
-            <td><button class="btn-view" onclick="openAnalysis('${s.display_name}', '${s.symbol}', '${cat}')">Analyze</button></td>`;
+            <td><button class="btn-view" onclick="openAnalysis('${s.display_name}', '${s.symbol}')">Analyze</button></td>`;
         list.appendChild(tr);
     });
 }
 
-function openAnalysis(name, symbol, cat) {
+function openAnalysis(name, symbol) {
     tickHistory = [];
     document.getElementById('mTitle').innerText = name;
     document.getElementById('modal').style.display = 'block';
     
-    const digitArea = document.getElementById('digit-area');
+    const isSynthetic = name.toLowerCase().includes('volatility') || name.toLowerCase().includes('1s') || symbol.includes('R_');
+    const digitPanel = document.getElementById('digit-panel');
     const chartArea = document.getElementById('chart-area');
 
-    // Show digits only for Volatility
-    if (cat === 'volatility') {
-        digitArea.style.display = 'block';
-        chartArea.style.height = '350px';
-        let gridHTML = '';
-        for(let i=0; i<=9; i++) {
-            gridHTML += `<div id="d-card-${i}" class="digit-box"><span class="d-val">${i}</span><span id="d-pct-${i}" class="d-pct">0%</span></div>`;
-        }
-        document.getElementById('digit-grid').innerHTML = gridHTML;
+    // Routing Logic: Digits vs Candles
+    if (isSynthetic) {
+        digitPanel.style.display = 'block';
+        chartArea.style.height = '300px';
+        renderDigitGrid();
     } else {
-        digitArea.style.display = 'none';
-        chartArea.style.height = '500px';
+        digitPanel.style.display = 'none';
+        chartArea.style.height = '450px';
     }
 
-    // FIXED: Correct TradingView URL format for iFrame
-    chartArea.innerHTML = `<iframe 
-        src="https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=light" 
-        width="100%" 
-        height="100%" 
-        style="border:none;" 
-        allowfullscreen>
-    </iframe>`;
+    chartArea.innerHTML = `<iframe src="https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=light" width="100%" height="100%" frameborder="0"></iframe>`;
     
     if (activeSub) ws.send(JSON.stringify({ "forget": activeSub }));
     ws.send(JSON.stringify({ "ticks": symbol, "subscribe": 1 }));
 }
 
-function updateDigitAnalysis(tick) {
-    activeSub = tick.id;
-    const priceStr = tick.quote.toFixed(tick.pip_size);
-    const lastDigit = parseInt(priceStr.slice(-1));
+function renderDigitGrid() {
+    const container = document.getElementById('digit-grid-container');
+    let html = '';
+    for (let i = 0; i <= 9; i++) {
+        html += `<div id="d-${i}" class="digit-box">
+                    <div style="font-weight:bold; font-size:16px;">${i}</div>
+                    <div id="p-${i}" style="font-size:10px; color:#999;">0%</div>
+                 </div>`;
+    }
+    container.innerHTML = html;
+}
 
-    document.getElementById('mPrice').innerHTML = `${priceStr.slice(0, -1)}<span style="color:var(--red); border-bottom:3px solid var(--red);">${lastDigit}</span>`;
+function updateTradingUI(tick) {
+    activeSub = tick.id;
+    const priceDisplay = document.getElementById('mPrice');
+    const oldPrice = parseFloat(priceDisplay.innerText.replace(/,/g, '')) || 0;
+    const newPrice = tick.quote;
+    const pipSize = tick.pip_size || 2;
+
+    // High Precision Price Display
+    priceDisplay.innerText = newPrice.toLocaleString(undefined, {minimumFractionDigits: pipSize});
+    const isRise = newPrice >= oldPrice;
+    priceDisplay.style.color = isRise ? "#4caf50" : "#ff444f";
+
+    // Extract exact Last Digit
+    const priceStr = newPrice.toFixed(pipSize);
+    const lastDigit = parseInt(priceStr.slice(-1));
     
+    // Process Digit Stats
     tickHistory.push(lastDigit);
     if (tickHistory.length > 100) tickHistory.shift();
 
@@ -100,14 +109,25 @@ function updateDigitAnalysis(tick) {
     tickHistory.forEach(d => counts[d]++);
 
     counts.forEach((count, i) => {
-        const pct = ((count / tickHistory.length) * 100).toFixed(1);
-        const card = document.getElementById(`d-card-${i}`);
-        const label = document.getElementById(`d-pct-${i}`);
+        const pct = ((count / tickHistory.length) * 100).toFixed(0);
+        const box = document.getElementById(`d-${i}`);
+        const label = document.getElementById(`p-${i}`);
+        
         if (label) {
-            label.innerText = `${pct}%`;
-            label.style.color = pct > 12 ? "#4caf50" : (pct < 8 ? "#ff444f" : "#999");
-            card.style.borderBottomColor = (i % 2 === 0) ? '#4caf50' : '#ff444f';
+            label.innerText = pct + '%';
+            box.style.background = (i === lastDigit) ? '#1e1e1e' : '#fdfdfd';
+            box.style.color = (i === lastDigit) ? '#fff' : '#000';
+            // Condition Colors
+            box.style.borderBottomColor = (pct > 12) ? '#4caf50' : (pct < 8 ? '#ff444f' : '#ddd');
         }
-        if (card) card.classList.toggle('active', i === lastDigit);
     });
+
+    const dirLabel = document.getElementById('mDir');
+    dirLabel.innerText = isRise ? "▲ RISE" : "▼ FALL";
+    dirLabel.style.color = isRise ? "#4caf50" : "#ff444f";
+}
+
+function closeModal() {
+    document.getElementById('modal').style.display = 'none';
+    if (activeSub) ws.send(JSON.stringify({ "forget": activeSub }));
 }
