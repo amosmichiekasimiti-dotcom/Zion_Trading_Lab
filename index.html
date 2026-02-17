@@ -3,21 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zion Trading Lab | Pro Engine</title>
+    <title>Zion Trading Lab | Strategy Switcher</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header>
         <div id="ai-header">SYSTEM STATUS: LIVE SCANNER ACTIVE</div>
-        <h1 id="hub-title">DERIV MASTER HUB</h1>
+        <h1 id="hub-title">ZION MASTER HUB</h1>
         <nav id="navigation-bar">
-            <button id="back-btn" onclick="renderCategories()" style="display:none;">← BACK TO ALL GROUPS</button>
+            <button id="back-btn" onclick="renderCategories()" style="display:none;">← BACK TO GROUPS</button>
         </nav>
     </header>
 
     <main id="display-grid">
         <div class="init-msg">ESTABLISHING MASTER HANDSHAKE...</div>
     </main>
+
+    <div id="strategy-overlay" class="overlay">
+        <div class="overlay-header">
+            <span id="analysis-title">STRATEGY ANALYSIS</span>
+            <span class="close-overlay" onclick="closeStrategy()">× CLOSE</span>
+        </div>
+        
+        <div id="digit-hub" class="digit-container" style="display:none;">
+            <div id="digit-bars" class="digit-grid"></div>
+        </div>
+
+        <div id="chart-view"></div>
+    </div>
 
     <script src="script.js"></script>
 </body>
