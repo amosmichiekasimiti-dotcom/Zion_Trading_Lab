@@ -1,115 +1,110 @@
-// Final Corrected script.js for Zion Trading Lab
-const APP_ID = '1089'; 
-const ws = new WebSocket(`wss://ws.binaryws.com/websockets/v3?app_id=${APP_ID}`);
-let activeTickSubscription = null;
+const ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
+let activeSub = null;
 let allSymbols = [];
+let tickHistory = [];
 
 ws.onopen = () => {
-    console.log("Connected to Deriv");
-    // Request all symbols
+    document.getElementById('status').innerText = '● Connected';
     ws.send(JSON.stringify({ "active_symbols": "brief", "product_type": "basic" }));
-    
-    // Heartbeat to keep connection alive
-    setInterval(() => {
-        if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ ping: 1 }));
-    }, 30000);
+    setInterval(() => ws.send(JSON.stringify({ ping: 1 })), 30000);
 };
 
 ws.onmessage = (msg) => {
-    const data = JSON.parse(msg.data);
-    if (data.active_symbols) {
-        allSymbols = data.active_symbols;
-        // Start with Derived tab
-        filterMarkets('derived');
+    const res = JSON.parse(msg.data);
+    if (res.active_symbols) { 
+        allSymbols = res.active_symbols; 
+        loadCategory('volatility'); 
     }
-    if (data.tick) updateLivePrice(data.tick);
+    if (res.tick) processTick(res.tick);
 };
 
-// FIX: Updated filtering logic for Forex and Crypto
-function filterMarkets(category) {
-    const tableBody = document.querySelector('#market-table tbody');
-    if (!tableBody) return;
+function loadCategory(cat, el) {
+    const list = document.getElementById('market-list');
+    list.innerHTML = '';
     
-    tableBody.innerHTML = '<tr><td colspan="4">Loading ' + category + '...</td></tr>';
+    document.querySelectorAll('.nav-card').forEach(c => c.classList.remove('active'));
+    if(el) el.classList.add('active');
 
     const filtered = allSymbols.filter(s => {
-        // 'derived' covers Synthetic and Basket indices
-        if (category === 'derived') return s.market === 'synthetic_index' || s.market === 'basket_index';
-        // 'forex' covers major/minor pairs
-        if (category === 'forex') return s.market === 'forex';
-        // 'crypto' covers coins like BTC, ETH, etc.
-        if (category === 'crypto') return s.market === 'cryptocurrency';
+        const sym = s.symbol.toLowerCase();
+        if (cat === 'volatility') return s.market === 'synthetic_index' && (sym.includes('volatility') || sym.includes('1s'));
+        if (cat === 'crashboom') return sym.includes('crash') || sym.includes('boom');
+        if (cat === 'jump') return sym.includes('jump');
+        if (cat === 'range') return sym.includes('range') || sym.includes('step');
+        if (cat === 'basket') return s.market === 'basket_index';
+        if (cat === 'forex') return s.market === 'forex';
+        if (cat === 'crypto') return s.market === 'cryptocurrency';
         return false;
     });
 
-    tableBody.innerHTML = ''; 
-    if (filtered.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="4">No markets found for this category.</td></tr>';
-        return;
-    }
+    filtered.forEach(s => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${s.display_name}</td><td>${s.symbol.toUpperCase()}</td>
+            <td><button class="btn-view" onclick="openAnalysis('${s.display_name}', '${s.symbol}')">View</button></td>`;
+        list.appendChild(tr);
+    });
+}
 
-    filtered.forEach(symbol => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${symbol.display_name}</td>
-            <td>${symbol.symbol.toUpperCase()}</td>
-            <td><span style="color:green;">● Live</span></td>
-            <td><button onclick="viewMarket('${symbol.display_name}', '${symbol.symbol}')">View Analysis</button></td>
-        `;
-        tableBody.appendChild(row);
+function openAnalysis(name, symbol) {
+    document.getElementById('mTitle').innerText = name;
+    document.getElementById('modal').style.display = 'block';
+    tickHistory = []; // Reset for new market
+    
+    // Embed Official Chart
+    document.getElementById('chart-area').innerHTML = `
+        <iframe src="https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=light" width="100%" height="100%" frameborder="0"></iframe>`;
+    
+    // Setup Bars
+    let barsHTML = '';
+    for(let i=0; i<10; i++) {
+        barsHTML += `<div class="bar-group"><span id="p-${i}" class="percent-label">0%</span><div id="b-${i}" class="bar" style="height:0px"></div><span class="bar-label">${i}</span></div>`;
+    }
+    document.getElementById('digit-bars').innerHTML = barsHTML;
+
+    if (activeSub) ws.send(JSON.stringify({ "forget": activeSub }));
+    ws.send(JSON.stringify({ "ticks": symbol, "subscribe": 1 }));
+}
+
+function processTick(tick) {
+    activeSub = tick.id;
+    const price = tick.quote.toFixed(tick.pip_size);
+    const lastDigit = parseInt(price.charAt(price.length - 1));
+
+    // 1. Update Price UI
+    const priceDisplay = document.getElementById('mPrice');
+    const oldPrice = parseFloat(priceDisplay.innerText);
+    priceDisplay.innerText = price;
+    priceDisplay.style.color = (parseFloat(price) >= oldPrice) ? "#4CAF50" : "#ff444f";
+    document.getElementById('mDir').innerText = (parseFloat(price) >= oldPrice) ? "▲ RISE" : "▼ FALL";
+    document.getElementById('mDir').style.color = priceDisplay.style.color;
+
+    // 2. Real-Time Digit Logic (Last 100 ticks)
+    tickHistory.push(lastDigit);
+    if (tickHistory.length > 100) tickHistory.shift();
+
+    const counts = Array(10).fill(0);
+    let even = 0;
+    tickHistory.forEach(d => {
+        counts[d]++;
+        if(d % 2 === 0) even++;
     });
 
-    // Update Tab UI visually
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    const clickedTab = Array.from(document.querySelectorAll('.tab')).find(t => t.innerText.toLowerCase().includes(category));
-    if (clickedTab) clickedTab.classList.add('active');
-}
+    // 3. Update Visual Bars and Stats
+    counts.forEach((count, i) => {
+        const percent = ((count / tickHistory.length) * 100).toFixed(0);
+        document.getElementById(`b-${i}`).style.height = (percent * 1.5) + "px"; // Visual Scale
+        document.getElementById(`p-${i}`).innerText = percent + "%";
+    });
 
-function viewMarket(name, symbol) {
-    const modal = document.getElementById('marketModal');
-    const content = document.getElementById('modalContent');
-    const title = document.getElementById('modalTitle');
+    document.getElementById('stat-even').innerText = ((even / tickHistory.length) * 100).toFixed(0) + "%";
+    document.getElementById('stat-odd').innerText = (((tickHistory.length - even) / tickHistory.length) * 100).toFixed(0) + "%";
 
-    if (modal && content) {
-        title.innerText = name;
-        content.innerHTML = `
-            <div style="text-align:center;">
-                <p style="margin:0; color:#666;">Current Price</p>
-                <h1 id="live-price" style="font-size:2.5rem; margin:10px 0;">---</h1>
-                <div id="price-direction" style="font-weight:bold; margin-bottom:15px;">Connecting Stream...</div>
-                <div style="width:100%; height:400px; border-top:1px solid #ddd; padding-top:10px;">
-                    <iframe src="https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=light" width="100%" height="100%" frameborder="0"></iframe>
-                </div>
-            </div>
-        `;
-        modal.style.display = "block";
-
-        if (activeTickSubscription) ws.send(JSON.stringify({ "forget": activeTickSubscription }));
-        ws.send(JSON.stringify({ "ticks": symbol, "subscribe": 1 }));
-    }
-}
-
-function updateLivePrice(tick) {
-    const priceElement = document.getElementById('live-price');
-    const direction = document.getElementById('price-direction');
-    if (priceElement) {
-        const oldPrice = parseFloat(priceElement.innerText);
-        const newPrice = tick.quote;
-        activeTickSubscription = tick.id;
-
-        if (!isNaN(oldPrice)) {
-            priceElement.style.color = newPrice > oldPrice ? "green" : "red";
-            direction.innerText = newPrice > oldPrice ? "▲ UP" : "▼ DOWN";
-            direction.style.color = priceElement.style.color;
-        }
-        priceElement.innerText = newPrice;
-    }
+    // 4. Last 5 digits tracker
+    const last5 = tickHistory.slice(-5).reverse();
+    document.getElementById('last-5').innerHTML = last5.map(d => `<span style="color:${d % 2 === 0 ? 'green':'red'}">${d}</span>`).join(' ');
 }
 
 function closeModal() {
-    document.getElementById('marketModal').style.display = "none";
-    if (activeTickSubscription) {
-        ws.send(JSON.stringify({ "forget": activeTickSubscription }));
-        activeTickSubscription = null;
-    }
+    document.getElementById('modal').style.display = 'none';
+    if (activeSub) ws.send(JSON.stringify({ "forget": activeSub }));
 }
