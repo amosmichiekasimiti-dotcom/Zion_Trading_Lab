@@ -1,27 +1,37 @@
 let allSymbols = [];
-const ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
+const app_id = 1089; 
+const ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=' + app_id);
 
+// 1. Connection logic
 ws.onopen = () => {
-    document.getElementById('connection-status').innerHTML = '<span style="color: green;">● System Live</span>';
+    const statusElement = document.getElementById('connection-status');
+    if (statusElement) {
+        statusElement.innerHTML = '<span style="color: green;">● System Live</span>';
+    }
+    // Request all symbols from Deriv
     ws.send(JSON.stringify({ "active_symbols": "brief", "product_type": "basic" }));
 };
 
+// 2. Data handling logic
 ws.onmessage = (msg) => {
     const data = JSON.parse(msg.data);
     if (data.active_symbols) {
         allSymbols = data.active_symbols;
-        filterMarket('synthetic_index'); // Show Derived by default
+        filterMarket('synthetic_index'); // Show Derived by default on load
     }
 };
 
+// 3. Filtering logic for Tabs
 function filterMarket(category, element) {
-    // Update active tab UI
+    // Update active tab UI colors
     if (element) {
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
         element.classList.add('active');
     }
 
     const tableBody = document.getElementById('market-list');
+    if (!tableBody) return;
+    
     tableBody.innerHTML = '';
 
     const filtered = allSymbols.filter(s => s.market === category);
@@ -36,8 +46,41 @@ function filterMarket(category, element) {
                         ${symbol.exchange_is_open ? 'TRADE OPEN' : 'MARKET CLOSED'}
                     </span>
                 </td>
-                <td><button style="cursor:pointer; border:1px solid #ddd; padding:5px 10px; border-radius:4px;">View Chart</button></td>
+                <td>
+                    <button onclick="viewMarket('${symbol.display_name}', '${symbol.symbol}', '${symbol.market}')" 
+                            style="cursor:pointer; border:1px solid #ddd; padding:5px 10px; border-radius:4px;">
+                        View
+                    </button>
+                </td>
             </tr>`;
         tableBody.innerHTML += row;
     });
+}
+
+// 4. Modal View logic
+function viewMarket(name, symbol, marketType) {
+    const modal = document.getElementById('marketModal');
+    const title = document.getElementById('modalTitle');
+    const content = document.getElementById('modalContent');
+
+    if (modal && title && content) {
+        title.innerText = name;
+        content.innerHTML = `
+            <p><strong>Symbol Code:</strong> <code>${symbol}</code></p>
+            <p><strong>Category:</strong> ${marketType.toUpperCase()}</p>
+            <hr>
+            <div style="background:#f9f9f9; padding:10px; border-radius:5px;">
+                <p>Live data for ${name} is being retrieved from Deriv servers.</p>
+            </div>
+        `;
+        modal.style.display = "block";
+    }
+}
+
+// 5. Modal Close logic
+function closeModal() {
+    const modal = document.getElementById('marketModal');
+    if (modal) {
+        modal.style.display = "none";
+    }
 }
