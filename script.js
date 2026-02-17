@@ -1,11 +1,12 @@
-const ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
+let ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
 let activeSub = null;
 let allSymbols = [];
-let tickHistory = []; // Tracks exactly 100 ticks for official percentage spreading
-let currentMarketType = 'matches_differs'; // Default type for analysis
+let tickHistory = [];
 
+// Automatic connection logic
 ws.onopen = () => {
     document.getElementById('status').innerText = '● Connected';
+    document.getElementById('status').style.color = '#4caf50';
     ws.send(JSON.stringify({ "active_symbols": "brief", "product_type": "basic" }));
     setInterval(() => { if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ ping: 1 })); }, 30000);
 };
@@ -16,7 +17,12 @@ ws.onmessage = (msg) => {
         allSymbols = res.active_symbols; 
         loadCategory('volatility'); 
     }
-    if (res.tick) updateDigitLogic(res.tick);
+    if (res.tick) updateDigitAnalysis(res.tick);
+};
+
+ws.onclose = () => {
+    document.getElementById('status').innerText = '● Reconnecting...';
+    setTimeout(() => { ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089'); }, 5000);
 };
 
 function loadCategory(cat, el) {
@@ -40,29 +46,20 @@ function loadCategory(cat, el) {
 
     filtered.forEach(s => {
         const tr = document.createElement('tr');
-        // Check if market is Volatility to handle digit market types
-        const isDigit = cat === 'volatility' ? 'matches_differs' : 'rise_fall';
         tr.innerHTML = `<td>${s.display_name}</td><td>${s.symbol.toUpperCase()}</td>
-            <td><button class="btn-view" onclick="openAnalysis('${s.display_name}', '${s.symbol}', '${cat}', '${isDigit}')">Analyze</button></td>`;
+            <td><button class="btn-view" onclick="openAnalysis('${s.display_name}', '${s.symbol}', '${cat}')">View</button></td>`;
         list.appendChild(tr);
     });
 }
 
-function openAnalysis(name, symbol, category, marketType) {
+function openAnalysis(name, symbol, cat) {
     tickHistory = [];
-    currentMarketType = marketType;
     document.getElementById('mTitle').innerText = name;
     document.getElementById('modal').style.display = 'block';
     
-    const digitArea = document.getElementById('digit-analysis-area');
-    const label = document.getElementById('digit-market-label');
-    const chartArea = document.getElementById('chart-area');
-
-    if (category === 'volatility') {
+    const digitArea = document.getElementById('digit-area');
+    if (cat === 'volatility') {
         digitArea.style.display = 'block';
-        chartArea.style.height = '350px';
-        label.innerText = marketType.replace('_', ' ');
-        
         let gridHTML = '';
         for(let i=0; i<=9; i++) {
             gridHTML += `<div id="d-card-${i}" class="digit-box"><span class="d-val">${i}</span><span id="d-pct-${i}" class="d-pct">0%</span></div>`;
@@ -70,23 +67,23 @@ function openAnalysis(name, symbol, category, marketType) {
         document.getElementById('digit-grid').innerHTML = gridHTML;
     } else {
         digitArea.style.display = 'none';
-        chartArea.style.height = '500px';
     }
 
-    // Embed direct TradingView command for candlesticks
-    chartArea.innerHTML = `<iframe src="https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=light" width="100%" height="100%" frameborder="0"></iframe>`;
+    document.getElementById('chart-area').innerHTML = `<iframe src="https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=light" width="100%" height="100%" frameborder="0"></iframe>`;
     
     if (activeSub) ws.send(JSON.stringify({ "forget": activeSub }));
     ws.send(JSON.stringify({ "ticks": symbol, "subscribe": 1 }));
 }
 
-function updateDigitLogic(tick) {
+function updateDigitAnalysis(tick) {
     activeSub = tick.id;
-    // Direct API command: retrieve true last digit using pip_size precision
     const priceStr = tick.quote.toFixed(tick.pip_size);
     const lastDigit = parseInt(priceStr.slice(-1));
 
-    document.getElementById('mPrice').innerHTML = `${priceStr.slice(0, -1)}<span style="color:var(--red); border-bottom:3px solid var(--red);">${lastDigit}</span>`;
+    const priceEl = document.getElementById('mPrice');
+    if (priceEl) {
+        priceEl.innerHTML = `${priceStr.slice(0, -1)}<span style="color:var(--red); border-bottom:3px solid var(--red);">${lastDigit}</span>`;
+    }
     
     tickHistory.push(lastDigit);
     if (tickHistory.length > 100) tickHistory.shift();
@@ -98,19 +95,10 @@ function updateDigitLogic(tick) {
         const pct = ((count / tickHistory.length) * 100).toFixed(1);
         const card = document.getElementById(`d-card-${i}`);
         const label = document.getElementById(`d-pct-${i}`);
-        
         if (label) {
             label.innerText = `${pct}%`;
             label.style.color = pct > 12 ? "var(--green)" : (pct < 8 ? "var(--red)" : "#999");
-            
-            // Highlight specific segments for Even/Odd or Over/Under
-            if (currentMarketType === 'even_odd') {
-                card.style.borderBottomColor = (i % 2 === 0) ? 'var(--green)' : 'var(--red)';
-            } else if (currentMarketType === 'over_under') {
-                card.style.borderBottomColor = (i > 4) ? 'var(--green)' : 'var(--red)';
-            } else {
-                card.style.borderBottomColor = 'transparent';
-            }
+            card.style.borderBottomColor = (i % 2 === 0) ? 'var(--green)' : 'var(--red)'; // Even/Odd indicators
         }
         if (card) card.classList.toggle('active', i === lastDigit);
     });
