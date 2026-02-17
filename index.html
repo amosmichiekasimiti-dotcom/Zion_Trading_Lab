@@ -3,35 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZION LAB | Universal Scavenger</title>
+    <title>Automated Synthetic Hub</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@deriv/deriv-api/dist/DerivAPIBasic.js"></script>
 </head>
 <body>
-    <div class="app-container">
-        <header class="main-header">
-            <div class="brand">⚡ ZION MASTER HUB</div>
-            <div class="connection-zone">
-                <input type="password" id="apiToken" placeholder="Deriv API Token" value="rbQgwOkbsfDoKw2">
-                <button onclick="initializeUniversalScavenger()" class="glow-btn">INITIALIZE ENGINE</button>
-            </div>
-        </header>
-
-        <section id="discovery-wall" class="discovery-grid">
-            <div class="status-msg">Engine Standby. Waiting for Handshake...</div>
+    <header>
+        <h1>Live Synthetic Platform</h1>
+        <div id="connection-status">Connecting to Deriv...</div>
+    </header>
+    
+    <main>
+        <section id="platform-updates">
+            <h3>Platform Status: <span id="status-text">Checking...</span></h3>
         </section>
 
-        <div id="analysis-overlay" class="overlay">
-            <div class="overlay-content">
-                <nav class="overlay-nav">
-                    <span id="active-asset-name">SCAVENGER VIEW</span>
-                    <button onclick="closeAnalysis()" class="close-btn">× CLOSE</button>
-                </nav>
-                <div id="dynamic-trade-container"></div>
-                <div id="universal-chart"></div>
-            </div>
-        </div>
-    </div>
-    <script src="script.js"></script>
+        <section id="asset-container">
+            <h3>Available Indices (Auto-Detected)</h3>
+            <div id="loader">Reading platform data...</div>
+            <div id="indices-grid" class="grid"></div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
 </body>
 </html>
+
