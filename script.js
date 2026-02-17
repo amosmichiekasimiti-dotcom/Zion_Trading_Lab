@@ -1,6 +1,6 @@
 /**
- * Zion Trading Lab - Authoritative Direct Feed
- * Direct Sync with Deriv "Reef" Servers
+ * Zion Trading Lab - Final Direct Sync Feed
+ * Authoritative Digit Statistics & Real-Time Tick Feed
  */
 
 const ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
@@ -8,7 +8,7 @@ let activeSub = null;
 let allSymbols = [];
 let currentSymbol = '';
 let currentMode = 'rise_fall';
-let reefDigitWindow = []; // Stores the authoritative 100-digit history
+let digitHistory = []; // Buffer for the last 100 digits from the Reef
 
 ws.onopen = () => {
     console.log("Zion Lab: Connected to Direct Reef Feed");
@@ -18,41 +18,42 @@ ws.onopen = () => {
 ws.onmessage = (msg) => {
     const data = JSON.parse(msg.data);
 
-    // Initial Symbol Loading
+    // Initial Market Data Loading
     if (data.active_symbols) { 
         allSymbols = data.active_symbols; 
         loadCategory('volatility'); 
     }
 
-    // AUTHENTIC PERCENTAGE PULL: Fetch 100-tick history from the Reef
+    // AUTHENTIC DATA PULL: Initial 100-Tick History for Real Percentages
     if (data.history) {
-        reefDigitWindow = []; 
+        digitHistory = []; // Clear old local data
         data.history.prices.forEach(price => {
             const digit = parseInt(price.toFixed(data.pip_size).slice(-1));
-            reefDigitWindow.push(digit);
+            digitHistory.push(digit);
         });
-        renderReefStatistics();
+        renderAuthoritativeStats();
     }
 
-    // LIVE AUTHORITATIVE STREAM: Update Price & Digit Probabilities
+    // LIVE STREAM: Real-time Price & Digit Synchronization
     if (data.tick) {
         activeSub = data.tick.id;
         const priceStr = data.tick.quote.toFixed(data.tick.pip_size);
         const lastDigit = parseInt(priceStr.slice(-1));
         const head = priceStr.slice(0, -1);
         
-        // Update Running Price Header
+        // Update Live Price Number (Always visible)
         const priceDisplay = document.getElementById('live-price');
         if (priceDisplay) {
-            priceDisplay.innerHTML = `${head}<span class="active-digit">${lastDigit}</span>`;
+            priceDisplay.innerHTML = `${head}<span>${lastDigit}</span>`;
         }
 
-        // Maintain the real 100-tick window exactly like the Reef platform
-        reefDigitWindow.push(lastDigit);
-        if (reefDigitWindow.length > 100) reefDigitWindow.shift();
+        // Maintain the Authoritative 100-occurrence window
+        digitHistory.push(lastDigit);
+        if (digitHistory.length > 100) digitHistory.shift();
         
+        // Only update the probability grid for Digit Markets
         if (currentMode !== 'rise_fall') {
-            renderReefStatistics(lastDigit);
+            renderAuthoritativeStats(lastDigit);
         }
     }
 };
@@ -74,6 +75,7 @@ function loadCategory(cat, el) {
         if (cat === 'range') return disp.includes('range') || disp.includes('step');
         if (cat === 'forex') return s.market === 'forex';
         if (cat === 'crypto') return s.market === 'cryptocurrency';
+        if (cat === 'baskets') return s.market === 'indices' && disp.includes('basket');
         return false;
     });
 
@@ -86,13 +88,14 @@ function loadCategory(cat, el) {
 
 function openAnalysis(name, symbol) {
     currentSymbol = symbol;
-    reefDigitWindow = []; 
+    digitHistory = []; 
     document.getElementById('mTitle').innerText = name;
     document.getElementById('modal').style.display = 'block';
     
+    // Set default view to Rise/Fall (Candles)
     switchContract('rise_fall', document.querySelector('.tab'));
 
-    // DIRECT REEF COMMAND: Request authoritative 100-tick history state
+    // REEF COMMAND: Fetch the real 100-tick history state immediately
     ws.send(JSON.stringify({
         "ticks_history": symbol,
         "adjust_start_time": 1,
@@ -120,60 +123,47 @@ function switchContract(mode, el) {
     } else {
         digitPanel.style.display = 'block';
         chartView.style.height = '400px';
-        buildAmazingGrid();
+        buildDigitGrid();
     }
     
+    // Load TradingView chart synchronized with authoritative feed
     chartView.innerHTML = `<iframe src="https://tradingview.binary.com/v2/main.php?symbol=${currentSymbol}&theme=light" width="100%" height="100%" frameborder="0"></iframe>`;
 }
 
-function buildAmazingGrid() {
+function buildDigitGrid() {
     const grid = document.getElementById('digit-grid');
     grid.innerHTML = '';
     for (let i = 0; i <= 9; i++) {
         grid.innerHTML += `
             <div id="d-${i}" class="d-box">
                 <div class="d-num">${i}</div>
-                <div id="bar-${i}" class="d-bar"></div>
-                <div id="p-${i}" class="d-pct">0%</div>
+                <div id="bar-${i}" class="d-bar" style="height:0%;"></div>
+                <div id="p-${i}" class="d-pct" style="position:absolute; bottom:-15px; font-size:10px; color:#333; font-weight:bold;">0%</div>
             </div>`;
     }
 }
 
-function renderReefStatistics(activeDigit) {
+function renderAuthoritativeStats(activeDigit) {
     const counts = Array(10).fill(0);
-    reefDigitWindow.forEach(d => counts[d]++);
+    digitHistory.forEach(d => counts[d]++);
 
     for (let i = 0; i <= 9; i++) {
-        const realPercentage = reefDigitWindow.length > 0 ? ((counts[i] / reefDigitWindow.length) * 100).toFixed(1) : 0;
+        // Calculate the REAL probability based on the server-provided 100-tick window
+        const realPercentage = digitHistory.length > 0 ? ((counts[i] / digitHistory.length) * 100).toFixed(1) : 0;
         const bar = document.getElementById(`bar-${i}`);
         const label = document.getElementById(`p-${i}`);
         const box = document.getElementById(`d-${i}`);
         
-        if (label) {
-            label.innerText = realPercentage + "%";
-            // Color logic: highlight "Hot" digits in green
-            label.style.color = realPercentage > 11.5 ? "#00ff88" : "#00f2fe";
-        }
-        
-        if (bar) {
-            bar.style.height = realPercentage + "%";
-            bar.style.background = "linear-gradient(to top, #2e2e48, #00f2fe)";
-        }
+        if (label) label.innerText = realPercentage + "%";
+        if (bar) bar.style.height = realPercentage + "%";
 
-        // Apply "Amazing" Active Glow State
+        // Real-time Visual Highlight to match the official Reef platform
         if (i === activeDigit) {
-            if (box) {
-                box.style.borderColor = "#ff444f";
-                box.style.boxShadow = "0 0 15px rgba(255, 68, 79, 0.6)";
-                box.style.transform = "scale(1.05)";
-            }
+            if (box) box.style.borderColor = "#ff444f";
             if (bar) bar.style.background = "#ff444f";
         } else {
-            if (box) {
-                box.style.borderColor = "#2e2e48";
-                box.style.boxShadow = "none";
-                box.style.transform = "scale(1)";
-            }
+            if (box) box.style.borderColor = "#ddd";
+            if (bar) bar.style.background = "#323738";
         }
     }
 }
