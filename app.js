@@ -1,78 +1,73 @@
-/* Zion Trading Lab - Automated Connection Logic */
+/* Zion Trading Lab - Automated Mirror Engine */
 
-// REPLACE 1089 with your own unique App ID from api.deriv.com for faster priority
-const APP_ID = 1089; 
-const connection = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`);
-const api = new DerivAPIBasic({ connection });
+const APP_ID = 126973; // Your specific App ID
+const socket = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`);
+const api = new DerivAPIBasic({ connection: socket });
 
-// 1. "Single Command" Initialization - Waiting for the 'Open' state
+// 1. Handshake Listener: Fires the moment connection is ready
 api.onOpen().subscribe(() => {
-    updateUIConnection(true);
-    // Read everything on Deriv as soon as the line is open
-    syncEverything();
-});
-
-// 2. Automate detection of NEW updates or maintenance
-api.websiteStatus().subscribe(update => {
-    if (update.msg_type === 'website_status') {
-        const msg = `Platform Update: ${update.website_status.site_status}`;
-        showNotification(msg);
-        // Refresh symbols if a platform change is detected
-        syncEverything();
-    }
-});
-
-const syncEverything = async () => {
-    try {
-        // Fetch every active synthetic symbol
-        const response = await api.active_symbols({ active_symbols: 'brief', product_type: 'basic' });
-        renderAssets(response.active_symbols);
-    } catch (error) {
-        console.error("Discovery Error:", error);
-    }
-};
-
-const renderAssets = (symbols) => {
-    const container = document.getElementById('indices-grid');
-    const synthetics = symbols.filter(s => s.market === 'synthetic_index');
+    const statusBadge = document.getElementById('connection-status');
+    statusBadge.innerText = "● Connected to Deriv (Zion Active)";
+    statusBadge.classList.add('online');
     
-    container.innerHTML = synthetics.map(s => `
+    // Immediately ask the server for every asset
+    fetchAssets();
+});
+
+async function fetchAssets() {
+    try {
+        // Request "active_symbols" - the master list of all markets
+        const response = await api.active_symbols({ 
+            active_symbols: 'brief', 
+            product_type: 'basic' 
+        });
+
+        // Error Handling: If Deriv sends an error, display it in the Lab
+        if (response.error) {
+            showError(`Server Error: ${response.error.message}`);
+            return;
+        }
+
+        renderDisplay(response.active_symbols);
+
+    } catch (err) {
+        showError(`Network Error: Check your internet or Redirect URL settings.`);
+    }
+}
+
+function renderDisplay(allSymbols) {
+    const grid = document.getElementById('indices-grid');
+    const loader = document.getElementById('loader-area');
+    
+    // Filter strictly for Synthetic (Derived) Indices
+    const targets = allSymbols.filter(s => s.market === 'synthetic_index');
+    
+    if (targets.length === 0) {
+        showError("No synthetic assets found. Ensure App ID 126973 has 'Read' scope enabled.");
+        return;
+    }
+
+    loader.classList.add('hidden');
+    grid.innerHTML = targets.map(s => `
         <div class="asset-card" id="card-${s.symbol}">
             <div class="asset-name">${s.display_name}</div>
-            <div class="price" id="price-${s.symbol}">0.00</div>
-            <div class="trend-indicator" id="trend-${s.symbol}">-</div>
+            <div class="price" id="price-${s.symbol}">0.0000</div>
         </div>
     `).join('');
 
-    // Subscribe to live price ticks for every asset discovered
-    synthetics.forEach(s => subscribeToPrice(s.symbol));
-};
-
-const subscribeToPrice = (symbol) => {
-    api.ticks(symbol).subscribe(tickData => {
-        const priceEl = document.getElementById(`price-${symbol}`);
-        if (priceEl) {
-            const oldPrice = parseFloat(priceEl.innerText);
-            const newPrice = tickData.tick.quote;
-            priceEl.innerText = newPrice;
-            
-            // Visual trend detection
-            const card = document.getElementById(`card-${symbol}`);
-            card.style.borderColor = newPrice > oldPrice? '#4caf50' : '#f44336';
-        }
+    // 2. Automated Streaming: Subscribe to live price for every detected asset
+    targets.forEach(s => {
+        api.ticks(s.symbol).subscribe(tickData => {
+            const el = document.getElementById(`price-${s.symbol}`);
+            if (el) el.innerText = tickData.tick.quote;
+        });
     });
-};
-
-// UI Helpers
-function updateUIConnection(status) {
-    const el = document.getElementById('connection-status');
-    el.innerText = status? "● Connected to Deriv" : "Connecting...";
-    el.className = status? "status-badge online" : "status-badge";
 }
 
-function showNotification(text) {
-    const bar = document.getElementById('notification-bar');
-    document.getElementById('update-msg').innerText = text;
-    bar.classList.remove('hidden');
-    setTimeout(() => bar.classList.add('hidden'), 5000);
+function showError(text) {
+    document.getElementById('loader-area').classList.add('hidden');
+    const log = document.getElementById('debug-log');
+    const msg = document.getElementById('error-msg');
+    log.classList.remove('hidden');
+    msg.innerText = text;
 }
