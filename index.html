@@ -3,22 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zion Trading Lab</title>
+    <title>Zion Trading Lab - Full Access</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header>
         <h1>DERIV MARKET HUB</h1>
-        <div class="search-container">
-            <input type="text" id="marketSearch" placeholder="Search Markets (e.g., 1S, Volatility...)" onkeyup="runSearch()">
-        </div>
-        <div id="path-tracker" onclick="goHome()">HOME</div>
+        <nav id="path-tracker" onclick="location.reload()">REFRESH ALL DATA</nav>
     </header>
-
-    <main id="display-grid" class="grid-container">
-        <div class="status-msg">ESTABLISHING HANDSHAKE...</div>
+    <main id="display-grid">
+        <div class="status-msg">OPENING ALL DERIV STREAMS...</div>
     </main>
-
     <script src="script.js"></script>
 </body>
 </html>
