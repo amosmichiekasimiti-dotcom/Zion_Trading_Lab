@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zion Trading Lab | Universal Feed</title>
+    <title>Zion Trading Lab | Professional</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --red: #ff444f; --dark: #1e1e1e; --green: #4caf50; --neon: #00f2fe; }
@@ -29,12 +29,11 @@
         #signal-alert { font-size: 12px; font-weight: 900; color: var(--neon); letter-spacing: 1px; }
         #momentum-text { font-size: 9px; color: #888; }
 
-        #digit-analysis-panel { display: none; margin-bottom: 10px; }
-        .digit-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; background: #000; padding: 5px; border-radius: 4px; }
-        .d-box { background: #1a1a1a; height: 45px; display: flex; flex-direction: column-reverse; align-items: center; position: relative; border: 1px solid #333; transition: 0.2s; }
+        #digit-analysis-panel { display: none; margin-bottom: 15px; }
+        .digit-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; background: #000; padding: 8px; border-radius: 8px; }
+        .d-box { background: #1a1a1a; height: 45px; display: flex; flex-direction: column-reverse; align-items: center; position: relative; border: 1px solid #333; }
         .d-bar { width: 100%; background: #323738; transition: height 0.3s; }
         .d-num { position: absolute; top: 2px; font-size: 11px; color: white; font-weight: bold; z-index: 5; }
-        .d-pct { position: absolute; bottom: -15px; font-size: 9px; font-weight: bold; color: #333; }
         
         #chart-container { flex-grow: 1; border-radius: 8px; overflow: hidden; border: 1px solid #ddd; }
         .tabs { display: flex; gap: 5px; margin-bottom: 10px; overflow-x: auto; }
@@ -49,11 +48,11 @@
     </div>
 
     <div class="nav-grid">
-        <div class="nav-card active" onclick="loadCategory('volatility', this)">VOLATILITY</div>
-        <div class="nav-card" onclick="loadCategory('crashboom', this)">CRASH/BOOM</div>
-        <div class="nav-card" onclick="loadCategory('jump', this)">JUMP</div>
-        <div class="nav-card" onclick="loadCategory('range', this)">RANGE/STEP</div>
-        <div class="nav-card" onclick="loadCategory('forex', this)">FOREX</div>
+        <div class="nav-card active" onclick="window.loadCategory('volatility', this)">VOLATILITY</div>
+        <div class="nav-card" onclick="window.loadCategory('crashboom', this)">CRASH/BOOM</div>
+        <div class="nav-card" onclick="window.loadCategory('jump', this)">JUMP</div>
+        <div class="nav-card" onclick="window.loadCategory('range', this)">RANGE/STEP</div>
+        <div class="nav-card" onclick="window.loadCategory('forex', this)">FOREX</div>
     </div>
 
     <div class="card">
@@ -67,14 +66,14 @@
         <div class="modal-body">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                 <h4 id="mTitle" style="margin:0;">Asset</h4>
-                <button onclick="closeModal()" style="background:var(--red); color:white; border:none; padding:5px 15px; border-radius:5px; font-weight:bold;">CLOSE</button>
+                <button onclick="window.closeModal()" style="background:var(--red); color:white; border:none; padding:5px 15px; border-radius:5px; font-weight:bold;">CLOSE</button>
             </div>
 
             <div class="tabs">
-                <div class="tab active" onclick="switchContract('rise_fall', this)">Rise/Fall</div>
-                <div class="tab" onclick="switchContract('even_odd', this)">Even/Odd</div>
-                <div class="tab" onclick="switchContract('matches_differs', this)">Matches/Differs</div>
-                <div class="tab" onclick="switchContract('over_under', this)">Over/Under</div>
+                <div class="tab active" onclick="window.switchContract('rise_fall', this)">Rise/Fall</div>
+                <div class="tab" onclick="window.switchContract('even_odd', this)">Even/Odd</div>
+                <div class="tab" onclick="window.switchContract('matches_differs', this)">Matches/Differs</div>
+                <div class="tab" onclick="window.switchContract('over_under', this)">Over/Under</div>
             </div>
 
             <div class="price-header">
@@ -87,7 +86,6 @@
 
             <div id="digit-analysis-panel">
                 <div class="digit-grid" id="digit-grid"></div>
-                <div style="height:15px;"></div>
             </div>
 
             <div id="chart-container"></div>
