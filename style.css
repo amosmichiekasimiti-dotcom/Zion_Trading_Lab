@@ -1,62 +1,70 @@
-:root {
-    --bg: #050505;
-    --card: #121212;
-    --accent: #3b82f6;
-    --text: #ffffff;
-    --dim: #666666;
-}
-
 body {
-    background-color: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: #000; /* True black background */
+    color: #fff;
+    font-family: sans-serif;
     margin: 0;
-}
-
-header {
     padding: 20px;
-    border-bottom: 1px solid #222;
     text-align: center;
-    background: rgba(5,5,5,0.9);
-    backdrop-filter: blur(10px);
-    position: sticky;
-    top: 0;
-    z-index: 100;
 }
 
-h1 { font-size: 1.2rem; letter-spacing: 2px; margin: 0; font-weight: 900; }
-
-#connection-status { font-size: 10px; margin-top: 5px; font-weight: bold; text-transform: uppercase; }
-.status-online { color: #10b981; }
-.status-offline { color: #f59e0b; }
-
-#filters { display: flex; gap: 8px; justify-content: center; margin-top: 15px; flex-wrap: wrap; }
-#filters button {
-    background: #1a1a1a; border: 1px solid #333; color: var(--dim);
-    padding: 6px 15px; border-radius: 20px; font-size: 11px; cursor: pointer; transition: 0.3s;
-}
-#filters button.active { background: var(--accent); color: white; border-color: var(--accent); }
-
-#market-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 15px;
-    padding: 20px;
+.filter-nav {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 30px;
 }
 
-.market-card {
-    background: var(--card);
-    border: 1px solid #222;
-    padding: 15px;
-    border-radius: 12px;
+.filter-btn {
+    background: #222;
+    border: none;
+    color: #888;
+    padding: 10px 20px;
+    border-radius: 20px;
+    cursor: pointer;
     transition: 0.3s;
 }
 
-.market-card:hover { border-color: var(--accent); transform: translateY(-3px); }
+.filter-btn.active, .filter-btn:hover {
+    background: #3e7eff; /* Blue highlight from your image */
+    color: #fff;
+}
 
-.card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.category { font-size: 9px; color: var(--dim); text-transform: uppercase; font-weight: bold; }
-.live-price { font-family: monospace; font-size: 11px; color: var(--accent); font-weight: bold; }
-h3 { margin: 0; font-size: 14px; font-weight: 700; }
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
 
-.stats-area { margin-top: 12px; }
+.market-card {
+    background: #111;
+    border-radius: 15px;
+    padding: 20px;
+    text-align: left;
+    border: 1px solid #222;
+}
+
+.market-card h4 {
+    color: #666;
+    font-size: 10px;
+    text-transform: uppercase;
+    margin: 0;
+}
+
+.market-card h2 {
+    font-size: 18px;
+    margin: 5px 0;
+}
+
+.market-card .symbol-code {
+    color: #3e7eff;
+    font-size: 12px;
+}
+
+.market-card .price {
+    font-size: 24px;
+    font-weight: bold;
+    margin-top: 15px;
+    color: #00ff88; /* Green for live data */
+}
