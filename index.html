@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zion Trading Lab | Live</title>
-    <link rel="stylesheet" href="style.css?v=302">
+    <title>Zion Trading Lab | Live Sync</title>
+    <link rel="stylesheet" href="style.css?v=303">
     <script src="https://unpkg.com/@deriv/deriv-api/dist/DerivAPIBasic.js"></script>
 </head>
 <body>
     <header>
         <div class="container">
             <h1>Zion Trading Lab</h1>
-            <div id="connection-status" class="status-badge">System Offline</div>
+            <div id="connection-status" class="status-badge">Checking Connection...</div>
         </div>
     </header>
     
@@ -25,11 +25,12 @@
 
         <div id="debug-log" class="hidden">
             <h3>⚠️ System Notification</h3>
-            <p id="error-msg"></p>
-            <p><small>Ensure Redirect URL matches in api.deriv.com</small></p>
+            <p id="error-msg">Initializing...</p>
+            <p><small>Update Redirect URL at api.deriv.com</small></p>
+            <button onclick="location.reload()">Force Refresh</button>
         </div>
     </main>
 
-    <script src="app.js?v=302"></script>
+    <script src="app.js?v=303"></script>
 </body>
 </html>
