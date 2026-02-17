@@ -1,127 +1,34 @@
-:root{
---neon:#00ff88;
---blue:#3e7eff;
---dark:#050505;
---glass:rgba(255,255,255,0.04);
---border:rgba(255,255,255,0.1);
+:root {
+    --neon: #00ff88;
+    --pro-blue: #3e7eff;
+    --bg: #050505;
+    --glass: rgba(255, 255, 255, 0.03);
 }
 
-body{
-background:radial-gradient(circle at top right,#111,var(--dark));
-color:white;
-font-family:Inter;
-margin:0;
-padding:20px;
-overflow-x:hidden;
+body { background: var(--bg); color: #fff; font-family: 'Inter', sans-serif; margin: 0; }
+
+.main-header { display: flex; justify-content: space-between; padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); background: #0a0a0a; }
+
+.discovery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; padding: 25px; }
+
+.asset-card {
+    background: var(--glass);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 15px;
+    transition: 0.3s;
+    backdrop-filter: blur(10px);
 }
 
-header{
-border-bottom:1px solid var(--border);
-margin-bottom:20px;
-padding-bottom:15px;
-}
+.asset-card:hover { border-color: var(--neon); transform: translateY(-3px); }
 
-h1{
-margin:0;
-font-size:28px;
-font-weight:800;
-}
+.price-box { font-family: 'JetBrains Mono', monospace; font-size: 22px; color: var(--neon); margin: 10px 0; }
 
-.status{
-font-size:11px;
-letter-spacing:2px;
-color:var(--neon);
-}
+.glow-btn { background: var(--neon); color: #000; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 900; cursor: pointer; }
 
-#display-grid{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
-gap:20px;
-}
+.overlay { display: none; position: fixed; inset: 0; background: #000; z-index: 100; }
+.overlay-content { display: grid; grid-template-rows: 60px 1fr 1fr; height: 100vh; }
 
-.market-title{
-grid-column:1/-1;
-color:var(--blue);
-text-transform:uppercase;
-border-left:3px solid var(--blue);
-padding-left:10px;
-margin-top:30px;
-}
-
-.card{
-background:var(--glass);
-border:1px solid var(--border);
-border-radius:14px;
-padding:20px;
-backdrop-filter:blur(10px);
-transition:.3s;
-}
-
-.card:hover{
-border-color:var(--neon);
-transform:translateY(-5px);
-}
-
-.price{
-font-family:"JetBrains Mono";
-font-size:22px;
-color:var(--neon);
-margin:10px 0;
-}
-
-.stats{
-font-size:12px;
-opacity:.7;
-}
-
-button{
-width:100%;
-margin-top:10px;
-padding:10px;
-background:transparent;
-border:1px solid var(--blue);
-color:var(--blue);
-cursor:pointer;
-font-weight:700;
-}
-
-button:hover{
-background:var(--blue);
-color:white;
-}
-
-#voice-toggle{
-position:fixed;
-bottom:20px;
-right:20px;
-background:black;
-border:1px solid var(--neon);
-padding:10px;
-cursor:pointer;
-}
-
-.overlay{
-display:none;
-position:fixed;
-top:0;left:0;
-width:100%;height:100%;
-background:black;
-z-index:9999;
-}
-
-.overlay-header{
-padding:20px;
-display:flex;
-justify-content:space-between;
-border-bottom:1px solid var(--border);
-}
-
-.close-btn{
-cursor:pointer;
-color:var(--neon);
-}
-
-#chart-view{
-width:100%;
-height:90%;
-}
+.trade-row { display: flex; gap: 10px; padding: 20px; background: #111; overflow-x: auto; }
+.scavenged-btn { padding: 10px 20px; border: 1px solid var(--pro-blue); background: transparent; color: var(--pro-blue); border-radius: 4px; white-space: nowrap; cursor: pointer; font-weight: bold;}
+.scavenged-btn:hover { background: var(--pro-blue); color: #fff; }
