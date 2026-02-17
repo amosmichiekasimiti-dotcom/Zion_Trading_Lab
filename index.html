@@ -3,50 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zion Trading Lab | Direct Feed</title>
+    <title>Zion Trading Lab | Full Direct Feed</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --red: #ff444f; --dark: #1e1e1e; --green: #4caf50; }
-        body { font-family: sans-serif; background: #f4f7f6; margin: 0; padding: 15px; }
-        .nav-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; margin-bottom: 20px; }
-        .nav-card { background: white; padding: 15px; border-radius: 12px; text-align: center; cursor: pointer; border: 1px solid #ddd; display: flex; flex-direction: column; align-items: center; }
+        body { font-family: sans-serif; background: #f4f7f6; margin: 0; padding: 10px; height: 100vh; display: flex; flex-direction: column; }
+        .nav-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 8px; margin-bottom: 15px; }
+        .nav-card { background: white; padding: 12px; border-radius: 10px; text-align: center; cursor: pointer; border: 1px solid #ddd; font-size: 11px; font-weight: bold; }
         .nav-card.active { background: var(--red); color: white; border-color: var(--red); }
-        .card { background: white; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow: hidden; }
+        .table-container { background: white; border-radius: 12px; flex-grow: 1; overflow-y: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         table { width: 100%; border-collapse: collapse; }
-        td, th { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
-        .btn-view { background: var(--dark); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
+        td, th { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+        .btn-view { background: var(--dark); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
 
-        /* Modal & Direct Panels */
-        #modal { display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.9); }
-        .modal-body { background:white; margin:1% auto; padding:20px; border-radius:12px; width:95%; height: 95vh; display: flex; flex-direction: column; }
-        .contract-selector { display: flex; gap: 10px; margin-bottom: 10px; overflow-x: auto; }
-        .c-btn { padding: 10px 15px; border-radius: 20px; border: 1px solid #ddd; background: #eee; cursor: pointer; white-space: nowrap; font-weight: bold; }
-        .c-btn.active { background: var(--red); color: white; }
-
-        #digit-panel { display: none; background: #111; color: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; }
-        .digit-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 5px; margin-top: 10px; }
-        .d-box { background: #222; padding: 10px 5px; text-align: center; border-bottom: 3px solid #444; font-size: 12px; }
+        /* Full Height Analysis Modal */
+        #modal { display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.95); }
+        .modal-body { background:white; margin:0; width:100%; height: 100%; display: flex; flex-direction: column; padding: 15px; box-sizing: border-box; }
         
-        /* Fix: TradingView Full View */
-        #chart-container { flex-grow: 1; width: 100%; border-radius: 8px; overflow: hidden; }
+        .contract-selector { display: flex; gap: 5px; margin-bottom: 10px; overflow-x: auto; padding-bottom: 5px; }
+        .c-btn { padding: 8px 12px; border-radius: 20px; border: 1px solid #ddd; background: #f0f0f0; cursor: pointer; white-space: nowrap; font-size: 11px; font-weight: bold; }
+        .c-btn.active { background: var(--red); color: white; border-color: var(--red); }
+
+        /* Deriv-Style Direct Digit Panel */
+        #live-digit-panel { background: #111; color: white; padding: 12px; border-radius: 8px; margin-bottom: 10px; }
+        .digit-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; background: #000; padding: 5px; border-radius: 4px; }
+        .d-box { background: #1a1a1a; height: 50px; display: flex; flex-direction: column-reverse; align-items: center; position: relative; border: 1px solid #333; }
+        .d-bar { width: 100%; background: #323738; transition: height 0.3s ease; }
+        .d-num { position: absolute; top: 2px; font-weight: bold; font-size: 12px; color: #fff; z-index: 2; }
+        .d-pct { position: absolute; bottom: 2px; font-size: 9px; color: #999; z-index: 2; }
+        
+        #chart-container { flex-grow: 1; width: 100%; border-radius: 8px; overflow: hidden; border: 1px solid #eee; }
     </style>
 </head>
 <body>
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-        <h2>Zion Trading Lab</h2>
-        <div id="status">Connecting...</div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding: 0 5px;">
+        <h3 style="margin:0;">Zion Trading Lab</h3>
+        <div id="status" style="color: grey; font-size: 12px;">Connecting...</div>
     </div>
 
     <div class="nav-grid">
-        <div class="nav-card active" onclick="loadCategory('volatility', this)"><i class="fas fa-chart-line"></i><span>VOLATILITY</span></div>
-        <div class="nav-card" onclick="loadCategory('crashboom', this)"><i class="fas fa-bolt"></i><span>CRASH/BOOM</span></div>
-        <div class="nav-card" onclick="loadCategory('jump', this)"><i class="fas fa-arrow-up"></i><span>JUMP</span></div>
-        <div class="nav-card" onclick="loadCategory('range', this)"><i class="fas fa-arrows-alt-h"></i><span>RANGE/STEP</span></div>
-        <div class="nav-card" onclick="loadCategory('basket', this)"><i class="fas fa-shopping-basket"></i><span>BASKETS</span></div>
-        <div class="nav-card" onclick="loadCategory('forex', this)"><i class="fas fa-dollar-sign"></i><span>FOREX</span></div>
+        <div class="nav-card active" onclick="loadCategory('volatility', this)">VOLATILITY</div>
+        <div class="nav-card" onclick="loadCategory('crashboom', this)">CRASH/BOOM</div>
+        <div class="nav-card" onclick="loadCategory('jump', this)">JUMP</div>
+        <div class="nav-card" onclick="loadCategory('range', this)">RANGE/STEP</div>
+        <div class="nav-card" onclick="loadCategory('forex', this)">FOREX</div>
     </div>
 
-    <div class="card">
+    <div class="table-container">
         <table>
             <thead><tr><th>Market</th><th>Symbol</th><th>Action</th></tr></thead>
             <tbody id="market-list"></tbody>
@@ -55,22 +58,22 @@
 
     <div id="modal">
         <div class="modal-body">
-            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                <h3 id="mTitle" style="margin:0;">Analysis</h3>
-                <button onclick="closeModal()" style="background:var(--red); color:white; border:none; padding:5px 15px; border-radius:5px; cursor:pointer;">Close</button>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                <h4 id="mTitle" style="margin:0;">Asset Name</h4>
+                <button onclick="closeModal()" style="background:var(--red); color:white; border:none; padding:4px 12px; border-radius:4px; font-size: 12px;">CLOSE</button>
             </div>
 
             <div class="contract-selector">
-                <button class="c-btn active" onclick="setMode('rise_fall', this)">Rise/Fall</button>
-                <button class="c-btn" onclick="setMode('even_odd', this)">Even/Odd</button>
-                <button class="c-btn" onclick="setMode('matches_differs', this)">Matches/Differs</button>
-                <button class="c-btn" onclick="setMode('over_under', this)">Over/Under</button>
+                <button class="c-btn active" onclick="setContract('rise_fall', this)">Rise/Fall</button>
+                <button class="c-btn" onclick="setContract('even_odd', this)">Even/Odd</button>
+                <button class="c-btn" onclick="setContract('matches_differs', this)">Matches/Differs</button>
+                <button class="c-btn" onclick="setContract('over_under', this)">Over/Under</button>
             </div>
 
-            <div id="digit-panel">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <div id="mPrice" style="font-size:24px; font-family:monospace;">0.0000</div>
-                    <div style="font-weight:bold; color:var(--red);">LIVE FEED</div>
+            <div id="live-digit-panel">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <div id="mPrice" style="font-size:22px; font-family:monospace; color: white; font-weight: bold;">0.0000</div>
+                    <div style="font-size: 10px; color: var(--red); font-weight: bold;">LIVE FEED</div>
                 </div>
                 <div class="digit-grid" id="digit-grid"></div>
             </div>
