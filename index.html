@@ -1,41 +1,65 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zion Trading Lab | Automated Sync</title>
-    <link rel="stylesheet" href="style.css?v=304">
-    <script src="https://unpkg.com/@deriv/deriv-api/dist/DerivAPIBasic.js"></script>
+    <title>Professional Deriv Dashboard</title>
+    <style>
+        /* CSS: This makes your site look professional and arranged */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; margin: 20px; }
+        .dashboard-table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 15px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; }
+        .dashboard-table th { background: #ff444f; color: white; padding: 15px; text-align: left; }
+        .dashboard-table td { padding: 12px 15px; border-bottom: 1px solid #ddd; }
+        .status-open { color: green; font-weight: bold; }
+        h1 { color: #333; }
+    </style>
 </head>
 <body>
-    <header>
-        <div class="container">
-            <h1>Zion Trading Lab</h1>
-            <div id="connection-status" class="status-badge">Establishing Connection...</div>
-        </div>
-    </header>
-    
-    <main class="container">
-        <div class="dashboard-meta">
-            <h2>Live Synthetic Hub</h2>
-            <p>Automatically detecting all 24/7 assets via Master Code modules.</p>
-        </div>
 
-        <div id="loader-area">
-            <div class="spinner"></div>
-            <p id="loading-text">Synchronizing platform data...</p>
-        </div>
+    <h1>Deriv Market Monitor</h1>
+    <table class="dashboard-table">
+        <thead>
+            <tr>
+                <th>Market Name</th>
+                <th>Symbol Code</th>
+                <th>Market Type</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody id="market-list">
+            </tbody>
+    </table>
 
-        <div id="indices-grid" class="asset-grid"></div>
+    <script>
+        // JavaScript: This connects to the "Sauce" (Deriv Server)
+        const app_id = 1089;
+        const ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=' + app_id);
 
-        <div id="debug-log" class="hidden">
-            <h3>⚠️ System Alert</h3>
-            <p id="error-msg">Checking permissions...</p>
-            <p><small>Ensure Redirect URL and 'Read' scope are set at api.deriv.com</small></p>
-            <button class="btn-refresh" onclick="location.reload()">Force Sync</button>
-        </div>
-    </main>
+        ws.onopen = function(evt) {
+            // This is the specific command from the #active_symbols page
+            ws.send(JSON.stringify({
+                "active_symbols": "brief",
+                "product_type": "basic"
+            }));
+        };
 
-    <script src="app.js?v=304"></script>
+        ws.onmessage = function(msg) {
+            const data = JSON.parse(msg.data);
+            
+            if (data.active_symbols) {
+                const tableBody = document.getElementById('market-list');
+                tableBody.innerHTML = ''; // Clear the "loading" text
+
+                // This "Arranges" the data in a proper way as you requested
+                data.active_symbols.forEach(item => {
+                    const row = `<tr>
+                        <td>${item.display_name}</td>
+                        <td>${item.symbol}</td>
+                        <td>${item.market_display_name}</td>
+                        <td class="status-open">${item.exchange_is_open ? 'OPEN' : 'CLOSED'}</td>
+                    </tr>`;
+                    tableBody.innerHTML += row;
+                });
+            }
+        };
+    </script>
 </body>
 </html>
