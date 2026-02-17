@@ -1,6 +1,6 @@
 /**
- * Zion Trading Lab - Final Direct Sync Feed
- * Authoritative Digit Statistics & Real-Time Tick Feed
+ * Zion Trading Lab - Authoritative Direct Feed
+ * Direct Sync with Deriv "Reef" Servers & Live Directional Arrows
  */
 
 const ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
@@ -8,7 +8,8 @@ let activeSub = null;
 let allSymbols = [];
 let currentSymbol = '';
 let currentMode = 'rise_fall';
-let digitHistory = []; // Buffer for the last 100 digits from the Reef
+let lastPrice = 0; // Track previous price for directional arrows
+let reefDigitWindow = []; // Stores authoritative 100-digit history
 
 ws.onopen = () => {
     console.log("Zion Lab: Connected to Direct Reef Feed");
@@ -18,42 +19,59 @@ ws.onopen = () => {
 ws.onmessage = (msg) => {
     const data = JSON.parse(msg.data);
 
-    // Initial Market Data Loading
+    // Initial Symbol Loading
     if (data.active_symbols) { 
         allSymbols = data.active_symbols; 
         loadCategory('volatility'); 
     }
 
-    // AUTHENTIC DATA PULL: Initial 100-Tick History for Real Percentages
+    // AUTHENTIC PERCENTAGE PULL: Initial 100-Tick History for Real Percentages
     if (data.history) {
-        digitHistory = []; // Clear old local data
+        reefDigitWindow = []; 
         data.history.prices.forEach(price => {
             const digit = parseInt(price.toFixed(data.pip_size).slice(-1));
-            digitHistory.push(digit);
+            reefDigitWindow.push(digit);
         });
-        renderAuthoritativeStats();
+        renderReefStatistics();
     }
 
-    // LIVE STREAM: Real-time Price & Digit Synchronization
+    // LIVE AUTHORITATIVE STREAM: Update Price, Directional Arrows & Digit Probabilities
     if (data.tick) {
         activeSub = data.tick.id;
-        const priceStr = data.tick.quote.toFixed(data.tick.pip_size);
+        const currentPrice = data.tick.quote;
+        const priceStr = currentPrice.toFixed(data.tick.pip_size);
         const lastDigit = parseInt(priceStr.slice(-1));
         const head = priceStr.slice(0, -1);
         
-        // Update Live Price Number (Always visible)
+        // Determine Direction for Amazing Arrows
+        let directionArrow = "";
+        let arrowColor = "#ffffff";
+        if (lastPrice > 0) {
+            if (currentPrice > lastPrice) {
+                directionArrow = " ▲"; // Upwards movement
+                arrowColor = "#4caf50"; // Green
+            } else if (currentPrice < lastPrice) {
+                directionArrow = " ▼"; // Downwards movement
+                arrowColor = "#ff444f"; // Red
+            }
+        }
+        lastPrice = currentPrice;
+
+        // Update Running Price Header with Live Arrow
         const priceDisplay = document.getElementById('live-price');
         if (priceDisplay) {
-            priceDisplay.innerHTML = `${head}<span>${lastDigit}</span>`;
+            priceDisplay.innerHTML = `
+                ${head}<span class="active-digit-underline">${lastDigit}</span>
+                <span style="color:${arrowColor}; font-size: 22px; margin-left: 10px; font-weight: bold;">${directionArrow}</span>
+            `;
         }
 
-        // Maintain the Authoritative 100-occurrence window
-        digitHistory.push(lastDigit);
-        if (digitHistory.length > 100) digitHistory.shift();
+        // Maintain the real 100-tick window exactly like the Reef platform
+        reefDigitWindow.push(lastDigit);
+        if (reefDigitWindow.length > 100) reefDigitWindow.shift();
         
-        // Only update the probability grid for Digit Markets
         if (currentMode !== 'rise_fall') {
-            renderAuthoritativeStats(lastDigit);
+            renderReefStatistics(lastDigit);
         }
     }
 };
@@ -74,8 +92,6 @@ function loadCategory(cat, el) {
         if (cat === 'jump') return disp.includes('jump');
         if (cat === 'range') return disp.includes('range') || disp.includes('step');
         if (cat === 'forex') return s.market === 'forex';
-        if (cat === 'crypto') return s.market === 'cryptocurrency';
-        if (cat === 'baskets') return s.market === 'indices' && disp.includes('basket');
         return false;
     });
 
@@ -88,14 +104,14 @@ function loadCategory(cat, el) {
 
 function openAnalysis(name, symbol) {
     currentSymbol = symbol;
-    digitHistory = []; 
+    reefDigitWindow = []; 
+    lastPrice = 0; // Reset price comparison
     document.getElementById('mTitle').innerText = name;
     document.getElementById('modal').style.display = 'block';
     
-    // Set default view to Rise/Fall (Candles)
     switchContract('rise_fall', document.querySelector('.tab'));
 
-    // REEF COMMAND: Fetch the real 100-tick history state immediately
+    // DIRECT REEF COMMAND: Request authoritative 100-tick history state
     ws.send(JSON.stringify({
         "ticks_history": symbol,
         "adjust_start_time": 1,
@@ -126,7 +142,7 @@ function switchContract(mode, el) {
         buildDigitGrid();
     }
     
-    // Load TradingView chart synchronized with authoritative feed
+    // TradingView Candle Chart synchronized with price
     chartView.innerHTML = `<iframe src="https://tradingview.binary.com/v2/main.php?symbol=${currentSymbol}&theme=light" width="100%" height="100%" frameborder="0"></iframe>`;
 }
 
@@ -137,33 +153,56 @@ function buildDigitGrid() {
         grid.innerHTML += `
             <div id="d-${i}" class="d-box">
                 <div class="d-num">${i}</div>
-                <div id="bar-${i}" class="d-bar" style="height:0%;"></div>
-                <div id="p-${i}" class="d-pct" style="position:absolute; bottom:-15px; font-size:10px; color:#333; font-weight:bold;">0%</div>
+                <div id="bar-${i}" class="d-bar"></div>
+                <div id="p-${i}" class="d-pct">0%</div>
             </div>`;
     }
 }
 
-function renderAuthoritativeStats(activeDigit) {
+function renderReefStatistics(activeDigit) {
     const counts = Array(10).fill(0);
-    digitHistory.forEach(d => counts[d]++);
+    reefDigitWindow.forEach(d => counts[d]++);
+
+    // Find Max and Min to match Red/Green coloring in screenshots
+    const maxVal = Math.max(...counts);
+    const minVal = Math.min(...counts);
 
     for (let i = 0; i <= 9; i++) {
-        // Calculate the REAL probability based on the server-provided 100-tick window
-        const realPercentage = digitHistory.length > 0 ? ((counts[i] / digitHistory.length) * 100).toFixed(1) : 0;
+        const realPercentage = reefDigitWindow.length > 0 ? ((counts[i] / reefDigitWindow.length) * 100).toFixed(1) : 0;
         const bar = document.getElementById(`bar-${i}`);
         const label = document.getElementById(`p-${i}`);
         const box = document.getElementById(`d-${i}`);
         
-        if (label) label.innerText = realPercentage + "%";
+        if (label) {
+            label.innerText = realPercentage + "%";
+            
+            // Percentage Coloring Logic from Deriv platform
+            if (counts[i] === maxVal && maxVal !== minVal) {
+                label.style.color = "#4caf50"; // Green for highest occurrence
+            } else if (counts[i] === minVal && maxVal !== minVal) {
+                label.style.color = "#ff444f"; // Red for lowest occurrence
+            } else {
+                label.style.color = "#00f2fe"; // Standard Neon
+            }
+        }
+        
         if (bar) bar.style.height = realPercentage + "%";
 
-        // Real-time Visual Highlight to match the official Reef platform
+        // Black Box Active Glow State
         if (i === activeDigit) {
-            if (box) box.style.borderColor = "#ff444f";
-            if (bar) bar.style.background = "#ff444f";
+            if (box) {
+                box.style.background = "#000000";
+                box.style.borderColor = "#ffffff";
+                box.style.boxShadow = "0 0 10px rgba(255,255,255,0.5)";
+                box.style.transform = "scale(1.05)";
+            }
         } else {
-            if (box) box.style.borderColor = "#ddd";
-            if (bar) bar.style.background = "#323738";
+            if (box) {
+                box.style.background = "#161625";
+                box.style.borderColor = "#2e2e48";
+                box.style.boxShadow = "none";
+                box.style.transform = "scale(1)";
+            }
         }
     }
 }
