@@ -1,50 +1,32 @@
-// Universal Master Engine - Automated Handshake
 const socket = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
 let allAssets = [];
 
-// 1. AUTOMATIC KICKSTART
 socket.onopen = () => {
-    console.log("Master Handshake Established.");
-    requestData();
+    socket.send(JSON.stringify({ "active_symbols": "brief", "product_type": "basic" }));
 };
 
-function requestData() {
-    // THE SINGLE MASTER COMMAND
-    socket.send(JSON.stringify({ "active_symbols": "brief", "product_type": "basic" }));
-}
-
-// 2. DATA PROCESSING
 socket.onmessage = (msg) => {
     const data = JSON.parse(msg.data);
-
     if (data.active_symbols) {
         allAssets = data.active_symbols;
-        renderCategories(); // This clears the "Establishing" message automatically
+        renderCategories();
     }
-
     if (data.tick) {
         updateLivePrice(data.tick);
     }
 };
 
-// 3. AUTOMATIC UI RENDERING
 function renderCategories() {
     const grid = document.getElementById('display-grid');
-    if (!grid) return;
-    
-    grid.innerHTML = ''; // Removes "Establishing Master Handshake"
-    
-    // Intelligent Grouping
-    const groups = [...new Set(allAssets.map(a => a.market_display_name))];
+    const backBtn = document.getElementById('back-btn');
+    grid.innerHTML = '';
+    backBtn.style.display = 'none';
 
+    const groups = [...new Set(allAssets.map(a => a.market_display_name))];
     groups.forEach(groupName => {
         const card = document.createElement('div');
         card.className = 'card';
-        card.innerHTML = `
-            <h4>DATABASE GROUP</h4>
-            <h2>${groupName.toUpperCase()}</h2>
-            <p style="font-size:11px; color:#555; margin-top:10px;">Click to Extract</p>
-        `;
+        card.innerHTML = `<h4>GROUP</h4><h2>${groupName.toUpperCase()}</h2>`;
         card.onclick = () => renderGroupAssets(groupName);
         grid.appendChild(card);
     });
@@ -53,14 +35,10 @@ function renderCategories() {
 function renderGroupAssets(groupName) {
     const grid = document.getElementById('display-grid');
     const backBtn = document.getElementById('back-btn');
-    const title = document.getElementById('hub-title');
-
     grid.innerHTML = '';
-    if (backBtn) backBtn.style.display = 'block';
-    if (title) title.innerText = groupName.toUpperCase();
+    backBtn.style.display = 'block';
 
     const filtered = allAssets.filter(a => a.market_display_name === groupName);
-
     filtered.forEach(asset => {
         const safeId = asset.symbol.replace(/\./g, '_');
         const card = document.createElement('div');
@@ -69,7 +47,8 @@ function renderGroupAssets(groupName) {
             <h4>${asset.submarket_display_name}</h4>
             <h3>${asset.display_name}</h3>
             <div class="price" id="price-${safeId}">---</div>
-            <div class="volatility-intel" id="vol-${safeId}">VOLATILITY: SCANNING...</div>
+            <div class="volatility-intel" id="vol-${safeId}">VOLATILITY: ANALYZING</div>
+            <button class="chart-btn" onclick="openLiveChart('${asset.symbol}')">ANALYZE CHART</button>
         `;
         grid.appendChild(card);
         socket.send(JSON.stringify({ "ticks": asset.symbol, "subscribe": 1 }));
@@ -80,22 +59,14 @@ function updateLivePrice(tick) {
     const id = tick.symbol.replace(/\./g, '_');
     const priceEl = document.getElementById(`price-${id}`);
     const volEl = document.getElementById(`vol-${id}`);
-
     if (priceEl) {
         priceEl.innerText = tick.quote;
-        volEl.innerText = `VOLATILITY: ${tick.id} (LIVE)`;
+        volEl.innerText = `VOLATILITY: ${tick.id.slice(0, 8)} (LIVE)`;
     }
 }
 
-// 4. AUTO-RECOVERY (If it stays stuck)
-setTimeout(() => {
-    if (allAssets.length === 0) {
-        console.log("Retrying Handshake...");
-        requestData();
-    }
-}, 3000);
 function openLiveChart(symbol) {
-    // This builds the dynamic link based on the asset you clicked
-    const chartUrl = `https://app.deriv.com/markets/${symbol}`;
-    window.open(chartUrl, '_blank');
+    // This URL opens the Professional Trader with Candlesticks and Indicator support
+    const traderUrl = `https://app.deriv.com/trader?chart_type=candle&interval=1m&symbol=${symbol}`;
+    window.open(traderUrl, '_blank');
 }
