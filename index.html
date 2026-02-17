@@ -3,72 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZION TRADING LAB | Universal Hub</title>
+    <title>Deriv Market Hub</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="app">
-        <header>
-            <div class="logo-area">
-                <h1>ZION TRADING LAB</h1>
-                <div id="connection-status" class="status-offline">Establishing Handshake...</div>
-            </div>
-            <nav id="filters">
-                <button onclick="filterType('all', event)" class="active">All Markets</button>
-                <button onclick="filterType('synthetic_index', event)">Synthetics</button>
-                <button onclick="filterType('forex', event)">Forex</button>
-                <button onclick="filterType('indices', event)">Stock Indices</button>
-            </nav>
-        </header>
+    <header>
+        <h1>DERIV MARKET HUB</h1>
+        <p id="status">HANDSHAKE ACTIVE - PULLING DATA</p>
+        
+        <nav class="filter-nav">
+            <button class="filter-btn active" onclick="filterAssets('all')">All Markets</button>
+            <button class="filter-btn" onclick="filterAssets('synthetic_index')">Synthetics</button>
+            <button class="filter-btn" onclick="filterAssets('forex')">Forex</button>
+            <button class="filter-btn" onclick="filterAssets('indices')">Stock Indices</button>
+            <button class="filter-btn" onclick="filterAssets('cryptocurrency')">Cryptocurrencies</button>
+        </nav>
+    </header>
 
-        <main id="market-grid">
-            <div class="loading-state">Scanning Deriv Backend...</div>
+    <main id="market-grid" class="grid-container">
         </main>
-    </div>
 
-    <script>
-        // UNIVERSAL UI INJECTOR
-        window.renderMarkets = function(list) {
-            const grid = document.getElementById('market-grid');
-            if (!grid) return;
-            grid.innerHTML = ''; 
-
-            list.forEach(m => {
-                const card = document.createElement('div');
-                card.className = 'market-card';
-                card.setAttribute('data-symbol', m.symbol); 
-                
-                card.innerHTML = `
-                    <div class="card-header">
-                        <span class="category">${m.market_display_name}</span>
-                        <span class="live-price">0.0000</span>
-                    </div>
-                    <h3>${m.display_name}</h3>
-                    
-                    <!-- Intelligent Data Slot -->
-                    <div class="dynamic-analysis" style="margin-top:10px; min-height:40px;">
-                        <div class="analyzing-text" style="font-size:10px; color:#444;">Analyzing Market Type...</div>
-                    </div>
-
-                    <!-- Hidden Contract Discovery -->
-                    <div class="discovery-footer" style="margin-top:12px; padding-top:10px; border-top:1px solid #1a1a1a;">
-                        <div class="market-types" style="display:flex; flex-wrap:wrap; gap:4px;"></div>
-                    </div>
-                `;
-                grid.appendChild(card);
-            });
-        };
-
-        function filterType(type, event) {
-            const btns = document.querySelectorAll('#filters button');
-            btns.forEach(b => b.classList.remove('active'));
-            event.target.classList.add('active');
-            if(window.allSymbols) {
-                const filtered = type === 'all' ? window.allSymbols : window.allSymbols.filter(s => s.market === type);
-                window.renderMarkets(filtered);
-            }
-        }
-    </script>
-    <script src="app.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
