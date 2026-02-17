@@ -2,39 +2,66 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Zion Trading Lab | Market Monitor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zion Trading Lab | Professional Dashboard</title>
     <style>
-        body { font-family: sans-serif; background-color: #f0f2f5; padding: 20px; }
-        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th { background-color: #ff444f; color: white; padding: 12px; text-align: left; }
-        td { padding: 10px; border-bottom: 1px solid #ddd; }
-        .category-tag { padding: 4px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold; color: white; }
-        /* Professional Colors for your classifications */
-        .cat-derived { background: #ff444f; }
-        .cat-4x { background: #2e7d32; }
-        .cat-crypto { background: #f57c00; }
-        .cat-stocks { background: #1976d2; }
+        :root {
+            --primary: #ff444f;
+            --dark: #151717;
+            --light: #f4f7f6;
+            --success: #008832;
+        }
+        body { font-family: 'Inter', sans-serif; background: var(--light); margin: 0; padding: 20px; color: var(--dark); }
+        .container { max-width: 1000px; margin: auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        
+        /* Tabs Styling */
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+        .tab-btn { padding: 10px 20px; border: none; background: none; cursor: pointer; font-weight: bold; font-size: 1rem; color: #666; }
+        .tab-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
+
+        /* Table Styling */
+        .market-card { background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #fafafa; padding: 15px; text-align: left; font-size: 0.85rem; text-transform: uppercase; color: #888; border-bottom: 1px solid #eee; }
+        td { padding: 15px; border-bottom: 1px solid #f9f9f9; font-size: 0.95rem; }
+        
+        .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
+        .open { background: #e6f4ea; color: var(--success); }
+        .closed { background: #fce8e6; color: var(--primary); }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h1>Zion Trading Lab: All Markets</h1>
+<div class="container">
+    <div class="header">
+        <h1>Zion Trading Lab</h1>
+        <div id="connection-status" style="color: orange;">● Connecting to Deriv...</div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="filterMarket('synthetic_index', this)">Derived</button>
+        <button class="tab-btn" onclick="filterMarket('forex', this)">Forex (4X)</button>
+        <button class="tab-btn" onclick="filterMarket('cryptocurrency', this)">Crypto</button>
+        <button class="tab-btn" onclick="filterMarket('indices', this)">Stocks</button>
+    </div>
+
+    <div class="market-card">
         <table>
             <thead>
                 <tr>
-                    <th>Classification</th>
                     <th>Market Name</th>
                     <th>Symbol</th>
                     <th>Status</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody id="market-list">
                 </tbody>
         </table>
     </div>
+</div>
 
-    <script src="script.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
