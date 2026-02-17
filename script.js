@@ -1,49 +1,40 @@
-// script.js - The Brain of Zion Trading Lab
-const app_id = 1089; // Default Test ID
-const ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=' + app_id);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Zion Trading Lab | Market Monitor</title>
+    <style>
+        body { font-family: sans-serif; background-color: #f0f2f5; padding: 20px; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { background-color: #ff444f; color: white; padding: 12px; text-align: left; }
+        td { padding: 10px; border-bottom: 1px solid #ddd; }
+        .category-tag { padding: 4px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold; color: white; }
+        /* Professional Colors for your classifications */
+        .cat-derived { background: #ff444f; }
+        .cat-4x { background: #2e7d32; }
+        .cat-crypto { background: #f57c00; }
+        .cat-stocks { background: #1976d2; }
+    </style>
+</head>
+<body>
 
-ws.onopen = function(evt) {
-    console.log("Connection Established with Deriv Server");
-    // Request all symbols with the 'brief' command
-    ws.send(JSON.stringify({
-        "active_symbols": "brief",
-        "product_type": "basic"
-    }));
-};
-
-ws.onmessage = function(msg) {
-    const data = JSON.parse(msg.data);
-    
-    if (data.active_symbols) {
-        // Clear your current display before updating
-        document.getElementById('market-list').innerHTML = '';
-
-        data.active_symbols.forEach(symbol => {
-            let category = "Other";
-
-            // LOGIC: Classification based on Deriv Market types
-            if (symbol.market === 'synthetic_index') {
-                category = "Derived Indices";
-            } else if (symbol.market === 'forex') {
-                category = "4X (Forex)";
-            } else if (symbol.market === 'cryptocurrency') {
-                category = "Cryptocurrency";
-            } else if (symbol.market === 'indices' || symbol.market === 'stocks') {
-                category = "Stock Indices";
-            }
-
-            // Create a professional row for your website
-            const row = `
+    <div class="card">
+        <h1>Zion Trading Lab: All Markets</h1>
+        <table>
+            <thead>
                 <tr>
-                    <td><strong>${category}</strong></td>
-                    <td>${symbol.display_name}</td>
-                    <td>${symbol.symbol}</td>
-                    <td style="color: ${symbol.exchange_is_open ? 'green' : 'red'}">
-                        ${symbol.exchange_is_open ? '● Open' : '○ Closed'}
-                    </td>
-                </tr>`;
-            
-            document.getElementById('market-list').innerHTML += row;
-        });
-    }
-};
+                    <th>Classification</th>
+                    <th>Market Name</th>
+                    <th>Symbol</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="market-list">
+                </tbody>
+        </table>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
