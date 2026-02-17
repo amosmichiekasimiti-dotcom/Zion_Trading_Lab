@@ -8,12 +8,12 @@
         :root { --red: #ff444f; --dark: #0e0e15; --card-bg: #161625; --border: #2e2e48; --neon: #00f2fe; --green: #4caf50; }
         body { font-family: sans-serif; background: var(--dark); margin: 0; padding: 10px; color: white; overflow-x: hidden; display: flex; flex-direction: column; height: 100vh; }
         
-        /* Navigation Grid: Ensures all 5 categories wrap and are visible on mobile */
+        /* Navigation: Fixes the 'missing categories' issue on mobile */
         .nav-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 15px; justify-content: center; }
-        .nav-card { background: var(--card-bg); padding: 10px; border-radius: 8px; text-align: center; cursor: pointer; border: 1px solid var(--border); font-size: 10px; font-weight: 800; color: #8e8e9e; flex: 1 1 calc(30% - 10px); min-width: 90px; box-sizing: border-box; transition: 0.3s; }
+        .nav-card { background: var(--card-bg); padding: 10px; border-radius: 8px; text-align: center; cursor: pointer; border: 1px solid var(--border); font-size: 10px; font-weight: 800; color: #8e8e9e; flex: 1 1 calc(30% - 10px); min-width: 90px; box-sizing: border-box; }
         .nav-card.active { background: var(--red); color: white; border-color: var(--red); }
         
-        /* Main Asset Table */
+        /* Asset Table */
         .card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); flex-grow: 1; overflow-y: auto; }
         table { width: 100%; border-collapse: collapse; }
         td, th { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); font-size: 12px; }
@@ -31,14 +31,14 @@
         .tab { padding: 8px 12px; border-radius: 20px; border: 1px solid var(--border); background: #1c1c2d; font-size: 10px; font-weight: bold; cursor: pointer; color: #8e8e9e; flex: 1 1 auto; text-align: center; }
         .tab.active { background: var(--red); color: white; }
 
-        /* Digit Statistics Grid */
+        /* Digit Stats UI */
         .digit-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; background: #000; padding: 8px; border-radius: 8px; margin-bottom: 25px; }
         .d-box { background: #1a1a1a; height: 50px; display: flex; flex-direction: column-reverse; align-items: center; position: relative; border: 1px solid #333; }
         .d-bar { width: 100%; background: var(--neon); transition: height 0.3s; opacity: 0.7; }
         .d-num { position: absolute; top: 2px; font-size: 10px; font-weight: bold; color: white; }
         .d-pct { position: absolute; bottom: -20px; font-size: 9px; font-weight: bold; color: var(--neon); }
         
-        /* TradingView Chart: Occupies full remaining space */
+        /* TradingView Chart Fix: Now takes full space below the header */
         #chart-container { flex-grow: 1; width: 100%; min-height: 450px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); margin-top: 10px; }
     </style>
 </head>
@@ -102,7 +102,7 @@
                     activeSub = data.tick.id;
                     const priceStr = data.tick.quote.toFixed(data.tick.pip_size);
                     const digit = parseInt(priceStr.slice(-1));
-                    physicsBuffer.push(data.tick.quote); if(physicsBuffer.length > 14) physicsBuffer.shift();
+                    physicsBuffer.push(data.tick.quote); if(physicsBuffer.length > 15) physicsBuffer.shift();
                     reefDigitWindow.push(digit); if(reefDigitWindow.length > 100) reefDigitWindow.shift();
                     updateUI(priceStr, data.tick.quote, digit);
                 }
@@ -165,8 +165,8 @@
                 color = even > 55 ? "#4caf50" : (even < 45 ? "#ff444f" : "#8e8e9e");
             } else if (currentMode === 'over_under') {
                 let over = counts[6]+counts[7]+counts[8]+counts[9];
-                signal = over > 45 ? "OVER BIAS ↑" : "UNDER BIAS ↓";
-                color = over > 45 ? "#4caf50" : "#ff444f";
+                signal = over > 43 ? "OVER BIAS ↑" : "UNDER BIAS ↓";
+                color = over > 43 ? "#4caf50" : "#ff444f";
             } else if (currentMode === 'matches_differs') {
                 signal = `DIFFERS ${counts.indexOf(Math.min(...counts))} ●`; color = "#4caf50";
             } else {
