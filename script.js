@@ -19,7 +19,7 @@ ws.onmessage = (msg) => {
 
 function loadCategory(cat, el) {
     const list = document.getElementById('market-list');
-    list.innerHTML = '<tr><td colspan="3" style="text-align:center;">Syncing Markets...</td></tr>';
+    list.innerHTML = '<tr><td colspan="3" style="text-align:center;">Analyzing API Data...</td></tr>';
     
     document.querySelectorAll('.nav-card').forEach(c => c.classList.remove('active'));
     if(el) el.classList.add('active');
@@ -28,22 +28,23 @@ function loadCategory(cat, el) {
         const sym = s.symbol.toLowerCase();
         const mkt = s.market.toLowerCase();
         const sub = s.submarket ? s.submarket.toLowerCase() : "";
+        const display = s.display_name.toLowerCase();
 
-        // BROAD VOLATILITY: Catching 'v', 'volatility', and '1s' variants
+        // VOLATILITY: Search by market name, submarket, and common prefixes
         if (cat === 'volatility') {
-            return (mkt.includes('synthetic') || mkt.includes('indices')) && 
-                   (sym.includes('v') || sym.includes('volatility') || sym.includes('1s'));
+            return mkt.includes('synthetic') && 
+                   (display.includes('volatility') || sym.includes('v') || sym.includes('1s'));
         }
 
-        // BASKETS: Checking market and submarket names
+        // BASKETS: Search for 'basket' in market, submarket, or display name
         if (cat === 'basket') {
-            return mkt.includes('basket') || sub.includes('basket') || sym.includes('basket');
+            return mkt.includes('basket') || sub.includes('basket') || display.includes('basket');
         }
 
-        // OTHER CATEGORIES
-        if (cat === 'crashboom') return sym.includes('crash') || sym.includes('boom');
-        if (cat === 'jump') return sym.startsWith('jd') || sub.includes('jump');
-        if (cat === 'range') return sym.includes('range') || sym.includes('step') || sym.includes('stp');
+        // OTHER MARKETS
+        if (cat === 'crashboom') return display.includes('crash') || display.includes('boom');
+        if (cat === 'jump') return sym.startsWith('jd') || display.includes('jump');
+        if (cat === 'range') return sym.includes('range') || sym.includes('stp') || display.includes('step');
         if (cat === 'forex') return mkt === 'forex';
         if (cat === 'crypto') return mkt === 'cryptocurrency';
         
@@ -52,7 +53,7 @@ function loadCategory(cat, el) {
 
     list.innerHTML = '';
     if (filtered.length === 0) {
-        list.innerHTML = '<tr><td colspan="3" style="text-align:center;">No markets found.</td></tr>';
+        list.innerHTML = '<tr><td colspan="3" style="text-align:center;">No markets found for this category.</td></tr>';
         return;
     }
 
