@@ -3,36 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zion Trading Lab | Automated Hub</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Zion Trading Lab | Pro</title>
+    <link rel="stylesheet" href="style.css?v=301">
     <script src="https://unpkg.com/@deriv/deriv-api/dist/DerivAPIBasic.js"></script>
 </head>
 <body>
     <header>
-        <div class="header-content">
+        <div class="container">
             <h1>Zion Trading Lab</h1>
-            <div id="connection-status" class="status-badge">Establishing Connection...</div>
+            <div id="connection-status" class="status-badge">System Offline</div>
         </div>
     </header>
     
-    <main>
-        <div id="notification-bar" class="hidden">
-            <span id="update-msg"></span>
+    <main class="container">
+        <div id="loader-area">
+            <div class="spinner"></div>
+            <p id="loading-text">Synchronizing with platform assets...</p>
         </div>
 
-        <div class="dashboard-controls">
-            <h2>Live Synthetic Indices</h2>
-            <p>Automatically detecting all platform updates...</p>
-        </div>
+        <div id="indices-grid" class="asset-grid"></div>
 
-        <div id="indices-grid" class="asset-grid">
-            <div class="loader-box">
-                <div class="spinner"></div>
-                <p>Synchronizing with platform assets...</p>
-            </div>
+        <div id="debug-log" class="hidden">
+            <h3>⚠️ System Notification</h3>
+            <p id="error-msg"></p>
+            <p><small>Check your App ID settings at api.deriv.com</small></p>
         </div>
     </main>
 
-    <script src="app.js?v=1.02"></script>
+    <script src="app.js?v=301"></script>
 </body>
 </html>
