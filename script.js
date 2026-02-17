@@ -19,7 +19,7 @@ ws.onmessage = (msg) => {
 
 function loadCategory(cat, el) {
     const list = document.getElementById('market-list');
-    list.innerHTML = '<tr><td colspan="3" style="text-align:center;">Searching Markets...</td></tr>';
+    list.innerHTML = '<tr><td colspan="3" style="text-align:center;">Syncing Markets...</td></tr>';
     
     document.querySelectorAll('.nav-card').forEach(c => c.classList.remove('active'));
     if(el) el.classList.add('active');
@@ -27,36 +27,32 @@ function loadCategory(cat, el) {
     const filtered = allSymbols.filter(s => {
         const sym = s.symbol.toLowerCase();
         const mkt = s.market.toLowerCase();
-        const subMkt = s.submarket ? s.submarket.toLowerCase() : "";
+        const sub = s.submarket ? s.submarket.toLowerCase() : "";
 
-        // BROAD VOLATILITY FILTER: Catching all variants (Indices, 1s, etc)
+        // BROAD VOLATILITY: Catching 'v', 'volatility', and '1s' variants
         if (cat === 'volatility') {
-            return (mkt === 'synthetic_index' || mkt === 'indices') && 
-                   (sym.includes('volatility') || sym.includes('v') || sym.includes('1s'));
+            return (mkt.includes('synthetic') || mkt.includes('indices')) && 
+                   (sym.includes('v') || sym.includes('volatility') || sym.includes('1s'));
         }
 
-        // CRASH & BOOM FILTER
-        if (cat === 'crashboom') return sym.includes('crash') || sym.includes('boom');
-
-        // JUMP FILTER
-        if (cat === 'jump') return sym.startsWith('jd') || subMkt.includes('jump');
-
-        // RANGE & STEP FILTER
-        if (cat === 'range') return sym.includes('range') || sym.includes('stp') || sym.includes('step');
-
-        // BASKET FILTER: Checking both market and symbol name for redundancy
+        // BASKETS: Checking market and submarket names
         if (cat === 'basket') {
-            return mkt === 'basket_index' || sym.includes('basket') || subMkt.includes('basket');
+            return mkt.includes('basket') || sub.includes('basket') || sym.includes('basket');
         }
 
+        // OTHER CATEGORIES
+        if (cat === 'crashboom') return sym.includes('crash') || sym.includes('boom');
+        if (cat === 'jump') return sym.startsWith('jd') || sub.includes('jump');
+        if (cat === 'range') return sym.includes('range') || sym.includes('step') || sym.includes('stp');
         if (cat === 'forex') return mkt === 'forex';
         if (cat === 'crypto') return mkt === 'cryptocurrency';
+        
         return false;
     });
 
     list.innerHTML = '';
     if (filtered.length === 0) {
-        list.innerHTML = '<tr><td colspan="3" style="text-align:center;">No markets found for this category.</td></tr>';
+        list.innerHTML = '<tr><td colspan="3" style="text-align:center;">No markets found.</td></tr>';
         return;
     }
 
