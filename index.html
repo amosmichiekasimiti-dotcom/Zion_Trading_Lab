@@ -1,66 +1,40 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Professional Deriv Dashboard</title>
+    <meta charset="UTF-8">
+    <title>Zion Trading Lab | Market Monitor</title>
     <style>
-        /* CSS: This makes your site look professional and arranged */
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; margin: 20px; }
-        .dashboard-table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 15px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; }
-        .dashboard-table th { background: #ff444f; color: white; padding: 15px; text-align: left; }
-        .dashboard-table td { padding: 12px 15px; border-bottom: 1px solid #ddd; }
-        .status-open { color: green; font-weight: bold; }
-        h1 { color: #333; }
+        body { font-family: sans-serif; background-color: #f0f2f5; padding: 20px; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { background-color: #ff444f; color: white; padding: 12px; text-align: left; }
+        td { padding: 10px; border-bottom: 1px solid #ddd; }
+        .category-tag { padding: 4px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold; color: white; }
+        /* Professional Colors for your classifications */
+        .cat-derived { background: #ff444f; }
+        .cat-4x { background: #2e7d32; }
+        .cat-crypto { background: #f57c00; }
+        .cat-stocks { background: #1976d2; }
     </style>
 </head>
 <body>
 
-    <h1>Deriv Market Monitor</h1>
-    <table class="dashboard-table">
-        <thead>
-            <tr>
-                <th>Market Name</th>
-                <th>Symbol Code</th>
-                <th>Market Type</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody id="market-list">
-            </tbody>
-    </table>
+    <div class="card">
+        <h1>Zion Trading Lab: All Markets</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>Classification</th>
+                    <th>Market Name</th>
+                    <th>Symbol</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="market-list">
+                </tbody>
+        </table>
+    </div>
 
-    <script>
-        // JavaScript: This connects to the "Sauce" (Deriv Server)
-        const app_id = 1089;
-        const ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=' + app_id);
-
-        ws.onopen = function(evt) {
-            // This is the specific command from the #active_symbols page
-            ws.send(JSON.stringify({
-                "active_symbols": "brief",
-                "product_type": "basic"
-            }));
-        };
-
-        ws.onmessage = function(msg) {
-            const data = JSON.parse(msg.data);
-            
-            if (data.active_symbols) {
-                const tableBody = document.getElementById('market-list');
-                tableBody.innerHTML = ''; // Clear the "loading" text
-
-                // This "Arranges" the data in a proper way as you requested
-                data.active_symbols.forEach(item => {
-                    const row = `<tr>
-                        <td>${item.display_name}</td>
-                        <td>${item.symbol}</td>
-                        <td>${item.market_display_name}</td>
-                        <td class="status-open">${item.exchange_is_open ? 'OPEN' : 'CLOSED'}</td>
-                    </tr>`;
-                    tableBody.innerHTML += row;
-                });
-            }
-        };
-       <script src="script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
- 
