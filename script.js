@@ -19,11 +19,6 @@ ws.onmessage = (msg) => {
     if (res.tick) updateDigitAnalysis(res.tick);
 };
 
-ws.onclose = () => {
-    document.getElementById('status').innerText = '● Reconnecting...';
-    setTimeout(() => { ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089'); }, 5000);
-};
-
 function loadCategory(cat, el) {
     const list = document.getElementById('market-list');
     list.innerHTML = '';
@@ -33,11 +28,16 @@ function loadCategory(cat, el) {
     const filtered = allSymbols.filter(s => {
         const mkt = s.market.toLowerCase();
         const sym = s.symbol.toLowerCase();
-        if (cat === 'volatility') return mkt.includes('synthetic') && (sym.includes('vol') || sym.includes('1s'));
+        
+        // FIXED: Range/Step and Volatility are both 'synthetic_index'
+        if (cat === 'volatility') return mkt === 'synthetic_index' && (sym.includes('vol') || sym.includes('1s'));
+        if (cat === 'range') return mkt === 'synthetic_index' && (sym.includes('range') || sym.includes('step'));
+        
+        // FIXED: Baskets can be 'forex_basket' or 'commodity_basket'
         if (cat === 'basket') return mkt.includes('basket');
+        
         if (cat === 'crashboom') return sym.includes('crash') || sym.includes('boom');
         if (cat === 'jump') return sym.startsWith('jd');
-        if (cat === 'range') return sym.includes('range') || sym.includes('step');
         if (cat === 'forex') return mkt === 'forex';
         if (cat === 'crypto') return mkt === 'cryptocurrency';
         return false;
@@ -46,7 +46,7 @@ function loadCategory(cat, el) {
     filtered.forEach(s => {
         const tr = document.createElement('tr');
         tr.innerHTML = `<td>${s.display_name}</td><td>${s.symbol.toUpperCase()}</td>
-            <td><button class="btn-view" onclick="openAnalysis('${s.display_name}', '${s.symbol}', '${cat}')">View</button></td>`;
+            <td><button class="btn-view" onclick="openAnalysis('${s.display_name}', '${s.symbol}', '${cat}')">Analyze</button></td>`;
         list.appendChild(tr);
     });
 }
@@ -59,9 +59,10 @@ function openAnalysis(name, symbol, cat) {
     const digitArea = document.getElementById('digit-area');
     const chartArea = document.getElementById('chart-area');
 
+    // Show digits only for Volatility
     if (cat === 'volatility') {
         digitArea.style.display = 'block';
-        chartArea.style.height = '350px'; // Shrink chart slightly for grid
+        chartArea.style.height = '350px';
         let gridHTML = '';
         for(let i=0; i<=9; i++) {
             gridHTML += `<div id="d-card-${i}" class="digit-box"><span class="d-val">${i}</span><span id="d-pct-${i}" class="d-pct">0%</span></div>`;
@@ -69,10 +70,17 @@ function openAnalysis(name, symbol, cat) {
         document.getElementById('digit-grid').innerHTML = gridHTML;
     } else {
         digitArea.style.display = 'none';
-        chartArea.style.height = '500px'; // Full size chart for non-digit markets
+        chartArea.style.height = '500px';
     }
 
-    chartArea.innerHTML = `<iframe src="https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=light" width="100%" height="100%" frameborder="0"></iframe>`;
+    // FIXED: Correct TradingView URL format for iFrame
+    chartArea.innerHTML = `<iframe 
+        src="https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=light" 
+        width="100%" 
+        height="100%" 
+        style="border:none;" 
+        allowfullscreen>
+    </iframe>`;
     
     if (activeSub) ws.send(JSON.stringify({ "forget": activeSub }));
     ws.send(JSON.stringify({ "ticks": symbol, "subscribe": 1 }));
@@ -83,10 +91,7 @@ function updateDigitAnalysis(tick) {
     const priceStr = tick.quote.toFixed(tick.pip_size);
     const lastDigit = parseInt(priceStr.slice(-1));
 
-    const priceEl = document.getElementById('mPrice');
-    if (priceEl) {
-        priceEl.innerHTML = `${priceStr.slice(0, -1)}<span style="color:var(--red); border-bottom:3px solid var(--red);">${lastDigit}</span>`;
-    }
+    document.getElementById('mPrice').innerHTML = `${priceStr.slice(0, -1)}<span style="color:var(--red); border-bottom:3px solid var(--red);">${lastDigit}</span>`;
     
     tickHistory.push(lastDigit);
     if (tickHistory.length > 100) tickHistory.shift();
@@ -100,14 +105,9 @@ function updateDigitAnalysis(tick) {
         const label = document.getElementById(`d-pct-${i}`);
         if (label) {
             label.innerText = `${pct}%`;
-            label.style.color = pct > 12 ? "var(--green)" : (pct < 8 ? "var(--red)" : "#999");
-            card.style.borderBottomColor = (i % 2 === 0) ? 'var(--green)' : 'var(--red)'; // Green for Even, Red for Odd
+            label.style.color = pct > 12 ? "#4caf50" : (pct < 8 ? "#ff444f" : "#999");
+            card.style.borderBottomColor = (i % 2 === 0) ? '#4caf50' : '#ff444f';
         }
         if (card) card.classList.toggle('active', i === lastDigit);
     });
-}
-
-function closeModal() {
-    document.getElementById('modal').style.display = 'none';
-    if (activeSub) ws.send(JSON.stringify({ "forget": activeSub }));
 }
