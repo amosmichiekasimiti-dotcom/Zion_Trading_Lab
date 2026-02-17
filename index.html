@@ -1,67 +1,88 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zion Trading Lab | Professional Dashboard</title>
+    <title>Zion Trading Lab | Organized Market Monitor</title>
     <style>
-        :root {
-            --primary: #ff444f;
-            --dark: #151717;
-            --light: #f4f7f6;
-            --success: #008832;
-        }
-        body { font-family: 'Inter', sans-serif; background: var(--light); margin: 0; padding: 20px; color: var(--dark); }
-        .container { max-width: 1000px; margin: auto; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        
-        /* Tabs Styling */
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
-        .tab-btn { padding: 10px 20px; border: none; background: none; cursor: pointer; font-weight: bold; font-size: 1rem; color: #666; }
-        .tab-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
-
-        /* Table Styling */
-        .market-card { background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; padding: 20px; }
+        .market-section { background: white; margin-bottom: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); overflow: hidden; }
+        .section-title { background: #ff444f; color: white; padding: 15px; margin: 0; font-size: 1.2rem; }
         table { width: 100%; border-collapse: collapse; }
-        th { background: #fafafa; padding: 15px; text-align: left; font-size: 0.85rem; text-transform: uppercase; color: #888; border-bottom: 1px solid #eee; }
-        td { padding: 15px; border-bottom: 1px solid #f9f9f9; font-size: 0.95rem; }
-        
-        .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
-        .open { background: #e6f4ea; color: var(--success); }
-        .closed { background: #fce8e6; color: var(--primary); }
+        th { background: #f8f9fa; color: #666; text-align: left; padding: 12px; font-size: 0.8rem; text-transform: uppercase; border-bottom: 2px solid #eee; }
+        td { padding: 12px; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+        .status-open { color: #00a01a; font-weight: bold; }
+        .status-closed { color: #ff444f; font-weight: bold; }
+        code { background: #f4f4f4; padding: 2px 5px; border-radius: 4px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <h1>Zion Trading Lab</h1>
-        <div id="connection-status" style="color: orange;">● Connecting to Deriv...</div>
-    </div>
+    <h1>Zion Trading Lab Dashboard</h1>
 
-    <div class="tabs">
-        <button class="tab-btn active" onclick="filterMarket('synthetic_index', this)">Derived</button>
-        <button class="tab-btn" onclick="filterMarket('forex', this)">Forex (4X)</button>
-        <button class="tab-btn" onclick="filterMarket('cryptocurrency', this)">Crypto</button>
-        <button class="tab-btn" onclick="filterMarket('indices', this)">Stocks</button>
-    </div>
-
-    <div class="market-card">
+    <div class="market-section">
+        <h2 class="section-title">Derived Indices (Synthetic)</h2>
         <table>
-            <thead>
-                <tr>
-                    <th>Market Name</th>
-                    <th>Symbol</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody id="market-list">
-                </tbody>
+            <thead><tr><th>Name</th><th>Symbol</th><th>Status</th></tr></thead>
+            <tbody id="list-synthetic"></tbody>
         </table>
     </div>
-</div>
 
-<script src="script.js"></script>
+    <div class="market-section">
+        <h2 class="section-title" style="background: #2e7d32;">Forex (4X Pairs)</h2>
+        <table>
+            <thead><tr><th>Name</th><th>Symbol</th><th>Status</th></tr></thead>
+            <tbody id="list-forex"></tbody>
+        </table>
+    </div>
+
+    <div class="market-section">
+        <h2 class="section-title" style="background: #f57c00;">Cryptocurrency</h2>
+        <table>
+            <thead><tr><th>Name</th><th>Symbol</th><th>Status</th></tr></thead>
+            <tbody id="list-crypto"></tbody>
+        </table>
+    </div>
+
+    <script>
+        const app_id = 1089;
+        const ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=' + app_id);
+
+        ws.onopen = function() {
+            // THE COMMAND THAT WORKED: Pulls everything
+            ws.send(JSON.stringify({
+                "active_symbols": "brief",
+                "product_type": "basic"
+            }));
+        };
+
+        ws.onmessage = function(msg) {
+            const data = JSON.parse(msg.data);
+            
+            if (data.active_symbols) {
+                // Clear all tables first
+                document.getElementById('list-synthetic').innerHTML = '';
+                document.getElementById('list-forex').innerHTML = '';
+                document.getElementById('list-crypto').innerHTML = '';
+
+                data.active_symbols.forEach(item => {
+                    // Create the table row
+                    const status = item.exchange_is_open ? '<span class="status-open">OPEN</span>' : '<span class="status-closed">CLOSED</span>';
+                    const row = `<tr>
+                        <td><strong>${item.display_name}</strong></td>
+                        <td><code>${item.symbol}</code></td>
+                        <td>${status}</td>
+                    </tr>`;
+
+                    // THE SORTER: Directing data to the right table
+                    if (item.market === 'synthetic_index') {
+                        document.getElementById('list-synthetic').innerHTML += row;
+                    } else if (item.market === 'forex') {
+                        document.getElementById('list-forex').innerHTML += row;
+                    } else if (item.market === 'cryptocurrency') {
+                        document.getElementById('list-crypto').innerHTML += row;
+                    }
+                });
+            }
+        };
+    </script>
 </body>
 </html>
