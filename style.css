@@ -1,34 +1,7 @@
-:root {
-    --neon: #00ff88;
-    --pro-blue: #3e7eff;
-    --bg: #050505;
-    --glass: rgba(255, 255, 255, 0.03);
-}
-
-body { background: var(--bg); color: #fff; font-family: 'Inter', sans-serif; margin: 0; }
-
-.main-header { display: flex; justify-content: space-between; padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); background: #0a0a0a; }
-
-.discovery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; padding: 25px; }
-
-.asset-card {
-    background: var(--glass);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 12px;
-    padding: 15px;
-    transition: 0.3s;
-    backdrop-filter: blur(10px);
-}
-
-.asset-card:hover { border-color: var(--neon); transform: translateY(-3px); }
-
-.price-box { font-family: 'JetBrains Mono', monospace; font-size: 22px; color: var(--neon); margin: 10px 0; }
-
-.glow-btn { background: var(--neon); color: #000; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 900; cursor: pointer; }
-
-.overlay { display: none; position: fixed; inset: 0; background: #000; z-index: 100; }
-.overlay-content { display: grid; grid-template-rows: 60px 1fr 1fr; height: 100vh; }
-
-.trade-row { display: flex; gap: 10px; padding: 20px; background: #111; overflow-x: auto; }
-.scavenged-btn { padding: 10px 20px; border: 1px solid var(--pro-blue); background: transparent; color: var(--pro-blue); border-radius: 4px; white-space: nowrap; cursor: pointer; font-weight: bold;}
-.scavenged-btn:hover { background: var(--pro-blue); color: #fff; }
+body { font-family: sans-serif; background: #f4f4f4; color: #333; margin: 0; padding: 20px; }
+header { border-bottom: 2px solid #ff444f; margin-bottom: 20px; padding-bottom: 10px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
+.asset-card { background: white; padding: 15px; border-radius: 8px; border: 1px solid #ddd; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+.asset-card h4 { margin: 0 0 10px; color: #ff444f; }
+.price { font-weight: bold; font-family: monospace; font-size: 1.2em; }
+#connection-status { font-size: 0.8em; color: green; }
