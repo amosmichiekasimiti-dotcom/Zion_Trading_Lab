@@ -65,17 +65,36 @@ function viewMarket(name, symbol, marketType) {
 
     if (modal && title && content) {
         title.innerText = name;
+        
+        // This updated HTML includes the live price ID and the Chart Button area
         content.innerHTML = `
             <p><strong>Symbol Code:</strong> <code>${symbol}</code></p>
             <p><strong>Category:</strong> ${marketType.toUpperCase()}</p>
             <hr>
-            <div style="background:#f9f9f9; padding:10px; border-radius:5px;">
-                <p>Live data for ${name} is being retrieved from Deriv servers.</p>
+            <div style="background:#f9f9f9; padding:15px; border-radius:8px; text-align:center;">
+                <p style="color:#666; margin:0;">Current Price</p>
+                <h1 id="live-price" style="font-size:3rem; margin:10px 0; font-family:monospace;">---</h1>
+                <div id="price-direction" style="font-weight:bold; margin-bottom:15px;">Connecting...</div>
+                
+                <div id="chart-link-container">
+                    <a href="https://app.deriv.com/markets/${symbol}" target="_blank" 
+                       style="display:inline-block; padding:10px 20px; background:#007bff; color:white; text-decoration:none; border-radius:5px; font-weight:bold;">
+                       Open Live ${name} Chart ↗
+                    </a>
+                </div>
             </div>
         `;
+        
         modal.style.display = "block";
+
+        // Logic to start the live feed from Deriv API
+        if (typeof activeTickSubscription !== 'undefined' && activeTickSubscription) {
+            ws.send(JSON.stringify({ "forget": activeTickSubscription }));
+        }
+        ws.send(JSON.stringify({ "ticks": symbol, "subscribe": 1 }));
     }
 }
+
 
 // 5. Modal Close logic
 function closeModal() {
