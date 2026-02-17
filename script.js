@@ -2,6 +2,8 @@ const ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
 let activeSub = null;
 let allSymbols = [];
 let tickHistory = [];
+let currentSymbol = '';
+let currentMode = 'rise_fall';
 
 ws.onopen = () => {
     document.getElementById('status').innerText = '● Connected';
@@ -16,7 +18,7 @@ ws.onmessage = (msg) => {
         allSymbols = res.active_symbols; 
         loadCategory('volatility'); 
     }
-    if (res.tick) updateTradingUI(res.tick);
+    if (res.tick) updateUI(res.tick);
 };
 
 function loadCategory(cat, el) {
@@ -49,28 +51,37 @@ function loadCategory(cat, el) {
 }
 
 function openAnalysis(name, symbol) {
+    currentSymbol = symbol;
     tickHistory = [];
     document.getElementById('mTitle').innerText = name;
     document.getElementById('modal').style.display = 'block';
     
-    const isSynthetic = name.toLowerCase().includes('volatility') || name.toLowerCase().includes('1s') || symbol.includes('R_');
-    const digitPanel = document.getElementById('digit-panel');
-    const chartArea = document.getElementById('chart-area');
+    // Reset to Rise/Fall by default
+    switchContract('rise_fall', document.querySelector('.tab-btn'));
 
-    // Routing Logic: Digits vs Candles
-    if (isSynthetic) {
-        digitPanel.style.display = 'block';
-        chartArea.style.height = '300px';
-        renderDigitGrid();
-    } else {
-        digitPanel.style.display = 'none';
-        chartArea.style.height = '450px';
-    }
-
-    chartArea.innerHTML = `<iframe src="https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=light" width="100%" height="100%" frameborder="0"></iframe>`;
-    
     if (activeSub) ws.send(JSON.stringify({ "forget": activeSub }));
     ws.send(JSON.stringify({ "ticks": symbol, "subscribe": 1 }));
+}
+
+function switchContract(mode, el) {
+    currentMode = mode;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+
+    const digitDisplay = document.getElementById('digit-display');
+    const chartArea = document.getElementById('chart-area');
+
+    if (mode === 'rise_fall') {
+        digitDisplay.style.display = 'none';
+        chartArea.style.height = '100%';
+    } else {
+        digitDisplay.style.display = 'block';
+        chartArea.style.height = '300px';
+        renderDigitGrid();
+    }
+
+    // Load TradingView Candles
+    chartArea.innerHTML = `<iframe src="https://tradingview.binary.com/v2/main.php?symbol=${currentSymbol}&theme=light" width="100%" height="100%" frameborder="0"></iframe>`;
 }
 
 function renderDigitGrid() {
@@ -85,23 +96,18 @@ function renderDigitGrid() {
     container.innerHTML = html;
 }
 
-function updateTradingUI(tick) {
+function updateUI(tick) {
     activeSub = tick.id;
-    const priceDisplay = document.getElementById('mPrice');
-    const oldPrice = parseFloat(priceDisplay.innerText.replace(/,/g, '')) || 0;
-    const newPrice = tick.quote;
-    const pipSize = tick.pip_size || 2;
-
-    // High Precision Price Display
-    priceDisplay.innerText = newPrice.toLocaleString(undefined, {minimumFractionDigits: pipSize});
-    const isRise = newPrice >= oldPrice;
-    priceDisplay.style.color = isRise ? "#4caf50" : "#ff444f";
-
-    // Extract exact Last Digit
-    const priceStr = newPrice.toFixed(pipSize);
+    const priceStr = tick.quote.toFixed(tick.pip_size);
     const lastDigit = parseInt(priceStr.slice(-1));
     
-    // Process Digit Stats
+    // Update Price Hero
+    const priceEl = document.getElementById('mPrice');
+    if (priceEl) {
+        priceEl.innerHTML = `${priceStr.slice(0, -1)}<span style="color:var(--red); font-weight:bold; border-bottom:2px solid var(--red);">${lastDigit}</span>`;
+    }
+
+    // Digit Stats (Last 100 ticks)
     tickHistory.push(lastDigit);
     if (tickHistory.length > 100) tickHistory.shift();
 
@@ -117,14 +123,10 @@ function updateTradingUI(tick) {
             label.innerText = pct + '%';
             box.style.background = (i === lastDigit) ? '#1e1e1e' : '#fdfdfd';
             box.style.color = (i === lastDigit) ? '#fff' : '#000';
-            // Condition Colors
-            box.style.borderBottomColor = (pct > 12) ? '#4caf50' : (pct < 8 ? '#ff444f' : '#ddd');
+            // Even (Green) vs Odd (Red) logic for bottom border
+            box.style.borderBottomColor = (i % 2 === 0) ? 'var(--green)' : 'var(--red)';
         }
     });
-
-    const dirLabel = document.getElementById('mDir');
-    dirLabel.innerText = isRise ? "▲ RISE" : "▼ FALL";
-    dirLabel.style.color = isRise ? "#4caf50" : "#ff444f";
 }
 
 function closeModal() {
