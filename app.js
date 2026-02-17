@@ -1,77 +1,48 @@
-/**
- * MASTER COMMAND: initializePublicScavenger()
- * Uses Public App ID 1089 to scavenge live market data.
- * No API Token or Authorization required.
- */
-let ws;
-let allSymbols = [];
-const PUBLIC_APP_ID = 1089;
+// Replace 1089 with your App ID from api.deriv.com
+const app_id = 1089; 
+const connection = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${app_id}`);
+const api = new DerivAPIBasic({ connection });
 
-function initializePublicScavenger() {
-    // Connect using the standard public endpoint
-    ws = new WebSocket(`wss://ws.binaryws.com/websockets/v3?app_id=${PUBLIC_APP_ID}`);
-
-    ws.onopen = () => {
-        console.log("Connected to Public Deriv Stream...");
-        // Command 1: Scavenge all available symbols (Publicly available)
-        ws.send(JSON.stringify({ 
-            "active_symbols": "brief", 
-            "product_type": "basic" 
-        }));
+// 1. "Read Everything" - Fetch every asset automatically
+const loadAllAssets = async () => {
+    const response = await api.active_symbols({ active_symbols: 'brief', product_type: 'basic' });
+    const container = document.getElementById('indices-grid');
+    document.getElementById('loader').style.display = 'none';
+    
+    // Filter for synthetic indices and build the UI dynamically
+    container.innerHTML = response.active_symbols
+       .filter(symbol => symbol.market === 'synthetic_index')
+       .map(s => `
+            <div class="asset-card" id="${s.symbol}">
+                <h4>${s.display_name}</h4>
+                <p class="price" id="price-${s.symbol}">Loading price...</p>
+            </div>
+        `).join('');
         
-        // Command 2: Keep connection alive
-        setInterval(() => {
-            if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ ping: 1 }));
-        }, 30000);
-    };
+    // 2. Start live price feeds for all detected assets
+    response.active_symbols.forEach(s => subscribeToPrice(s.symbol));
+};
 
-    ws.onmessage = (msg) => {
-        const data = JSON.parse(msg.data);
+// 3. "Auto-Update" - Listen for platform updates (New indices, maintenance, etc.)
+api.websiteStatus().subscribe(update => {
+    const statusText = document.getElementById('status-text');
+    statusText.innerText = update.website_status.site_status |
 
-        // Step 1: Filter and display all discovered Synthetic Assets
-        if (data.active_symbols) {
-            allSymbols = data.active_symbols.filter(s => s.market === 'synthetic_index');
-            renderScavengerGrid();
-        }
+| "Online";
+    console.log("Deriv Update Detected:", update);
+    // If a new update is detected, we can refresh the asset list
+    if (update.msg_type === 'website_status') loadAllAssets();
+});
 
-        // Step 2: Handle live price updates for all scavenged assets
-        if (data.tick) {
-            const priceEl = document.getElementById(`price-${data.tick.symbol.replace(/\./g, '_')}`);
-            if (priceEl) {
-                priceEl.innerText = data.tick.quote;
-                // Add "Heartbeat" pulse effect
-                priceEl.style.color = "#00ff88";
-                setTimeout(() => priceEl.style.color = "", 100);
-            }
-        }
-    };
-}
-
-function renderScavengerGrid() {
-    const grid = document.getElementById('discovery-wall');
-    grid.innerHTML = ''; // Clear previous
-
-    allSymbols.forEach(asset => {
-        const card = document.createElement('div');
-        card.className = 'asset-card';
-        card.innerHTML = `
-            <div style="font-size:10px; color:#94a3b8;">${asset.submarket_display_name}</div>
-            <div style="font-weight:900; letter-spacing:1px;">${asset.display_name}</div>
-            <div class="price-box" id="price-${asset.symbol.replace(/\./g, '_')}">---</div>
-            <button onclick="viewAnalysis('${asset.symbol}')" class="scavenged-btn">LIVE ANALYSIS</button>
-        `;
-        grid.appendChild(card);
-        
-        // Immediately start scavenging live ticks for this asset
-        ws.send(JSON.stringify({ "ticks": asset.symbol, "subscribe": 1 }));
+const subscribeToPrice = (symbol) => {
+    api.ticks(symbol).subscribe(tick => {
+        const priceElement = document.getElementById(`price-${symbol}`);
+        if (priceElement) priceElement.innerText = tick.tick.quote;
     });
-}
+};
 
-function viewAnalysis(symbol) {
-    // Open the analysis panel and load the public TradingView chart
-    document.getElementById('analysis-overlay').style.display = 'block';
-    document.getElementById('universal-chart').innerHTML = `
-        <iframe src="https://tradingview.binary.com/v2.1.0/main.html?symbol=${symbol}&theme=dark" 
-                style="width:100%; height:100%; border:none;"></iframe>
-    `;
-}
+// Open connection and launch discovery
+api.onOpen().subscribe(() => {
+    document.getElementById('connection-status').innerText = "Connected to Deriv";
+    loadAllAssets();
+});
