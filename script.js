@@ -19,36 +19,44 @@ ws.onmessage = (msg) => {
 
 function loadCategory(cat, el) {
     const list = document.getElementById('market-list');
-    list.innerHTML = '<tr><td colspan="3" style="text-align:center;">Loading...</td></tr>';
+    list.innerHTML = '<tr><td colspan="3" style="text-align:center;">Searching Markets...</td></tr>';
     
     document.querySelectorAll('.nav-card').forEach(c => c.classList.remove('active'));
     if(el) el.classList.add('active');
 
     const filtered = allSymbols.filter(s => {
         const sym = s.symbol.toLowerCase();
-        const market = s.market;
+        const mkt = s.market.toLowerCase();
+        const subMkt = s.submarket ? s.submarket.toLowerCase() : "";
 
-        // Corrected identifiers for Volatility and Jump
-        if (cat === 'volatility') return market === 'synthetic_index' && (sym.includes('volatility') || sym.includes('1s'));
+        // BROAD VOLATILITY FILTER: Catching all variants (Indices, 1s, etc)
+        if (cat === 'volatility') {
+            return (mkt === 'synthetic_index' || mkt === 'indices') && 
+                   (sym.includes('volatility') || sym.includes('v') || sym.includes('1s'));
+        }
+
+        // CRASH & BOOM FILTER
         if (cat === 'crashboom') return sym.includes('crash') || sym.includes('boom');
-        
-        // Matches Jump Indices starting with 'jd'
-        if (cat === 'jump') return market === 'synthetic_index' && sym.startsWith('jd'); 
-        
-        // Matches Range Break and Step Index ('stp')
-        if (cat === 'range') return market === 'synthetic_index' && (sym.includes('range') || sym.includes('stp'));
-        
-        // Matches all Basket indices
-        if (cat === 'basket') return market === 'basket_index';
-        
-        if (cat === 'forex') return market === 'forex';
-        if (cat === 'crypto') return market === 'cryptocurrency';
+
+        // JUMP FILTER
+        if (cat === 'jump') return sym.startsWith('jd') || subMkt.includes('jump');
+
+        // RANGE & STEP FILTER
+        if (cat === 'range') return sym.includes('range') || sym.includes('stp') || sym.includes('step');
+
+        // BASKET FILTER: Checking both market and symbol name for redundancy
+        if (cat === 'basket') {
+            return mkt === 'basket_index' || sym.includes('basket') || subMkt.includes('basket');
+        }
+
+        if (cat === 'forex') return mkt === 'forex';
+        if (cat === 'crypto') return mkt === 'cryptocurrency';
         return false;
     });
 
     list.innerHTML = '';
     if (filtered.length === 0) {
-        list.innerHTML = '<tr><td colspan="3" style="text-align:center;">No markets found.</td></tr>';
+        list.innerHTML = '<tr><td colspan="3" style="text-align:center;">No markets found for this category.</td></tr>';
         return;
     }
 
