@@ -1,125 +1,86 @@
-let ws, activeSub = null, allSymbols = [], currentSymbol = '', currentMode = 'rise_fall';
-let reefDigitWindow = []; 
-let physicsBuffer = [];
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zion Trading Lab | Professional</title>
+    <style>
+        :root { --red: #ff444f; --dark: #0e0e15; --card-bg: #161625; --border: #2e2e48; --neon: #00f2fe; --green: #4caf50; }
+        body { font-family: sans-serif; background: var(--dark); margin: 0; padding: 10px; color: white; overflow-x: hidden; display: flex; flex-direction: column; height: 100vh; }
+        
+        /* Navigation Grid Fix */
+        .nav-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 15px; justify-content: center; }
+        .nav-card { background: var(--card-bg); padding: 10px; border-radius: 8px; text-align: center; cursor: pointer; border: 1px solid var(--border); font-size: 10px; font-weight: 800; color: #8e8e9e; flex: 1 1 calc(30% - 10px); min-width: 90px; box-sizing: border-box; }
+        .nav-card.active { background: var(--red); color: white; border-color: var(--red); }
+        
+        .card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); flex-grow: 1; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        td, th { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); font-size: 12px; }
+        .btn-view { background: #222; color: white; border: 1px solid #444; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; }
 
-function initWS() {
-    ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
-    ws.onopen = () => {
-        ws.send(JSON.stringify({ "active_symbols": "brief", "product_type": "basic" }));
-        setInterval(() => { if(ws.readyState === 1) ws.send(JSON.stringify({ping:1})); }, 30000);
-    };
-    ws.onmessage = (msg) => {
-        const data = JSON.parse(msg.data);
-        if (data.active_symbols) { 
-            allSymbols = data.active_symbols; 
-            loadCategory('volatility'); 
-        }
-        if (data.history) {
-            reefDigitWindow = data.history.prices.map(p => parseInt(p.toFixed(data.pip_size).slice(-1)));
-            render();
-        }
-        if (data.tick) {
-            activeSub = data.tick.id;
-            const price = data.tick.quote;
-            const priceStr = price.toFixed(data.tick.pip_size);
-            const digit = parseInt(priceStr.slice(-1));
-            
-            physicsBuffer.push(price); if(physicsBuffer.length > 14) physicsBuffer.shift();
-            
-            // Keep window exactly at 100 for stable percentages
-            reefDigitWindow.push(digit); 
-            if(reefDigitWindow.length > 100) reefDigitWindow.shift();
-            
-            updateUI(priceStr, price, digit);
-        }
-    };
-}
+        /* Modal & Analysis Layout */
+        #modal { display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; background:var(--dark); overflow-y: auto; box-sizing: border-box; }
+        .modal-body { display: flex; flex-direction: column; min-height: 100%; padding: 15px; }
+        
+        .price-header { background: #1c1c2d; padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); }
+        #live-price { font-size: 28px; font-family: monospace; font-weight: bold; }
+        #live-price span { color: var(--red); border-bottom: 3px solid var(--red); }
 
-window.loadCategory = function(cat, el) {
-    if(el) {
-        document.querySelectorAll('.nav-card').forEach(c => c.classList.remove('active'));
-        el.classList.add('active');
-    }
-    const list = document.getElementById('market-list');
-    list.innerHTML = '';
-    const filtered = allSymbols.filter(s => {
-        const d = s.display_name.toLowerCase();
-        if (cat === 'volatility') return s.market === 'synthetic_index' && !d.includes('jump');
-        if (cat === 'crashboom') return d.includes('crash') || d.includes('boom');
-        return d.includes(cat.toLowerCase()) || s.market.includes(cat.toLowerCase());
-    });
-    filtered.forEach(s => {
-        list.innerHTML += `<tr><td>${s.display_name}</td><td>${s.symbol}</td><td><button class="btn-view" onclick="openAnalysis('${s.display_name}', '${s.symbol}')">Analyze</button></td></tr>`;
-    });
-};
+        .tabs { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+        .tab { padding: 8px 12px; border-radius: 20px; border: 1px solid var(--border); background: #1c1c2d; font-size: 10px; font-weight: bold; cursor: pointer; color: #8e8e9e; flex: 1 1 auto; text-align: center; }
+        .tab.active { background: var(--red); color: white; }
 
-window.openAnalysis = function(name, symbol) {
-    currentSymbol = symbol;
-    document.getElementById('mTitle').innerText = name;
-    document.getElementById('modal').style.display = 'block';
-    switchContract('rise_fall', document.querySelector('.tab'));
-    if (activeSub) ws.send(JSON.stringify({ "forget": activeSub }));
-    ws.send(JSON.stringify({ "ticks_history": symbol, "count": 100, "end": "latest", "style": "ticks" }));
-    ws.send(JSON.stringify({ "ticks": symbol, "subscribe": 1 }));
-};
+        /* Digit Stats UI */
+        .digit-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; background: #000; padding: 8px; border-radius: 8px; margin-bottom: 25px; }
+        .d-box { background: #1a1a1a; height: 50px; display: flex; flex-direction: column-reverse; align-items: center; position: relative; border: 1px solid #333; }
+        .d-bar { width: 100%; background: var(--neon); transition: height 0.3s; opacity: 0.7; }
+        .d-num { position: absolute; top: 2px; font-size: 10px; font-weight: bold; color: white; }
+        .d-pct { position: absolute; bottom: -20px; font-size: 9px; font-weight: bold; color: var(--neon); }
+        
+        #chart-container { flex-grow: 1; width: 100%; min-height: 400px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+    </style>
+</head>
+<body>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; padding: 0 5px;">
+        <h2 style="margin:0; font-size: 16px;">ZION <span style="color:var(--red)">TRADING LAB</span></h2>
+        <div id="status" style="color:var(--green); font-weight:bold; font-size:10px;">● LIVE CONNECTED</div>
+    </div>
 
-window.switchContract = function(mode, el) {
-    currentMode = mode;
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    el.classList.add('active');
-    document.getElementById('digit-analysis-panel').style.display = (mode === 'rise_fall') ? 'none' : 'block';
-    
-    if(mode !== 'rise_fall') {
-        const grid = document.getElementById('digit-grid');
-        grid.innerHTML = '';
-        for(let i=0; i<=9; i++) {
-            grid.innerHTML += `<div id="d-${i}" class="d-box"><div class="d-num">${i}</div><div id="bar-${i}" class="d-bar"></div><div id="pct-${i}" class="d-pct">0%</div></div>`;
-        }
-    }
-    document.getElementById('chart-container').innerHTML = `<iframe src="https://tradingview.binary.com/v2/main.php?symbol=${currentSymbol}&theme=dark" width="100%" height="100%" frameborder="0"></iframe>`;
-};
+    <div class="nav-grid">
+        <div class="nav-card active" onclick="loadCategory('volatility', this)">VOLATILITY</div>
+        <div class="nav-card" onclick="loadCategory('crashboom', this)">CRASH/BOOM</div>
+        <div class="nav-card" onclick="loadCategory('jump', this)">JUMP</div>
+        <div class="nav-card" onclick="loadCategory('range', this)">RANGE/STEP</div>
+        <div class="nav-card" onclick="loadCategory('forex', this)">FOREX</div>
+    </div>
 
-window.closeModal = function() { document.getElementById('modal').style.display = 'none'; };
+    <div class="card">
+        <table>
+            <thead><tr><th>Asset</th><th>Symbol</th><th>Action</th></tr></thead>
+            <tbody id="market-list"></tbody>
+        </table>
+    </div>
 
-function updateUI(str, val, digit) {
-    document.getElementById('live-price').innerHTML = `${str.slice(0, -1)}<span>${digit}</span>`;
-    const counts = Array(10).fill(0);
-    reefDigitWindow.forEach(d => counts[d]++);
-    
-    let signal = "ANALYZING...", color = "#00f2fe";
-
-    // DIRECTIONAL ARROW ENGINE
-    if (currentMode === 'even_odd') {
-        let even = counts[0]+counts[2]+counts[4]+counts[6]+counts[8];
-        signal = even > 55 ? `SIGNAL: EVEN (${even}%) ↑` : (even < 45 ? `SIGNAL: ODD (${100-even}%) ↓` : "NEUTRAL");
-        color = even > 55 ? "#4caf50" : (even < 45 ? "#ff444f" : "#8e8e9e");
-    } else if (currentMode === 'over_under') {
-        let over = counts[6]+counts[7]+counts[8]+counts[9];
-        signal = over > 45 ? "OVER BIAS ↑" : "UNDER BIAS ↓";
-        color = over > 45 ? "#4caf50" : "#ff444f";
-    } else if (currentMode === 'matches_differs') {
-        signal = `DIFFERS ${counts.indexOf(Math.min(...counts))} ●`; color = "#4caf50";
-    } else {
-        let vel = physicsBuffer[physicsBuffer.length-1] - physicsBuffer[0];
-        signal = vel > 0 ? "BULLISH ↑" : "BEARISH ↓"; color = vel > 0 ? "#4caf50" : "#ff444f";
-    }
-    
-    const box = document.getElementById('signal-box');
-    box.innerText = signal; box.style.color = color;
-    render(digit, counts);
-}
-
-function render(active, counts) {
-    if (!counts) return;
-    for (let i = 0; i <= 9; i++) {
-        const pct = ((counts[i] / reefDigitWindow.length) * 100).toFixed(1);
-        const bar = document.getElementById(`bar-${i}`);
-        const pctLabel = document.getElementById(`pct-${i}`);
-        const box = document.getElementById(`d-${i}`);
-        if (bar) bar.style.height = pct + "%";
-        if (pctLabel) pctLabel.innerText = pct + "%";
-        if (box) box.style.background = (i === active) ? "#333" : "#1a1a1a";
-    }
-}
-
-initWS();
+    <div id="modal">
+        <div class="modal-body">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3 id="mTitle" style="margin:0;">Analysis</h3>
+                <button onclick="closeModal()" style="background:var(--red); color:white; border:none; padding:8px 20px; border-radius:8px; font-weight:bold;">CLOSE</button>
+            </div>
+            <div class="tabs">
+                <div class="tab active" onclick="switchContract('rise_fall', this)">Rise/Fall</div>
+                <div class="tab" onclick="switchContract('even_odd', this)">Even/Odd</div>
+                <div class="tab" onclick="switchContract('matches_differs', this)">Matches/Differs</div>
+                <div class="tab" onclick="switchContract('over_under', this)">Over/Under</div>
+            </div>
+            <div class="price-header">
+                <div id="live-price">0.0000<span>0</span></div>
+                <div id="signal-box" style="text-align:right; font-size:12px; font-weight:bold;">ANALYZING...</div>
+            </div>
+            <div id="digit-analysis-panel" style="display:none;"><div class="digit-grid" id="digit-grid"></div></div>
+            <div id="chart-container"></div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
