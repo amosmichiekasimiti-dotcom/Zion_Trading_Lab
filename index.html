@@ -6,51 +6,53 @@
     <title>Zion Trading Lab | Universal Feed</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --red: #ff444f; --dark: #11111b; --green: #4caf50; --neon: #00f2fe; }
-        body { font-family: 'Segoe UI', sans-serif; background: #0e0e15; margin: 0; padding: 10px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; color: white; }
+        :root { --red: #ff444f; --dark: #1e1e1e; --green: #4caf50; --neon: #00f2fe; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; padding: 10px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        /* Navigation Grid */
+        /* Navigation */
         .nav-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(85px, 1fr)); gap: 8px; margin-bottom: 15px; }
-        .nav-card { background: #161625; padding: 10px; border-radius: 10px; text-align: center; cursor: pointer; border: 1px solid #2e2e48; font-size: 10px; font-weight: 800; color: #8e8e9e; transition: 0.3s; }
-        .nav-card.active { background: var(--red); color: white; border-color: var(--red); box-shadow: 0 0 15px rgba(255, 68, 79, 0.4); }
+        .nav-card { background: white; padding: 10px; border-radius: 10px; text-align: center; cursor: pointer; border: 1px solid #ddd; font-size: 10px; font-weight: 800; color: #666; transition: 0.3s; }
+        .nav-card.active { background: var(--red); color: white; border-color: var(--red); box-shadow: 0 4px 10px rgba(255, 68, 79, 0.3); }
         
-        /* Main Content Area */
-        .card { background: #161625; border-radius: 12px; flex-grow: 1; overflow-y: auto; border: 1px solid #2e2e48; }
+        .card { background: white; border-radius: 12px; flex-grow: 1; overflow-y: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #eee; }
         table { width: 100%; border-collapse: collapse; }
-        td, th { padding: 12px; text-align: left; border-bottom: 1px solid #2e2e48; font-size: 13px; }
-        .btn-view { background: var(--red); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        td, th { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 13px; }
+        .btn-view { background: var(--dark); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
 
         /* Full Screen Modal */
-        #modal { display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; background:#0e0e15; }
+        #modal { display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; background:white; animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         .modal-body { height: 100%; display: flex; flex-direction: column; padding: 15px; box-sizing: border-box; }
         
         /* Universal Price Header */
-        .price-header { background: #1c1c2d; padding: 20px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #2e2e48; }
-        #live-price { font-size: 32px; font-family: 'Courier New', monospace; font-weight: bold; }
-        #live-price span { color: var(--red); border-bottom: 3px solid var(--red); padding-bottom: 2px; }
+        .price-header { background: #111; color: white; padding: 20px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid var(--red); }
+        #live-price { font-size: 32px; font-family: 'Courier New', monospace; font-weight: bold; line-height: 1; }
+        #live-price span { color: var(--red); border-bottom: 3px solid var(--red); }
 
-        /* Physics Momentum Display */
-        #market-strength-container { background: #161625; padding: 12px; border-radius: 8px; border: 1px solid #2e2e48; text-align: right; min-width: 150px; }
+        /* Signal & Momentum Displays */
+        #strategy-status { text-align: right; }
+        #market-momentum { font-size: 10px; color: #888; font-weight: bold; letter-spacing: 1px; margin-bottom: 5px; }
+        #signal-alert { font-size: 14px; font-weight: 900; color: var(--neon); animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
 
-        /* Digit Analysis Grid */
+        /* Digit Panel */
         #digit-analysis-panel { display: none; margin-bottom: 15px; }
-        .digit-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 5px; background: #000; padding: 8px; border-radius: 8px; }
-        .d-box { background: #161625; height: 60px; display: flex; flex-direction: column-reverse; align-items: center; position: relative; border: 1px solid #2e2e48; border-radius: 4px; transition: 0.2s; }
-        .d-bar { width: 100%; background: linear-gradient(to top, #2e2e48, var(--neon)); transition: height 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); opacity: 0.7; }
+        .digit-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; background: #000; padding: 8px; border-radius: 8px; }
+        .d-box { background: #1a1a1a; height: 55px; display: flex; flex-direction: column-reverse; align-items: center; position: relative; border: 1px solid #333; border-radius: 4px; transition: all 0.2s; }
+        .d-bar { width: 100%; background: linear-gradient(to top, #323738, var(--neon)); transition: height 0.4s ease; opacity: 0.8; }
         .d-num { position: absolute; top: 4px; font-size: 12px; color: white; font-weight: bold; z-index: 2; }
-        .d-pct { position: absolute; bottom: -18px; font-size: 10px; font-weight: 900; color: var(--neon); }
+        .d-pct { position: absolute; bottom: -18px; font-size: 10px; font-weight: bold; color: #333; }
         
-        /* Chart & Tabs */
-        #chart-container { flex-grow: 1; border-radius: 12px; overflow: hidden; border: 1px solid #2e2e48; background: #161625; }
-        .tabs { display: flex; gap: 8px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 5px; }
-        .tab { padding: 10px 20px; border-radius: 25px; border: 1px solid #2e2e48; background: #1c1c2d; font-size: 11px; font-weight: bold; cursor: pointer; color: #8e8e9e; white-space: nowrap; }
-        .tab.active { background: var(--red); color: white; border-color: var(--red); box-shadow: 0 4px 10px rgba(255, 68, 79, 0.3); }
+        #chart-container { flex-grow: 1; border-radius: 12px; overflow: hidden; border: 1px solid #ddd; background: #eee; }
+        .tabs { display: flex; gap: 8px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; }
+        .tab { padding: 10px 20px; border-radius: 25px; border: 1px solid #ddd; background: #f0f0f0; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap; transition: 0.3s; }
+        .tab.active { background: var(--red); color: white; border-color: var(--red); }
     </style>
 </head>
 <body>
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; padding: 5px;">
-        <h2 style="margin:0; font-size: 18px; letter-spacing: 1px;">ZION <span style="color:var(--red)">TRADING LAB</span></h2>
-        <div id="status" style="color:#4caf50; font-weight:bold; font-size:11px; background: rgba(76, 175, 80, 0.1); padding: 5px 12px; border-radius: 20px;">● CONNECTED</div>
+        <h2 style="margin:0; font-size: 20px; letter-spacing: -0.5px;">ZION <span style="color:var(--red)">TRADING LAB</span></h2>
+        <div id="status" style="color:var(--green); font-weight:bold; font-size:11px; background: rgba(76, 175, 80, 0.1); padding: 5px 12px; border-radius: 20px;">● LIVE CONNECTED</div>
     </div>
 
     <div class="nav-grid">
@@ -63,7 +65,7 @@
 
     <div class="card">
         <table>
-            <thead><tr><th>Asset Name</th><th>Symbol</th><th>Market Status</th></tr></thead>
+            <thead><tr><th>Market Asset</th><th>Symbol</th><th>Action</th></tr></thead>
             <tbody id="market-list"></tbody>
         </table>
     </div>
@@ -71,13 +73,11 @@
     <div id="modal">
         <div class="modal-body">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <div style="display:flex; align-items:center; gap: 10px;">
-                    <button onclick="closeModal()" style="background:none; border:none; color:#8e8e9e; font-size: 20px; cursor:pointer;"><i class="fas fa-arrow-left"></i></button>
-                    <h3 id="mTitle" style="margin:0; font-size: 16px;">Analyzing...</h3>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <i class="fas fa-chevron-left" onclick="closeModal()" style="cursor:pointer; font-size:20px; color:#666;"></i>
+                    <h3 id="mTitle" style="margin:0; font-size: 18px;">Market Analysis</h3>
                 </div>
-                <div id="market-strength-container">
-                    <div id="market-strength" style="font-size: 13px; font-weight: bold; color: var(--neon);">CALCULATING...</div>
-                </div>
+                <button onclick="closeModal()" style="background:var(--red); color:white; border:none; padding:8px 20px; border-radius:25px; font-weight:bold; font-size:11px; box-shadow: 0 4px 10px rgba(255, 68, 79, 0.2);">EXIT LAB</button>
             </div>
 
             <div class="tabs">
@@ -88,19 +88,16 @@
             </div>
 
             <div class="price-header">
-                <div>
-                    <div id="live-price">0.0000<span>0</span></div>
-                    <span id="price-symbol" style="font-size:10px; font-weight:bold; color: #8e8e9e; letter-spacing: 2px;">ASSET_LOAD</span>
-                </div>
-                <div style="text-align:right;">
-                    <i class="fas fa-bolt" style="color: var(--neon); font-size: 24px;"></i>
+                <div id="live-price">0.0000<span>0</span></div>
+                <div id="strategy-status">
+                    <div id="market-momentum">MOMENTUM: NEUTRAL</div>
+                    <div id="signal-alert">ANALYZING...</div>
                 </div>
             </div>
 
             <div id="digit-analysis-panel">
-                <div class="digit-grid" id="digit-grid">
-                    </div>
-                <div style="height: 20px;"></div> </div>
+                <div class="digit-grid" id="digit-grid"></div>
+                <div style="height:20px;"></div> </div>
 
             <div id="chart-container"></div>
         </div>
