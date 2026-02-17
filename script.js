@@ -94,3 +94,8 @@ setTimeout(() => {
         requestData();
     }
 }, 3000);
+function openLiveChart(symbol) {
+    // This builds the dynamic link based on the asset you clicked
+    const chartUrl = `https://app.deriv.com/markets/${symbol}`;
+    window.open(chartUrl, '_blank');
+}
