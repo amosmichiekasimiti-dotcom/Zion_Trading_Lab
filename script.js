@@ -1,40 +1,43 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Zion Trading Lab | Market Monitor</title>
-    <style>
-        body { font-family: sans-serif; background-color: #f0f2f5; padding: 20px; }
-        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th { background-color: #ff444f; color: white; padding: 12px; text-align: left; }
-        td { padding: 10px; border-bottom: 1px solid #ddd; }
-        .category-tag { padding: 4px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold; color: white; }
-        /* Professional Colors for your classifications */
-        .cat-derived { background: #ff444f; }
-        .cat-4x { background: #2e7d32; }
-        .cat-crypto { background: #f57c00; }
-        .cat-stocks { background: #1976d2; }
-    </style>
-</head>
-<body>
+let allSymbols = [];
+const ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
 
-    <div class="card">
-        <h1>Zion Trading Lab: All Markets</h1>
-        <table>
-            <thead>
-                <tr>
-                    <th>Classification</th>
-                    <th>Market Name</th>
-                    <th>Symbol</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody id="market-list">
-                </tbody>
-        </table>
-    </div>
+ws.onopen = () => {
+    document.getElementById('connection-status').innerHTML = '<span style="color: green;">● System Live</span>';
+    ws.send(JSON.stringify({ "active_symbols": "brief", "product_type": "basic" }));
+};
 
-    <script src="script.js"></script>
-</body>
-</html>
+ws.onmessage = (msg) => {
+    const data = JSON.parse(msg.data);
+    if (data.active_symbols) {
+        allSymbols = data.active_symbols;
+        filterMarket('synthetic_index'); // Show Derived by default
+    }
+};
+
+function filterMarket(category, element) {
+    // Update active tab UI
+    if (element) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        element.classList.add('active');
+    }
+
+    const tableBody = document.getElementById('market-list');
+    tableBody.innerHTML = '';
+
+    const filtered = allSymbols.filter(s => s.market === category);
+
+    filtered.forEach(symbol => {
+        const row = `
+            <tr>
+                <td><strong>${symbol.display_name}</strong></td>
+                <td><code>${symbol.symbol}</code></td>
+                <td>
+                    <span class="status-pill ${symbol.exchange_is_open ? 'open' : 'closed'}">
+                        ${symbol.exchange_is_open ? 'TRADE OPEN' : 'MARKET CLOSED'}
+                    </span>
+                </td>
+                <td><button style="cursor:pointer; border:1px solid #ddd; padding:5px 10px; border-radius:4px;">View Chart</button></td>
+            </tr>`;
+        tableBody.innerHTML += row;
+    });
+}
