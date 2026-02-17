@@ -1,63 +1,44 @@
-let allSymbols = [];
-const app_id = 1089; 
-const ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=' + app_id);
+// Zion Trading Lab - Professional Dashboard Logic
+const ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
+let activeTickSubscription = null;
 
-// 1. Connection logic
+// Initialize Dashboard on Load
 ws.onopen = () => {
-    const statusElement = document.getElementById('connection-status');
-    if (statusElement) {
-        statusElement.innerHTML = '<span style="color: green;">● System Live</span>';
-    }
-    // Request all symbols from Deriv
+    console.log("Connected to Deriv Server");
     ws.send(JSON.stringify({ "active_symbols": "brief", "product_type": "basic" }));
 };
 
-// 2. Data handling logic
+// Handle Incoming Data
 ws.onmessage = (msg) => {
     const data = JSON.parse(msg.data);
+
     if (data.active_symbols) {
-        allSymbols = data.active_symbols;
-        filterMarket('synthetic_index'); // Show Derived by default on load
+        displayMarkets(data.active_symbols);
+    }
+
+    if (data.tick) {
+        updateLivePrice(data.tick);
     }
 };
 
-// 3. Filtering logic for Tabs
-function filterMarket(category, element) {
-    // Update active tab UI colors
-    if (element) {
-        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-        element.classList.add('active');
-    }
+// Display the Market Table
+function displayMarkets(symbols) {
+    const tableBody = document.querySelector('#market-table tbody');
+    tableBody.innerHTML = ''; // Clear loading state
 
-    const tableBody = document.getElementById('market-list');
-    if (!tableBody) return;
-    
-    tableBody.innerHTML = '';
-
-    const filtered = allSymbols.filter(s => s.market === category);
-
-    filtered.forEach(symbol => {
-        const row = `
-            <tr>
-                <td><strong>${symbol.display_name}</strong></td>
-                <td><code>${symbol.symbol}</code></td>
-                <td>
-                    <span class="status-pill ${symbol.exchange_is_open ? 'open' : 'closed'}">
-                        ${symbol.exchange_is_open ? 'TRADE OPEN' : 'MARKET CLOSED'}
-                    </span>
-                </td>
-                <td>
-                    <button onclick="viewMarket('${symbol.display_name}', '${symbol.symbol}', '${symbol.market}')" 
-                            style="cursor:pointer; border:1px solid #ddd; padding:5px 10px; border-radius:4px;">
-                        View
-                    </button>
-                </td>
-            </tr>`;
-        tableBody.innerHTML += row;
+    symbols.forEach(symbol => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${symbol.display_name}</td>
+            <td>${symbol.symbol.toUpperCase()}</td>
+            <td><span class="status-online">Live</span></td>
+            <td><button class="view-btn" onclick="viewMarket('${symbol.display_name}', '${symbol.symbol}', '${symbol.market}')">View Analysis</button></td>
+        `;
+        tableBody.appendChild(row);
     });
 }
 
-// 4. Modal View logic
+// Open Modal with Live Chart and Price
 function viewMarket(name, symbol, marketType) {
     const modal = document.getElementById('marketModal');
     const title = document.getElementById('modalTitle');
@@ -66,14 +47,14 @@ function viewMarket(name, symbol, marketType) {
     if (modal && title && content) {
         title.innerText = name;
         
-        // This embeds the chart in an iframe so you stay on your page
+        // This embeds the chart in an iframe so you STAY on your page
         content.innerHTML = `
-            <div style="background:#f9f9f9; padding:10px; border-radius:8px; text-align:center;">
-                <p style="color:#666; margin:0;">Current Price</p>
-                <h1 id="live-price" style="font-size:2.5rem; margin:5px 0; font-family:monospace;">---</h1>
-                <div id="price-direction" style="font-weight:bold; margin-bottom:10px;">Connecting...</div>
+            <div style="background:#f9f9f9; padding:15px; border-radius:8px; text-align:center;">
+                <p style="color:#666; margin:0;">Current Market Price</p>
+                <h1 id="live-price" style="font-size:2.8rem; margin:10px 0; font-family:monospace; color:#333;">---</h1>
+                <div id="price-direction" style="font-weight:bold; margin-bottom:15px; font-size:1.1rem;">Connecting to Stream...</div>
                 
-                <div id="chart-container" style="width:100%; height:350px; border-top:1px solid #eee; padding-top:10px;">
+                <div id="chart-container" style="width:100%; height:400px; border-top:1px solid #ddd; padding-top:15px; margin-top:10px;">
                     <iframe 
                         src="https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=light" 
                         width="100%" 
@@ -87,27 +68,56 @@ function viewMarket(name, symbol, marketType) {
         
         modal.style.display = "block";
 
-        // Start live ticker feed from Deriv API
-        if (typeof activeTickSubscription !== 'undefined' && activeTickSubscription) {
+        // Handle Subscriptions for Live Ticks
+        if (activeTickSubscription) {
             ws.send(JSON.stringify({ "forget": activeTickSubscription }));
         }
         ws.send(JSON.stringify({ "ticks": symbol, "subscribe": 1 }));
     }
 }
 
-        // Logic to start the live feed from Deriv API
-        if (typeof activeTickSubscription !== 'undefined' && activeTickSubscription) {
-            ws.send(JSON.stringify({ "forget": activeTickSubscription }));
+// Update the Ticking Price in the UI
+function updateLivePrice(tick) {
+    const priceElement = document.getElementById('live-price');
+    const directionElement = document.getElementById('price-direction');
+    
+    if (priceElement) {
+        const currentPrice = tick.quote;
+        activeTickSubscription = tick.id; // Save subscription ID to stop it later
+
+        // Simple visual feedback for price movement
+        const oldPrice = parseFloat(priceElement.innerText);
+        if (!isNaN(oldPrice)) {
+            if (currentPrice > oldPrice) {
+                directionElement.innerText = "▲ UP";
+                directionElement.style.color = "green";
+            } else if (currentPrice < oldPrice) {
+                directionElement.innerText = "▼ DOWN";
+                directionElement.style.color = "red";
+            }
         }
-        ws.send(JSON.stringify({ "ticks": symbol, "subscribe": 1 }));
+        
+        priceElement.innerText = currentPrice;
     }
 }
 
-
-// 5. Modal Close logic
+// Close Modal Function
 function closeModal() {
     const modal = document.getElementById('marketModal');
     if (modal) {
         modal.style.display = "none";
+        // Stop the price feed when closing to save data
+        if (activeTickSubscription) {
+            ws.send(JSON.stringify({ "forget": activeTickSubscription }));
+            activeTickSubscription = null;
+        }
+    }
+}
+
+// Close modal if user clicks outside of it
+window.onclick = function(event) {
+    const modal = document.getElementById('marketModal');
+    if (event.target == modal) {
+        closeModal();
     }
 }
