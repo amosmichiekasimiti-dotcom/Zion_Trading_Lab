@@ -1,68 +1,72 @@
-/* Zion Trading Lab - Pro Sync Logic */
+/* Zion Trading Lab - Automated Platform Mirror */
 
 const APP_ID = 126973; 
 const socket = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`);
 const api = new DerivAPIBasic({ connection: socket });
 
-// 1. Automatic Handshake: Starts only when line is fully open
+// 1. Handshake: Trigger 'Read Everything' only when the line is open
 api.onOpen().subscribe(() => {
-    document.getElementById('connection-status').innerText = "● Zion Trading Lab Active";
-    document.getElementById('connection-status').classList.add('online');
+    const badge = document.getElementById('connection-status');
+    badge.innerText = "● Zion Hub Connected";
+    badge.classList.add('online');
     
-    // Trigger the "Single Command" to read everything
-    readEverything();
+    // Command to automatically detect all assets
+    autoSynchronize();
 });
 
-// 2. Platform Update Listener: Detects new assets or maintenance automatically
+// 2. Real-time Platform Guard: Watch for new index releases
 api.websiteStatus().subscribe(status => {
     if (status.msg_type === 'website_status') {
-        console.log("Platform Sync Refresh:", status.website_status.site_status);
-        readEverything(); 
+        console.log("Deriv Platform Update:", status.website_status.site_status);
+        autoSynchronize(); // Refresh grid if platform data changes
     }
 });
 
-async function readEverything() {
+async function autoSynchronize() {
     try {
         const response = await api.active_symbols({ 
             active_symbols: 'brief', 
             product_type: 'basic' 
         });
 
+        // 3. LEGITIMATE ERROR CHECKING
+        // If your App ID permissions are wrong, the server will tell us here
         if (response.error) {
-            handleSystemError(`Deriv Rejected: ${response.error.message}`);
+            displaySystemError(`Deriv Server Error: ${response.error.message} (${response.error.code})`);
             return;
         }
 
-        buildAssetDisplay(response.active_symbols);
+        buildDashboard(response.active_symbols);
 
     } catch (err) {
-        handleSystemError("Redirect URL Mismatch or Read Scope missing.");
+        displaySystemError("Connectivity Block: Verify Redirect URL settings at api.deriv.com");
     }
 }
 
-function buildAssetDisplay(allSymbols) {
+function buildDashboard(allSymbols) {
     const grid = document.getElementById('indices-grid');
     const loader = document.getElementById('loader-area');
     
-    // Automatically filter all synthetic markets
+    // Auto-detect all markets under the 'Synthetic Index' family
     const synthetics = allSymbols.filter(s => s.market === 'synthetic_index');
     
     if (synthetics.length === 0) {
-        handleSystemError("No synthetic assets returned. Verify 'Read' scope at api.deriv.com.");
+        displaySystemError("No Synthetic Assets Found. Ensure 'Read' scope is checked for App 126973.");
         return;
     }
 
+    // Clear loader and reveal grid
     loader.classList.add('hidden');
     document.getElementById('debug-log').classList.add('hidden');
 
     grid.innerHTML = synthetics.map(s => `
-        <div class="asset-card">
+        <div class="asset-card" id="card-${s.symbol}">
             <div class="asset-name">${s.display_name}</div>
             <div class="price" id="p-${s.symbol}">0.00</div>
         </div>
     `).join('');
 
-    // 3. Live Mirroring: Link every detected asset to real-time price feeds
+    // 4. Live Data Mirroring: Map every asset to a live price feed
     synthetics.forEach(s => {
         api.ticks(s.symbol).subscribe(tick => {
             const priceDiv = document.getElementById(`p-${s.symbol}`);
@@ -71,7 +75,7 @@ function buildAssetDisplay(allSymbols) {
     });
 }
 
-function handleSystemError(text) {
+function displaySystemError(text) {
     document.getElementById('loader-area').classList.add('hidden');
     const log = document.getElementById('debug-log');
     log.classList.remove('hidden');
