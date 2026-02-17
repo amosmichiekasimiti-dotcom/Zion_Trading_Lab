@@ -66,26 +66,34 @@ function viewMarket(name, symbol, marketType) {
     if (modal && title && content) {
         title.innerText = name;
         
-        // This updated HTML includes the live price ID and the Chart Button area
+        // This embeds the chart in an iframe so you stay on your page
         content.innerHTML = `
-            <p><strong>Symbol Code:</strong> <code>${symbol}</code></p>
-            <p><strong>Category:</strong> ${marketType.toUpperCase()}</p>
-            <hr>
-            <div style="background:#f9f9f9; padding:15px; border-radius:8px; text-align:center;">
+            <div style="background:#f9f9f9; padding:10px; border-radius:8px; text-align:center;">
                 <p style="color:#666; margin:0;">Current Price</p>
-                <h1 id="live-price" style="font-size:3rem; margin:10px 0; font-family:monospace;">---</h1>
-                <div id="price-direction" style="font-weight:bold; margin-bottom:15px;">Connecting...</div>
+                <h1 id="live-price" style="font-size:2.5rem; margin:5px 0; font-family:monospace;">---</h1>
+                <div id="price-direction" style="font-weight:bold; margin-bottom:10px;">Connecting...</div>
                 
-                <div id="chart-link-container">
-                    <a href="https://app.deriv.com/markets/${symbol}" target="_blank" 
-                       style="display:inline-block; padding:10px 20px; background:#007bff; color:white; text-decoration:none; border-radius:5px; font-weight:bold;">
-                       Open Live ${name} Chart ↗
-                    </a>
+                <div id="chart-container" style="width:100%; height:350px; border-top:1px solid #eee; padding-top:10px;">
+                    <iframe 
+                        src="https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=light" 
+                        width="100%" 
+                        height="100%" 
+                        frameborder="0" 
+                        scrolling="no">
+                    </iframe>
                 </div>
             </div>
         `;
         
         modal.style.display = "block";
+
+        // Start live ticker feed from Deriv API
+        if (typeof activeTickSubscription !== 'undefined' && activeTickSubscription) {
+            ws.send(JSON.stringify({ "forget": activeTickSubscription }));
+        }
+        ws.send(JSON.stringify({ "ticks": symbol, "subscribe": 1 }));
+    }
+}
 
         // Logic to start the live feed from Deriv API
         if (typeof activeTickSubscription !== 'undefined' && activeTickSubscription) {
