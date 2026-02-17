@@ -1,49 +1,90 @@
-// Full corrected script for Zion Trading Lab
-const ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
+/**
+ * Zion Trading Lab - Professional Dashboard Logic
+ * Powered by Deriv API
+ */
+
+// Configuration
+const APP_ID = '1089'; // Default test ID. Replace with your own from api.deriv.com
+const SOCKET_URL = `wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`;
+
+let ws;
 let activeTickSubscription = null;
 let allSymbols = [];
 
-// 1. Connection Logic
-ws.onopen = () => {
-    console.log("Connected to Deriv");
-    // Request symbols immediately
-    ws.send(JSON.stringify({ "active_symbols": "brief", "product_type": "basic" }));
-    
-    // Heartbeat to prevent "Connecting..." freeze
-    setInterval(() => {
-        if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ ping: 1 }));
+/**
+ * 1. INITIALIZE CONNECTION
+ */
+function initConnection() {
+    ws = new WebSocket(SOCKET_URL);
+
+    ws.onopen = () => {
+        console.log("Connected to Deriv API");
+        updateStatus(true);
+        
+        // Request all active symbols immediately
+        ws.send(JSON.stringify({ "active_symbols": "brief", "product_type": "basic" }));
+        
+        // Start Heartbeat: Send a ping every 30 seconds to prevent timeout
+        // Sessions time out after 2 minutes of inactivity.
+        setInterval(() => {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ ping: 1 }));
+            }
+        }, 30000); 
+    };
+
+    ws.onmessage = (msg) => {
+        const data = JSON.parse(msg.data);
+
+        // Handle Symbol List
+        if (data.active_symbols) {
+            allSymbols = data.active_symbols;
+            filterMarkets('derived'); // Default view
         }
-    }, 30000);
-};
 
-ws.onmessage = (msg) => {
-    const data = JSON.parse(msg.data);
+        // Handle Live Tick Updates
+        if (data.tick) {
+            updateLivePriceDisplay(data.tick);
+        }
+        
+        // Log errors if any
+        if (data.error) {
+            console.error("API Error:", data.error.message);
+        }
+    };
 
-    if (data.active_symbols) {
-        allSymbols = data.active_symbols;
-        // Default view: Derived
-        filterMarkets('derived');
+    ws.onclose = () => {
+        console.log("Connection lost. Retrying in 5 seconds...");
+        updateStatus(false);
+        setTimeout(initConnection, 5000); // Auto-reconnect
+    };
+
+    ws.onerror = (error) => {
+        console.error("WebSocket Error:", error);
+    };
+}
+
+/**
+ * 2. DASHBOARD UI LOGIC
+ */
+function updateStatus(isOnline) {
+    const statusDot = document.querySelector('.status-dot') || document.createElement('span');
+    const statusText = document.getElementById('connection-status') || { innerText: "" };
+    
+    if (isOnline) {
+        statusText.innerText = "● Connected";
+        statusText.style.color = "#4CAF50";
+    } else {
+        statusText.innerText = "○ Connecting...";
+        statusText.style.color = "#f44336";
     }
+}
 
-    if (data.tick) {
-        updateLivePrice(data.tick);
-    }
-};
-
-ws.onclose = () => {
-    console.log("Connection lost. Reloading...");
-    setTimeout(() => location.reload(), 2000);
-};
-
-// 2. Tab & Filtering Logic
 function filterMarkets(category) {
     const tableBody = document.querySelector('#market-table tbody');
     if (!tableBody) return;
-    
-    tableBody.innerHTML = '<tr><td colspan="4">Loading ' + category + '...</td></tr>';
 
-    // Map categories to Deriv market types
+    // Map your tabs to Deriv market types
     const filtered = allSymbols.filter(s => {
         if (category === 'derived') return s.market === 'synthetic_index' || s.market === 'basket_index';
         if (category === 'forex') return s.market === 'forex';
@@ -51,39 +92,43 @@ function filterMarkets(category) {
         return false;
     });
 
-    tableBody.innerHTML = ''; 
+    tableBody.innerHTML = ''; // Clear table
     filtered.forEach(symbol => {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${symbol.display_name}</td>
             <td>${symbol.symbol.toUpperCase()}</td>
-            <td><span style="color:green;">● Live</span></td>
-            <td><button onclick="viewMarket('${symbol.display_name}', '${symbol.symbol}', '${symbol.market}')" 
-                style="padding:5px 10px; cursor:pointer;">View Analysis</button></td>
+            <td><span class="status-online">Live</span></td>
+            <td><button class="view-btn" onclick="viewMarket('${symbol.display_name}', '${symbol.symbol}')">View Analysis</button></td>
         `;
         tableBody.appendChild(row);
     });
 
-    // Update Tab UI
+    // Update active tab UI
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    // Ensure your HTML tabs have onclick="filterMarkets('crypto')" etc.
+    event?.target?.classList?.add('active');
 }
 
-// 3. Modal & Chart Logic
-function viewMarket(name, symbol, marketType) {
+/**
+ * 3. MODAL & CHARTING LOGIC
+ */
+function viewMarket(name, symbol) {
     const modal = document.getElementById('marketModal');
     const content = document.getElementById('modalContent');
     const title = document.getElementById('modalTitle');
 
     if (modal && content) {
         title.innerText = name;
+        
+        // Show embedded chart from TradingView/Deriv
         content.innerHTML = `
-            <div style="text-align:center;">
-                <p style="margin:0; color:#666;">Current Price</p>
-                <h1 id="live-price" style="font-size:2.5rem; margin:10px 0;">---</h1>
-                <div id="price-direction" style="font-weight:bold; margin-bottom:15px;">Connecting Stream...</div>
-                
-                <div style="width:100%; height:400px; border-top:1px solid #ddd; padding-top:10px;">
+            <div class="analysis-container">
+                <div class="price-header">
+                    <p>Current Price</p>
+                    <h1 id="live-price">---</h1>
+                    <div id="price-direction">Checking stream...</div>
+                </div>
+                <div class="chart-wrapper" style="height: 400px; margin-top: 15px;">
                     <iframe 
                         src="https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=light" 
                         width="100%" height="100%" frameborder="0">
@@ -93,32 +138,46 @@ function viewMarket(name, symbol, marketType) {
         `;
         modal.style.display = "block";
 
-        if (activeTickSubscription) ws.send(JSON.stringify({ "forget": activeTickSubscription }));
+        // Subscribe to live ticks for this specific symbol
+        if (activeTickSubscription) {
+            ws.send(JSON.stringify({ "forget": activeTickSubscription }));
+        }
         ws.send(JSON.stringify({ "ticks": symbol, "subscribe": 1 }));
     }
 }
 
-function updateLivePrice(tick) {
-    const priceElement = document.getElementById('live-price');
-    const direction = document.getElementById('price-direction');
-    if (priceElement) {
-        const oldPrice = parseFloat(priceElement.innerText);
+function updateLivePriceDisplay(tick) {
+    const priceEl = document.getElementById('live-price');
+    const dirEl = document.getElementById('price-direction');
+    
+    if (priceEl) {
+        const oldPrice = parseFloat(priceEl.innerText);
         const newPrice = tick.quote;
-        activeTickSubscription = tick.id;
+        activeTickSubscription = tick.id; // Store for "forget" call later
 
         if (!isNaN(oldPrice)) {
-            priceElement.style.color = newPrice > oldPrice ? "green" : "red";
-            direction.innerText = newPrice > oldPrice ? "▲ UP" : "▼ DOWN";
-            direction.style.color = newPrice > oldPrice ? "green" : "red";
+            priceEl.style.color = newPrice > oldPrice ? "#4CAF50" : "#f44336";
+            dirEl.innerText = newPrice > oldPrice ? "▲ UP" : "▼ DOWN";
+            dirEl.style.color = priceEl.style.color;
         }
-        priceElement.innerText = newPrice;
+        priceEl.innerText = newPrice;
     }
 }
 
 function closeModal() {
     document.getElementById('marketModal').style.display = "none";
+    // Important: Stop the data stream to save resources
     if (activeTickSubscription) {
         ws.send(JSON.stringify({ "forget": activeTickSubscription }));
         activeTickSubscription = null;
     }
 }
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('marketModal');
+    if (event.target == modal) closeModal();
+};
+
+// Launch
+initConnection();
