@@ -3,103 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zion Trading Lab | Pro Dashboard</title>
+    <title>Zion Trading Lab | Real-Time Pro</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { 
-            --deriv-red: #ff444f; 
-            --bg-gray: #f4f7f6; 
-            --card-shadow: 0 4px 20px rgba(0,0,0,0.08);
-        }
+        :root { --red: #ff444f; --dark: #1e1e1e; --light: #f4f7f6; }
+        body { font-family: 'Inter', sans-serif; background: var(--light); margin: 0; padding: 15px; }
         
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg-gray); margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 1000px; margin: 0 auto; }
-        
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        h1 { margin: 0; font-size: 24px; color: #222; }
-        
-        #connection-status { font-weight: bold; font-size: 14px; padding: 5px 12px; border-radius: 20px; background: #fff; box-shadow: var(--card-shadow); }
-
-        /* Tabs Navigation */
-        .tabs-header { display: flex; gap: 15px; margin-bottom: 20px; background: #eee; padding: 5px; border-radius: 10px; width: fit-content; }
-        .tab-btn { padding: 10px 25px; border: none; background: none; cursor: pointer; font-weight: 600; color: #555; border-radius: 8px; transition: 0.3s; }
-        .tab-btn.active { background: white; color: var(--deriv-red); box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        /* Icon Navigation */
+        .nav-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(85px, 1fr)); gap: 10px; margin-bottom: 20px; }
+        .nav-card { background: white; padding: 12px 5px; border-radius: 12px; text-align: center; cursor: pointer; border: 1px solid #ddd; transition: 0.2s; }
+        .nav-card i { font-size: 1.4rem; color: #555; margin-bottom: 5px; }
+        .nav-card span { display: block; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: #666; }
+        .nav-card.active { background: var(--red); border-color: var(--red); }
+        .nav-card.active i, .nav-card.active span { color: white; }
 
         /* Market Table */
-        .card { background: white; border-radius: 15px; box-shadow: var(--card-shadow); overflow: hidden; }
+        .card { background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow: hidden; }
         table { width: 100%; border-collapse: collapse; }
-        th { background: #fafafa; padding: 18px; text-align: left; color: #888; text-transform: uppercase; font-size: 12px; border-bottom: 2px solid #eee; }
-        td { padding: 18px; border-bottom: 1px solid #f0f0f0; font-weight: 500; }
-        
-        .view-btn { background: #222; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        .view-btn:hover { background: var(--deriv-red); }
+        th { background: #fafafa; padding: 12px; text-align: left; font-size: 11px; color: #999; border-bottom: 1px solid #eee; }
+        td { padding: 12px; border-bottom: 1px solid #f8f8f8; font-size: 14px; font-weight: 600; }
+        .btn-view { background: var(--dark); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; }
 
-        /* Modal / Popup */
-        #marketModal { display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.7); backdrop-filter: blur(8px); }
-        .modal-content { 
-            background:white; 
-            margin:5% auto; 
-            padding:30px; 
-            border-radius:20px; 
-            width:90%; 
-            max-width:600px; 
-            position: relative;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-        }
-        .close-x { position: absolute; right: 20px; top: 15px; font-size: 30px; cursor: pointer; color: #aaa; }
-        .close-x:hover { color: #000; }
-
-        #live-price { font-size: 3.5rem; margin: 10px 0; font-family: 'Courier New', monospace; letter-spacing: -2px; }
-        #price-direction { font-size: 1.2rem; font-weight: bold; margin-bottom: 20px; }
+        /* Modal & Analysis */
+        #modal { display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.8); backdrop-filter: blur(4px); overflow-y: auto; }
+        .modal-body { background:white; margin:2% auto; padding:20px; border-radius:16px; width:95%; max-width:900px; position: relative; }
         
-        iframe { border-radius: 10px; border: 1px solid #eee; margin-top: 15px; }
+        .grid-layout { display: grid; grid-template-columns: 1fr 320px; gap: 20px; }
+        @media (max-width: 800px) { .grid-layout { grid-template-columns: 1fr; } }
+
+        /* Digit Visuals */
+        .digit-box { background: #f9f9f9; border-radius: 10px; padding: 15px; border: 1px solid #eee; }
+        .bar-container { display: flex; align-items: flex-end; justify-content: space-between; height: 120px; margin-top: 15px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
+        .bar-group { display: flex; flex-direction: column; align-items: center; flex: 1; }
+        .bar { width: 12px; background: var(--red); border-radius: 2px 2px 0 0; transition: height 0.4s ease; }
+        .bar-label { font-size: 10px; font-weight: bold; margin-top: 5px; }
+        .percent-label { font-size: 9px; color: #888; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <header>
-        <h1>Zion Trading Lab</h1>
-        <div id="connection-status">● Connecting...</div>
-    </header>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <h2 style="margin:0;">Zion Trading Lab</h2>
+        <div id="status" style="font-size:12px; font-weight:bold; color:var(--red);">Connecting...</div>
+    </div>
 
-    <div class="tabs-header">
-        <button class="tab-btn active" onclick="filterMarkets('derived')">Derived</button>
-        <button class="tab-btn" onclick="filterMarkets('forex')">Forex</button>
-        <button class="tab-btn" onclick="filterMarkets('crypto')">Crypto</button>
+    <div class="nav-grid">
+        <div class="nav-card active" onclick="loadCategory('volatility', this)"><i class="fas fa-chart-line"></i><span>Volatility</span></div>
+        <div class="nav-card" onclick="loadCategory('crashboom', this)"><i class="fas fa-bolt"></i><span>Crash/Boom</span></div>
+        <div class="nav-card" onclick="loadCategory('jump', this)"><i class="fas fa-arrow-up-right-dots"></i><span>Jump</span></div>
+        <div class="nav-card" onclick="loadCategory('range', this)"><i class="fas fa-arrows-left-right"></i><span>Range/Step</span></div>
+        <div class="nav-card" onclick="loadCategory('basket', this)"><i class="fas fa-basket-shopping"></i><span>Baskets</span></div>
+        <div class="nav-card" onclick="loadCategory('forex', this)"><i class="fas fa-coins"></i><span>Forex</span></div>
+        <div class="nav-card" onclick="loadCategory('crypto', this)"><i class="fab fa-bitcoin"></i><span>Crypto</span></div>
     </div>
 
     <div class="card">
-        <table id="market-table">
-            <thead>
-                <tr>
-                    <th>Market Name</th>
-                    <th>Symbol</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody id="market-list">
-                </tbody>
+        <table>
+            <thead><tr><th>Market</th><th>Symbol</th><th>Action</th></tr></thead>
+            <tbody id="market-list"></tbody>
         </table>
     </div>
 </div>
 
-<div id="marketModal">
-    <div class="modal-content">
-        <span class="close-x" onclick="closeModal()">&times;</span>
-        <h2 id="modalTitle" style="margin:0; color:#444;">Market Analysis</h2>
-        <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
+<div id="modal">
+    <div class="modal-body">
+        <span onclick="closeModal()" style="position:absolute; right:20px; top:15px; font-size:24px; cursor:pointer; font-weight:bold;">&times;</span>
+        <h3 id="mTitle" style="margin-top:0;">Analysis</h3>
         
-        <div id="modalContent" style="text-align:center;">
-            <p style="color:#888; margin:0;">Real-Time Price</p>
-            <h1 id="live-price">---</h1>
-            <div id="price-direction">Awaiting Data...</div>
-            
-            <div id="chart-container" style="width:100%; height:400px;">
+        <div class="grid-layout">
+            <div>
+                <div style="text-align:center; padding:15px; background:var(--dark); color:white; border-radius:12px; margin-bottom:15px;">
+                    <div style="font-size:12px; opacity:0.7;">Live Market Price</div>
+                    <div id="mPrice" style="font-size:2.8rem; font-family:monospace; margin:5px 0;">---</div>
+                    <div id="mDir" style="font-size:14px; font-weight:bold;">Waiting for stream...</div>
                 </div>
-        </div>
+                <div id="chart-area" style="height:420px; background:#eee; border-radius:12px;"></div>
+            </div>
 
-        <button onclick="closeModal()" style="margin-top:20px; width:100%; padding:15px; background:var(--deriv-red); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer; font-size:16px;">Close Analysis</button>
+            <div class="digit-box">
+                <h4 style="margin:0;"><i class="fas fa-chart-bar"></i> Digit Frequency (100 Ticks)</h4>
+                <div class="bar-container" id="digit-bars">
+                    </div>
+                <div style="display:flex; justify-content:space-around; margin-top:20px; text-align:center;">
+                    <div><div style="font-size:10px; color:#888;">EVEN</div><div id="stat-even" style="font-size:1.2rem; font-weight:bold; color:green;">0%</div></div>
+                    <div><div style="font-size:10px; color:#888;">ODD</div><div id="stat-odd" style="font-size:1.2rem; font-weight:bold; color:red;">0%</div></div>
+                </div>
+                <div style="margin-top:20px;">
+                    <div style="font-size:10px; color:#888; margin-bottom:5px;">LAST 5 DIGITS:</div>
+                    <div id="last-5" style="display:flex; gap:8px; font-family:monospace; font-weight:bold; font-size:1.2rem;"></div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
