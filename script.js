@@ -1,23 +1,44 @@
+// Zion Master Engine - Self-Healing Handshake
 const socket = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
 let allAssets = [];
 let digitHistory = Array(10).fill(0);
 let tickCount = 0;
 
+// FORCED KICKSTART
 socket.onopen = () => {
+    console.log("Master Handshake Initialized.");
     socket.send(JSON.stringify({ "active_symbols": "brief", "product_type": "basic" }));
 };
 
 socket.onmessage = (msg) => {
     const data = JSON.parse(msg.data);
+
     if (data.active_symbols) {
         allAssets = data.active_symbols;
-        renderCategories();
+        renderCategories(); // Wipes out the "Establishing Handshake" message
     }
+
     if (data.tick) {
-        updatePrice(data.tick);
+        updateLivePrice(data.tick);
         trackDigits(data.tick);
     }
 };
+
+function renderCategories() {
+    const grid = document.getElementById('display-grid');
+    grid.innerHTML = ''; // Clears the hang message
+    document.getElementById('back-btn').style.display = 'none';
+
+    // Grouping by Market Type
+    const groups = [...new Set(allAssets.map(a => a.market_display_name))];
+    groups.forEach(groupName => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `<h4>GROUP</h4><h2>${groupName.toUpperCase()}</h2>`;
+        card.onclick = () => renderGroupAssets(groupName);
+        grid.appendChild(card);
+    });
+}
 
 function renderGroupAssets(groupName) {
     const grid = document.getElementById('display-grid');
@@ -42,11 +63,11 @@ function renderGroupAssets(groupName) {
     });
 }
 
+// Strategy Switcher Logic
 function openStrategy(mode, symbol) {
     const overlay = document.getElementById('strategy-overlay');
     const chartView = document.getElementById('chart-view');
     const digitHub = document.getElementById('digit-hub');
-    
     overlay.style.display = 'block';
     
     if (mode === 'CANDLE') {
@@ -59,6 +80,7 @@ function openStrategy(mode, symbol) {
     }
 }
 
+// Digit Competition Calculation (0-9)
 function trackDigits(tick) {
     const lastDigit = parseInt(tick.quote.toString().slice(-1));
     digitHistory[lastDigit]++;
@@ -75,8 +97,9 @@ function renderDigitStats() {
     });
 }
 
-function updatePrice(tick) {
-    const priceEl = document.getElementById(`price-${tick.symbol.replace(/\./g, '_')}`);
+function updateLivePrice(tick) {
+    const id = tick.symbol.replace(/\./g, '_');
+    const priceEl = document.getElementById(`price-${id}`);
     if (priceEl) priceEl.innerText = tick.quote;
 }
 
@@ -84,3 +107,10 @@ function closeStrategy() {
     document.getElementById('strategy-overlay').style.display = 'none';
     document.getElementById('chart-view').innerHTML = '';
 }
+
+// AUTO-RECOVERY: Retry if handshake is stuck for more than 3 seconds
+setTimeout(() => {
+    if (allAssets.length === 0) {
+        socket.send(JSON.stringify({ "active_symbols": "brief", "product_type": "basic" }));
+    }
+}, 3000);
