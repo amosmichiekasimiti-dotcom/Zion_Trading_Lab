@@ -2,99 +2,117 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zion Trading Lab | Professional</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zion Trading Lab | Ultra Sync</title>
     <style>
-        :root { --red: #ff444f; --dark: #0e0e15; --card-bg: #161625; --border: #2e2e48; --green: #4caf50; --neon: #00f2fe; }
-        body { font-family: sans-serif; background: var(--dark); margin: 0; padding: 10px; color: white; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        :root { --red: #ff444f; --dark: #0e0e15; --card: #161625; --border: #2e2e48; --green: #4caf50; --neon: #00f2fe; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--dark); margin: 0; padding: 0; color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        /* Fixed Scrollable Navigation to show all categories */
-        .nav-grid { display: flex; overflow-x: auto; gap: 8px; padding-bottom: 10px; margin-bottom: 10px; scrollbar-width: none; }
+        /* Fixed Header */
+        header { padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
+        
+        /* Category Nav: Horizontal Scrollable & Never Hidden */
+        .nav-grid { display: flex; overflow-x: auto; gap: 8px; padding: 10px; background: #0a0a0f; scrollbar-width: none; -webkit-overflow-scrolling: touch; flex-shrink: 0; }
         .nav-grid::-webkit-scrollbar { display: none; }
-        .nav-card { background: var(--card-bg); padding: 12px 18px; border-radius: 8px; text-align: center; cursor: pointer; border: 1px solid var(--border); font-size: 11px; font-weight: 800; color: #8e8e9e; white-space: nowrap; flex: 0 0 auto; }
+        .nav-card { background: var(--card); padding: 10px 18px; border-radius: 8px; border: 1px solid var(--border); font-size: 11px; font-weight: bold; color: #8e8e9e; white-space: nowrap; cursor: pointer; }
         .nav-card.active { background: var(--red); color: white; border-color: var(--red); }
-        
-        .card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); flex-grow: 1; overflow-y: auto; }
-        table { width: 100%; border-collapse: collapse; }
-        td, th { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); font-size: 12px; }
 
-        /* Full Screen Modal */
-        #modal { display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; background:var(--dark); }
-        .modal-body { display: flex; flex-direction: column; height: 100dvh; padding: 15px; box-sizing: border-box; }
+        /* Market Table Container */
+        .main-content { flex-grow: 1; overflow-y: auto; padding: 10px; }
+        table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 10px; overflow: hidden; }
+        th { background: #1c1c2d; padding: 12px; font-size: 11px; text-align: left; color: #8e8e9e; }
+        td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
+        .btn-view { background: #222; color: white; border: 1px solid #444; padding: 6px 12px; border-radius: 4px; font-weight: bold; }
+
+        /* Modal Layout */
+        #modal { display:none; position:fixed; inset:0; background:var(--dark); z-index: 1000; flex-direction: column; }
+        .modal-body { display: flex; flex-direction: column; height: 100%; padding: 10px; box-sizing: border-box; }
         
-        .tabs { display: flex; gap: 6px; margin-bottom: 10px; overflow-x: auto; padding-bottom: 5px; }
-        .tab { padding: 8px 15px; background: #1c1c2d; border-radius: 20px; font-size: 11px; cursor: pointer; border: 1px solid var(--border); white-space: nowrap; color: #8e8e9e; }
+        .market-tabs { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 10px; flex-shrink: 0; }
+        .tab { padding: 8px 12px; background: #1c1c2d; border-radius: 5px; font-size: 11px; color: #8e8e9e; border: 1px solid var(--border); cursor: pointer; white-space: nowrap; }
         .tab.active { background: var(--red); color: white; }
 
-        .price-header { background: #1c1c2d; padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); }
-        #live-price { font-size: 26px; font-family: monospace; font-weight: bold; }
-        #live-price span { color: var(--red); border-bottom: 3px solid var(--red); }
+        /* Live Display Section */
+        .live-stats { background: #1c1c2d; padding: 15px; border-radius: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); flex-shrink: 0; }
+        #live-price { font-size: 24px; font-weight: bold; font-family: monospace; }
+        #live-price span { color: var(--red); border-bottom: 2px solid var(--red); }
+        .signal-info { text-align: right; }
+        #signal-text { font-size: 11px; font-weight: 900; }
+        #direction-arrow { font-size: 26px; }
 
-        /* Signal Area with Directional Arrows */
-        #signal-box { text-align: right; min-width: 120px; }
-        #signal-text { font-size: 10px; font-weight: bold; margin-bottom: 2px; }
-        #direction-arrow { font-size: 22px; font-weight: bold; }
+        /* Digit Panel: Strict Visibility */
+        #digit-panel { display: none; margin-bottom: 8px; flex-shrink: 0; }
+        .tick-selector { display: flex; gap: 5px; margin-bottom: 5px; }
+        .t-btn { flex: 1; padding: 4px; font-size: 10px; background: #111; border: 1px solid #333; color: #fff; border-radius: 3px; }
+        .t-btn.active { background: var(--neon); color: #000; border-color: var(--neon); }
 
-        /* Digit Analysis - Strict Visibility */
-        #digit-analysis-panel { display: none; margin-bottom: 10px; }
-        .digit-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; background: #000; padding: 8px; border-radius: 8px; }
+        .digit-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; background: #000; padding: 8px; border-radius: 8px; }
         .d-box { background: #1a1a1a; height: 45px; display: flex; flex-direction: column-reverse; align-items: center; position: relative; border: 1px solid #333; }
-        .d-bar { width: 100%; background: var(--neon); transition: height 0.3s; opacity: 0.6; }
-        .d-num { position: absolute; top: 2px; font-size: 9px; font-weight: bold; color: white; }
+        .d-bar { width: 100%; background: var(--neon); opacity: 0.7; transition: height 0.3s; }
+        .d-num { position: absolute; top: 2px; font-size: 10px; font-weight: bold; }
         .d-pct { font-size: 8px; color: var(--neon); margin-bottom: 2px; z-index: 1; }
 
-        #chart-container { flex-grow: 1; width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+        #chart-container { flex-grow: 1; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
     </style>
 </head>
 <body>
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <h2 style="margin:0; font-size: 16px;">ZION <span style="color:var(--red)">TRADING LAB</span></h2>
-        <div id="status" style="color:var(--green); font-weight:bold; font-size:10px;">● CONNECTED</div>
-    </div>
 
-    <div class="nav-grid">
-        <div class="nav-card active" onclick="loadCategory('volatility', this)">VOLATILITY</div>
-        <div class="nav-card" onclick="loadCategory('crashboom', this)">CRASH/BOOM</div>
-        <div class="nav-card" onclick="loadCategory('jump', this)">JUMP</div>
-        <div class="nav-card" onclick="loadCategory('range', this)">RANGE/STEP</div>
-        <div class="nav-card" onclick="loadCategory('basket', this)">BASKETS</div>
-        <div class="nav-card" onclick="loadCategory('forex', this)">FOREX</div>
-    </div>
+<header>
+    <div style="font-weight: 800; font-size: 18px;">ZION <span style="color:var(--red)">LAB</span></div>
+    <div id="status" style="font-size: 10px; color: var(--green);">● SERVER CONNECTED</div>
+</header>
 
-    <div class="card">
-        <table>
-            <thead><tr><th>Asset Name</th><th>Symbol</th><th>Action</th></tr></thead>
-            <tbody id="market-list"></tbody>
-        </table>
-    </div>
+<div class="nav-grid">
+    <div class="nav-card active" onclick="loadCategory('volatility', this)">VOLATILITY</div>
+    <div class="nav-card" onclick="loadCategory('crashboom', this)">CRASH/BOOM</div>
+    <div class="nav-card" onclick="loadCategory('jump', this)">JUMP</div>
+    <div class="nav-card" onclick="loadCategory('range', this)">RANGE/STEP</div>
+    <div class="nav-card" onclick="loadCategory('basket', this)">BASKETS</div>
+    <div class="nav-card" onclick="loadCategory('forex', this)">FOREX</div>
+</div>
 
-    <div id="modal">
-        <div class="modal-body">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <h3 id="mTitle" style="margin:0; font-size:14px;">Analysis</h3>
-                <button onclick="closeModal()" style="background:var(--red); color:white; border:none; padding:8px 15px; border-radius:8px; font-weight:bold;">CLOSE</button>
-            </div>
-            
-            <div class="tabs">
-                <div class="tab active" onclick="switchContract('rise_fall', this)">Rise/Fall</div>
-                <div class="tab" onclick="switchContract('even_odd', this)">Even/Odd</div>
-                <div class="tab" onclick="switchContract('matches_differs', this)">Matches/Differs</div>
-                <div class="tab" onclick="switchContract('over_under', this)">Over/Under</div>
-            </div>
+<div class="main-content">
+    <table>
+        <thead><tr><th>ASSET</th><th>SYMBOL</th><th>TRADE</th></tr></thead>
+        <tbody id="market-list"></tbody>
+    </table>
+</div>
 
-            <div class="price-header">
-                <div id="live-price">0.00<span>0</span></div>
-                <div id="signal-box">
-                    <div id="signal-text">ANALYZING</div>
-                    <div id="direction-arrow">--</div>
-                </div>
-            </div>
-
-            <div id="digit-analysis-panel"><div class="digit-grid" id="digit-grid"></div></div>
-            <div id="chart-container"></div>
+<div id="modal">
+    <div class="modal-body">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <div id="mTitle" style="font-weight:bold; font-size:14px; color:var(--neon)">-</div>
+            <button onclick="closeModal()" style="background:var(--red); border:none; color:white; padding:5px 15px; border-radius:4px; font-weight:bold;">CLOSE</button>
         </div>
+
+        <div class="market-tabs">
+            <div class="tab active" onclick="switchContract('rise_fall', this)">Rise/Fall</div>
+            <div class="tab" onclick="switchContract('even_odd', this)">Even/Odd</div>
+            <div class="tab" onclick="switchContract('matches_differs', this)">Matches/Differs</div>
+            <div class="tab" onclick="switchContract('over_under', this)">Over/Under</div>
+        </div>
+
+        <div class="live-stats">
+            <div id="live-price">0.00<span>0</span></div>
+            <div class="signal-info">
+                <div id="signal-text" style="color:var(--neon)">ANALYZING...</div>
+                <div id="direction-arrow">--</div>
+            </div>
+        </div>
+
+        <div id="digit-panel">
+            <div class="tick-selector">
+                <button class="t-btn active" onclick="setTickCount(25, this)">25 Ticks</button>
+                <button class="t-btn" onclick="setTickCount(50, this)">50 Ticks</button>
+                <button class="t-btn" onclick="setTickCount(100, this)">100 Ticks</button>
+            </div>
+            <div class="digit-grid" id="digit-grid"></div>
+        </div>
+
+        <div id="chart-container"></div>
     </div>
-    <script src="script.js"></script>
+</div>
+
+<script src="script.js"></script>
 </body>
 </html>
