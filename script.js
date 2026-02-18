@@ -1,6 +1,7 @@
 const ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
 let activeSub = null, allSymbols = [], currentSymbol = '', currentMode = 'rise_fall';
 let lastPrice = 0, reefDigitWindow = [], priceBuffer = [];
+let signalCounter = 0; // Ensures 10-condition filter
 
 ws.onopen = () => {
     ws.send(JSON.stringify({ "active_symbols": "brief", "product_type": "basic" }));
@@ -22,7 +23,7 @@ ws.onmessage = (msg) => {
         const priceStr = currentPrice.toFixed(data.tick.pip_size);
         const lastDigit = parseInt(priceStr.slice(-1));
         
-        // Directional Arrow logic
+        // Directional Arrow Update
         const arrowEl = document.getElementById('direction-arrow');
         if (lastPrice > 0 && arrowEl) {
             arrowEl.innerText = currentPrice > lastPrice ? "↑" : "↓";
@@ -37,35 +38,47 @@ ws.onmessage = (msg) => {
         if (reefDigitWindow.length > 100) reefDigitWindow.shift();
         if (priceBuffer.length > 50) priceBuffer.shift();
 
-        updateSignal(currentPrice, lastDigit);
-        
-        // STRICT: Only show stats if not in Rise/Fall mode
+        processSignals(currentPrice, lastDigit);
         if (currentMode !== 'rise_fall') renderReefStatistics(lastDigit);
         lastPrice = currentPrice;
     }
 };
 
-function updateSignal(currentPrice, lastDigit) {
+function processSignals(currentPrice, lastDigit) {
     const sigText = document.getElementById('signal-text');
     if (!sigText) return;
 
     let signal = "ANALYZING";
     let color = "var(--neon)";
 
-    // Stable Signals using Historical Averages
+    // 1. DIGIT SPECIFIC SIGNALS
     if (currentMode === 'even_odd') {
         const evens = reefDigitWindow.filter(d => d % 2 === 0).length;
-        if (evens > 55) { signal = "STRONG EVEN ↑"; color = "var(--green)"; }
-        else if (evens < 45) { signal = "STRONG ODD ↓"; color = "var(--red)"; }
-    } else if (currentMode === 'over_under') {
+        if (evens > 58) { signal = `STRONG EVEN (${evens}%)`; color = "var(--green)"; }
+        else if (evens < 42) { signal = `STRONG ODD (${100-evens}%)`; color = "var(--red)"; }
+        else { signal = "DIGIT NEUTRAL"; }
+    } 
+    else if (currentMode === 'over_under') {
         const over4 = reefDigitWindow.filter(d => d > 4).length;
-        if (over4 > 56) { signal = "BUY OVER 4 ↑"; color = "var(--green)"; }
-        else if (over4 < 44) { signal = "BUY UNDER 4 ↓"; color = "var(--red)"; }
-    } else {
-        const momentum = currentPrice - priceBuffer[priceBuffer.length - 6];
-        if (momentum > 0 && currentPrice > lastPrice) { signal = "BULLISH ↑"; color = "var(--green)"; }
-        else if (momentum < 0 && currentPrice < lastPrice) { signal = "BEARISH ↓"; color = "var(--red)"; }
+        if (over4 > 58) { signal = `BUY OVER 4 (${over4}%)`; color = "var(--green)"; }
+        else if (over4 < 42) { signal = `BUY UNDER 4 (${100-over4}%)`; color = "var(--red)"; }
+        else { signal = "BARRIER NEUTRAL"; }
     }
+    // 2. RISE/FALL PRICE MOMENTUM (With 10-tick Condition Filter)
+    else {
+        const momentum = currentPrice - priceBuffer[priceBuffer.length - 11]; // Compare last 10 ticks
+        if (momentum > 0 && currentPrice > lastPrice) {
+            signalCounter++;
+            if (signalCounter >= 10) { signal = "BULLISH TREND ↑"; color = "var(--green)"; }
+        } else if (momentum < 0 && currentPrice < lastPrice) {
+            signalCounter++;
+            if (signalCounter >= 10) { signal = "BEARISH TREND ↓"; color = "var(--red)"; }
+        } else {
+            signalCounter = 0; // Reset if conditions aren't perfectly met
+            signal = "STABILIZING...";
+        }
+    }
+
     sigText.innerText = signal; sigText.style.color = color;
 }
 
@@ -90,9 +103,8 @@ window.openAnalysis = function(name, symbol) {
     currentSymbol = symbol;
     document.getElementById('mTitle').innerText = name;
     document.getElementById('modal').style.display = 'block';
-    reefDigitWindow = []; priceBuffer = [];
+    reefDigitWindow = []; priceBuffer = []; signalCounter = 0;
     
-    // Default to price mode
     switchContract('rise_fall', document.querySelector('.tab'));
     
     ws.send(JSON.stringify({ "ticks_history": symbol, "count": 100, "end": "latest", "style": "ticks" }));
@@ -107,8 +119,6 @@ window.switchContract = function(mode, el) {
     currentMode = mode;
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     el.classList.add('active');
-    
-    // UI Logic: Digits ONLY for digit modes
     document.getElementById('digit-analysis-panel').style.display = (mode === 'rise_fall' ? 'none' : 'block');
     if (mode !== 'rise_fall') buildDigitGrid();
 }
