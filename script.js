@@ -3,7 +3,6 @@ let allSymbols = [], currentSymbol = '', currentMode = 'rise_fall';
 let tickCount = 25, reefDigitWindow = [], lastPrice = 0;
 let signalBuffer = 0, lastSuggestedSignal = "";
 
-// 1. WebSocket Initialization
 ws.onopen = () => {
     ws.send(JSON.stringify({ "active_symbols": "brief", "product_type": "basic" }));
     setInterval(() => ws.send(JSON.stringify({ping: 1})), 30000);
@@ -12,42 +11,43 @@ ws.onopen = () => {
 ws.onmessage = (msg) => {
     const data = JSON.parse(msg.data);
 
-    // Initial load of assets
     if (data.active_symbols) {
         allSymbols = data.active_symbols;
         loadCategory('volatility');
     }
 
-    // Master History Sync: Ensures local numbers "rhyme" with Deriv 
+    // Sync history for matching percentages
     if (data.history) {
         const pipSize = data.pip_size || 2;
         reefDigitWindow = data.history.prices.map(p => 
             parseInt(p.toFixed(pipSize).split('').pop())
         );
-        renderDigitUI();
+        if (currentMode !== 'rise_fall') renderDigitUI();
     }
 
-    // Live Tick Processing
     if (data.tick) {
         const pipSize = data.tick.pip_size;
         const priceStr = data.tick.quote.toFixed(pipSize);
         const lastDigit = parseInt(priceStr.split('').pop());
 
-        // Update Digit Window
         reefDigitWindow.push(lastDigit);
         if (reefDigitWindow.length > tickCount) reefDigitWindow.shift();
 
-        // UI Updates
         document.getElementById('live-price').innerHTML = `${priceStr.slice(0, -1)}<span>${lastDigit}</span>`;
-        updateArrow(data.tick.quote);
         
+        // Direction Arrow Logic
+        const ar = document.getElementById('direction-arrow');
+        if (data.tick.quote > lastPrice) { ar.innerText = '↑'; ar.style.color = 'var(--green)'; }
+        else if (data.tick.quote < lastPrice) { ar.innerText = '↓'; ar.style.color = 'var(--red)'; }
+
+        // STRICT: Only update digit UI if NOT in Rise/Fall mode
         if (currentMode !== 'rise_fall') renderDigitUI(lastDigit);
-        processStrictSignals(data.tick.quote, lastDigit);
+        
+        processStrictSignals(data.tick.quote);
         lastPrice = data.tick.quote;
     }
 };
 
-// 2. Navigation & Modal Logic
 function loadCategory(cat, el) {
     if (el) {
         document.querySelectorAll('.nav-card').forEach(c => c.classList.remove('active'));
@@ -74,20 +74,14 @@ function openAnalysis(name, symbol) {
     document.getElementById('mTitle').innerText = name;
     document.getElementById('modal').style.display = 'flex';
     
-    // Clear and request fresh history to sync
-    reefDigitWindow = [];
-    requestSync();
+    // Always reset to Rise/Fall first to hide digits on entry
+    switchContract('rise_fall', document.querySelector('.tab'));
     
-    // Chart Persistence
-    document.getElementById('chart-container').innerHTML = `<iframe src="https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=dark" width="100%" height="100%" frameborder="0"></iframe>`;
-}
+    ws.send(JSON.stringify({ "forget_all": "ticks" }));
+    ws.send(JSON.stringify({ "ticks": symbol, "subscribe": 1 }));
+    ws.send(JSON.stringify({ "ticks_history": symbol, "count": tickCount, "end": "latest", "style": "ticks" }));
 
-// 3. Digit & Contract Management
-function setTickCount(val, el) {
-    tickCount = val;
-    document.querySelectorAll('.t-btn').forEach(b => b.classList.remove('active'));
-    el.classList.add('active');
-    requestSync();
+    document.getElementById('chart-container').innerHTML = `<iframe src="https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=dark" width="100%" height="100%" frameborder="0"></iframe>`;
 }
 
 function switchContract(mode, el) {
@@ -95,49 +89,50 @@ function switchContract(mode, el) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     el.classList.add('active');
     
-    // Visibility: Only show Digit Panel for Digit Markets
-    document.getElementById('digit-panel').style.display = (mode === 'rise_fall') ? 'none' : 'block';
-    if (mode !== 'rise_fall') buildDigitGrid();
-}
-
-function requestSync() {
-    ws.send(JSON.stringify({ "ticks_history": currentSymbol, "count": tickCount, "end": "latest", "style": "ticks" }));
-    if (currentSymbol) {
-        ws.send(JSON.stringify({ "forget_all": "ticks" }));
-        ws.send(JSON.stringify({ "ticks": currentSymbol, "subscribe": 1 }));
+    const digitPanel = document.getElementById('digit-panel');
+    
+    // THE FIX: Hide digits strictly if mode is Rise/Fall
+    if (mode === 'rise_fall') {
+        digitPanel.style.display = 'none';
+    } else {
+        digitPanel.style.display = 'block';
+        buildDigitGrid();
+        // Request history again to ensure correct tick count sync
+        ws.send(JSON.stringify({ "ticks_history": currentSymbol, "count": tickCount, "end": "latest", "style": "ticks" }));
     }
 }
 
-// 4. Signal Processing (10-Tick Stability Filter)
-function processStrictSignals(price, digit) {
-    const sigText = document.getElementById('signal-text');
-    let currentSignal = "ANALYZING...";
-    let color = "var(--neon)";
+function setTickCount(val, el) {
+    tickCount = val;
+    document.querySelectorAll('.t-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    ws.send(JSON.stringify({ "ticks_history": currentSymbol, "count": tickCount, "end": "latest", "style": "ticks" }));
+}
 
+function processStrictSignals(price) {
+    let currentSignal = "ANALYZING...";
+    
     if (currentMode === 'even_odd') {
         const evens = reefDigitWindow.filter(d => d % 2 === 0).length;
         const evenPct = (evens / reefDigitWindow.length) * 100;
-        if (evenPct > 58) currentSignal = `EVEN STRONG (${evenPct}%)`;
-        else if (evenPct < 42) currentSignal = `ODD STRONG (${100 - evenPct}%)`;
-    } 
-    else if (currentMode === 'over_under') {
+        if (evenPct > 58) currentSignal = "STRONG EVEN";
+        else if (evenPct < 42) currentSignal = "STRONG ODD";
+    } else if (currentMode === 'over_under') {
         const over4 = reefDigitWindow.filter(d => d > 4).length;
         const overPct = (over4 / reefDigitWindow.length) * 100;
-        if (overPct > 58) currentSignal = `OVER 4 STRONG (${overPct}%)`;
-        else if (overPct < 42) currentSignal = `UNDER 5 STRONG (${100 - overPct}%)`;
-    }
-    else {
-        // Rise/Fall Momentum
-        if (price > lastPrice) currentSignal = "BULLISH MOMENTUM";
-        else if (price < lastPrice) currentSignal = "BEARISH MOMENTUM";
+        if (overPct > 58) currentSignal = "STRONG OVER 4";
+        else if (overPct < 42) currentSignal = "STRONG UNDER 5";
+    } else {
+        if (price > lastPrice) currentSignal = "BULLISH TREND";
+        else if (price < lastPrice) currentSignal = "BEARISH TREND";
     }
 
-    // Stability Logic: Signal must stay the same for 10 ticks to show
+    // 10-Tick Stability Filter
     if (currentSignal === lastSuggestedSignal) {
         signalBuffer++;
         if (signalBuffer >= 10) {
-            sigText.innerText = currentSignal;
-            sigText.style.color = currentSignal.includes('STRONG') || currentSignal.includes('MOMENTUM') ? "var(--green)" : "var(--neon)";
+            document.getElementById('signal-text').innerText = currentSignal;
+            document.getElementById('signal-text').style.color = "var(--green)";
         }
     } else {
         signalBuffer = 0;
@@ -145,7 +140,6 @@ function processStrictSignals(price, digit) {
     }
 }
 
-// 5. Rendering Helpers
 function buildDigitGrid() {
     const grid = document.getElementById('digit-grid');
     grid.innerHTML = '';
@@ -155,6 +149,7 @@ function buildDigitGrid() {
 }
 
 function renderDigitUI(activeDigit) {
+    if (reefDigitWindow.length === 0) return;
     const counts = Array(10).fill(0);
     reefDigitWindow.forEach(d => counts[d]++);
     for (let i = 0; i <= 9; i++) {
@@ -167,12 +162,6 @@ function renderDigitUI(activeDigit) {
         const box = document.getElementById(`d-${i}`);
         if (box) box.style.background = (i === activeDigit) ? "rgba(0, 242, 254, 0.3)" : "#1a1a1a";
     }
-}
-
-function updateArrow(price) {
-    const ar = document.getElementById('direction-arrow');
-    if (price > lastPrice) { ar.innerText = '↑'; ar.style.color = 'var(--green)'; }
-    else if (price < lastPrice) { ar.innerText = '↓'; ar.style.color = 'var(--red)'; }
 }
 
 function closeModal() { document.getElementById('modal').style.display = 'none'; }
