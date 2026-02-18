@@ -3,416 +3,363 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zion Trading Lab · Direct Reef Feed</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>Zion Trading Lab · Direct Sync</title>
     <style>
+        :root { 
+            --red: #ff444f; 
+            --dark: #0e0e15; 
+            --neon: #00f2fe;
+            --card-bg: #1a1a1a;
+            --border: #2e2e48;
+        }
+        
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
 
-        :root {
-            --red: #ff444f;
-            --dark: #0b0e14;
-            --green: #4caf50;
-            --bg-dark: #0f1219;
-            --card-bg: #1a1e2a;
-            --neon-blue: #00f2fe;
-            --accent-glow: rgba(0, 242, 254, 0.3);
+        body { 
+            background: var(--dark); 
+            color: white; 
+            margin: 0; 
+            height: 100dvh; 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden; 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
 
-        body {
-            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #eef2f5;
-            margin: 0;
-            padding: 16px;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            color: #1e1e2f;
-        }
-
-        /* sleek scrollbar */
-        ::-webkit-scrollbar { width: 5px; height: 5px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 10px; }
-
-        /* header status */
-        .top-bar {
+        /* Header */
+        .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
         }
+
         .logo {
             font-weight: 700;
-            font-size: 1.3rem;
-            letter-spacing: -0.5px;
-            background: linear-gradient(145deg, #0b0e14, #1f2a3a);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            border-left: 4px solid var(--red);
-            padding-left: 12px;
+            color: var(--neon);
+            letter-spacing: 0.5px;
         }
-        .status-badge {
-            background: #14211a;
-            color: #5acd7a;
-            font-weight: 600;
-            font-size: 0.7rem;
-            padding: 6px 12px;
-            border-radius: 40px;
-            letter-spacing: 0.3px;
-            border: 1px solid #2b4633;
-            box-shadow: 0 0 6px #1f3b27;
+
+        .status {
+            font-size: 12px;
+            color: #4caf50;
             display: flex;
             align-items: center;
             gap: 6px;
         }
-        .status-badge i {
-            font-size: 0.5rem;
-            color: #23d160;
+
+        .status::before {
+            content: "";
+            width: 8px;
+            height: 8px;
+            background: #4caf50;
+            border-radius: 50%;
+            display: inline-block;
         }
 
-        /* navigation cards — premium glass */
-        .nav-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
-            gap: 10px;
-            margin-bottom: 22px;
+        /* Navigation */
+        .nav-scroll { 
+            display: flex; 
+            overflow-x: auto; 
+            padding: 12px 16px; 
+            gap: 12px; 
+            border-bottom: 1px solid var(--border); 
+            flex-shrink: 0;
+            scrollbar-width: thin;
+            scrollbar-color: var(--neon) var(--border);
         }
-        .nav-card {
-            background: rgba(255,255,255,0.75);
-            backdrop-filter: blur(2px);
-            padding: 12px 4px;
-            border-radius: 24px;
-            text-align: center;
+
+        .nav-scroll::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .nav-scroll::-webkit-scrollbar-thumb {
+            background: var(--neon);
+            border-radius: 4px;
+        }
+
+        .nav-scroll button { 
+            background: transparent; 
+            color: #8899bb; 
+            border: 1px solid var(--border); 
+            padding: 8px 20px; 
+            border-radius: 40px; 
+            font-size: 13px;
+            font-weight: 600;
             cursor: pointer;
-            border: 1px solid rgba(0,0,0,0.06);
-            font-size: 11px;
-            font-weight: 700;
-            color: #2f3a4b;
             transition: all 0.2s;
-            box-shadow: 0 5px 12px rgba(0,0,0,0.02);
-            letter-spacing: 0.3px;
+            white-space: nowrap;
         }
-        .nav-card i {
-            display: block;
-            font-size: 16px;
-            margin-bottom: 5px;
-            color: #475569;
+
+        .nav-scroll button:hover {
+            border-color: var(--neon);
+            color: white;
         }
-        .nav-card.active {
+
+        .nav-scroll button.active {
             background: var(--red);
             color: white;
             border-color: var(--red);
-            box-shadow: 0 8px 18px rgba(255,68,79,0.25);
-        }
-        .nav-card.active i {
-            color: white;
         }
 
-        /* main card (market list) */
-        .card {
-            background: white;
-            border-radius: 28px;
+        /* Market List */
+        .market-list {
             flex: 1;
             overflow-y: auto;
-            box-shadow: 0 15px 30px rgba(0,0,0,0.05);
-            padding: 6px 0;
-            border: 1px solid #ffffff50;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th {
-            text-align: left;
-            padding: 16px 16px 8px 20px;
-            font-weight: 600;
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            color: #6b7a8f;
-        }
-        td {
-            padding: 12px 16px 12px 20px;
-            border-bottom: 1px solid #f0f3f7;
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-        .btn-view {
-            background: #0f141f;
-            color: white;
-            border: none;
-            padding: 6px 16px;
-            border-radius: 40px;
-            font-weight: 600;
-            font-size: 0.7rem;
-            cursor: pointer;
-            transition: 0.15s;
-            letter-spacing: 0.3px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        .btn-view:hover {
-            background: #2d3a55;
+            padding: 16px;
         }
 
-        /* FULLSCREEN MODAL — DARK, FUTURISTIC */
+        .market-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            margin-bottom: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .market-info h4 {
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .market-info span {
+            font-size: 12px;
+            color: #8899bb;
+        }
+
+        .analyze-btn {
+            background: var(--neon);
+            color: black;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .analyze-btn:hover {
+            opacity: 0.9;
+            transform: scale(1.02);
+        }
+
+        /* MODAL */
         #modal {
             display: none;
             position: fixed;
-            z-index: 200;
-            left: 0; top: 0;
-            width: 100%; height: 100%;
-            background: #0e121c;
-            backdrop-filter: blur(4px);
-        }
-        .modal-body {
+            top: 0;
+            left: 0;
+            width: 100%;
             height: 100%;
-            display: flex;
+            background: var(--dark);
+            z-index: 1000;
             flex-direction: column;
-            padding: 18px 20px;
-            box-sizing: border-box;
-            background: #11161f;
-            background-image: radial-gradient(circle at 30% 40%, #1b2333 0%, #0a0e16 90%);
         }
 
-        /* modal header */
         .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 16px;
-        }
-        .asset-badge {
-            background: #212a3b;
-            color: #b5c9ff;
-            padding: 6px 18px;
-            border-radius: 40px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            border: 1px solid #3a4663;
-            letter-spacing: 0.5px;
-        }
-        .close-btn {
-            background: rgba(255,68,79,0.2);
-            color: var(--red);
-            border: 1px solid #ff4f5a;
-            padding: 8px 22px;
-            border-radius: 40px;
-            font-weight: 700;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: 0.15s;
-            backdrop-filter: blur(2px);
-        }
-        .close-btn:hover {
-            background: var(--red);
-            color: white;
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
         }
 
-        /* premium tabs */
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--neon);
+        }
+
+        .close-btn {
+            background: transparent;
+            color: var(--red);
+            border: 1px solid var(--red);
+            padding: 8px 24px;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Tabs */
         .tabs {
             display: flex;
             gap: 8px;
-            margin: 5px 0 18px 0;
-            flex-wrap: wrap;
+            padding: 16px;
+            overflow-x: auto;
+            scrollbar-width: thin;
         }
+
         .tab {
-            padding: 8px 18px;
+            background: transparent;
+            color: #8899bb;
+            border: 1px solid var(--border);
+            padding: 8px 20px;
             border-radius: 40px;
-            background: #1f283b;
-            color: #acbedb;
-            font-size: 0.7rem;
-            font-weight: 700;
+            font-size: 12px;
+            font-weight: 600;
             cursor: pointer;
-            border: 1px solid #31415a;
-            transition: 0.1s;
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
+            white-space: nowrap;
         }
+
         .tab.active {
             background: var(--red);
             color: white;
             border-color: var(--red);
-            box-shadow: 0 0 12px #ff4f5a;
         }
 
-        /* universal price header with arrow */
+        /* Price Display */
         .price-header {
-            background: #0a0f17;
-            background: linear-gradient(135deg, #0f172a 0%, #131d30 100%);
-            color: white;
-            padding: 20px 24px;
-            border-radius: 32px;
-            margin: 10px 0 16px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border: 1px solid #2a3850;
-            box-shadow: 0 15px 25px -8px black;
-        }
-        #live-price {
-            font-size: 2.6rem;
-            font-family: 'Fira Mono', 'Courier New', monospace;
-            font-weight: 600;
-            letter-spacing: -1px;
-            line-height: 1;
-        }
-        #live-price .active-digit-underline {
-            color: var(--red);
-            border-bottom: 3px solid var(--red);
-            padding-bottom: 2px;
-            text-shadow: 0 0 6px rgba(255,68,79,0.6);
-        }
-        .live-badge {
-            text-align: right;
-            font-size: 0.7rem;
-            color: #a5b9d4;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        .live-badge span {
-            display: block;
-            font-size: 1rem;
-            font-weight: 600;
-            color: #d1e0ff;
+            background: #000;
+            margin: 0 16px 16px 16px;
+            padding: 24px;
+            border-radius: 24px;
+            border: 1px solid var(--border);
         }
 
-        /* digit panel — dark grid */
-        #digit-analysis-panel {
-            display: none;
-            margin-bottom: 20px;
+        #live-price {
+            font-size: 42px;
+            font-family: 'Courier New', monospace;
+            font-weight: 700;
+            text-align: center;
+            letter-spacing: 2px;
         }
-        .digit-grid {
-            display: grid;
-            grid-template-columns: repeat(10, 1fr);
-            gap: 5px;
-            background: #0e121f;
-            padding: 12px 8px;
-            border-radius: 32px;
-            border: 1px solid #29344b;
+
+        /* Digit Panel */
+        #digit-panel { 
+            display: none; 
+            padding: 0 16px 16px 16px;
         }
-        .d-box {
-            background: #121a27;
-            height: 70px;
-            display: flex;
-            flex-direction: column-reverse;
-            align-items: center;
-            position: relative;
-            border: 1px solid #2e3b54;
-            border-radius: 16px;
+
+        .digit-grid { 
+            display: grid; 
+            grid-template-columns: repeat(10, 1fr); 
+            gap: 6px; 
+            height: 80px; 
+            background: #000;
+            padding: 12px;
+            border-radius: 24px;
+            border: 1px solid var(--border);
+        }
+
+        .d-box { 
+            background: #1a1a1a; 
+            display: flex; 
+            flex-direction: column-reverse; 
+            align-items: center; 
+            border: 1px solid #333; 
+            border-radius: 12px;
             overflow: hidden;
-            transition: all 0.15s;
+            position: relative;
+            transition: all 0.2s;
         }
-        .d-bar {
-            width: 100%;
-            background: #2b4b5c;
-            background: linear-gradient(0deg, #0f6b7a, #1e98b0);
-            transition: height 0.2s ease;
-            border-radius: 8px 8px 0 0;
+
+        .d-bar { 
+            width: 100%; 
+            background: var(--neon); 
+            transition: height 0.3s;
             min-height: 2px;
         }
+
         .d-num {
             position: absolute;
-            top: 8px;
-            font-size: 1.1rem;
-            font-weight: 800;
-            color: white;
-            text-shadow: 0 2px 4px black;
-        }
-        .d-pct {
-            position: absolute;
-            bottom: 6px;
-            font-size: 0.6rem;
+            top: 4px;
+            font-size: 14px;
             font-weight: 700;
-            color: #b0d0ff;
+            color: white;
+            z-index: 2;
+        }
+
+        .d-pct { 
+            position: absolute;
+            bottom: 4px;
+            font-size: 9px; 
+            font-weight: bold; 
+            color: var(--neon); 
+            z-index: 2;
             background: rgba(0,0,0,0.5);
             padding: 2px 6px;
             border-radius: 20px;
-            backdrop-filter: blur(2px);
         }
 
-        /* chart container */
-        #chart-container {
-            flex: 1;
-            border-radius: 28px;
-            overflow: hidden;
-            border: 1px solid #293856;
-            background: #0c0f17;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
-            min-height: 280px;
+        /* Chart */
+        #chart-container { 
+            flex: 1; 
+            border-top: 1px solid var(--border);
+            background: #0a0a12;
+            min-height: 300px;
         }
+
         iframe {
             width: 100%;
             height: 100%;
             border: none;
         }
 
-        /* additional small touches */
-        .fa-arrow-up, .fa-arrow-down { filter: drop-shadow(0 0 4px currentColor); }
+        /* Loading state */
+        .loading {
+            color: #8899bb;
+            text-align: center;
+            padding: 40px;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
-    <div class="top-bar">
-        <div class="logo"><i class="fas fa-bolt" style="color:#ff444f; margin-right:6px;"></i>ZION LAB · REEF</div>
-        <div class="status-badge"><i class="fas fa-circle"></i> DIRECT FEED · v3</div>
+    <div class="header">
+        <div class="logo">ZION · REEF SYNC</div>
+        <div class="status">DIRECT FEED</div>
     </div>
 
-    <!-- category navigation -->
-    <div class="nav-grid">
-        <div class="nav-card active" onclick="loadCategory('volatility', this)"><i class="fas fa-chart-line"></i>VOLATILITY</div>
-        <div class="nav-card" onclick="loadCategory('crashboom', this)"><i class="fas fa-bomb"></i>CRASH/BOOM</div>
-        <div class="nav-card" onclick="loadCategory('jump', this)"><i class="fas fa-rocket"></i>JUMP</div>
-        <div class="nav-card" onclick="loadCategory('range', this)"><i class="fas fa-chart-bar"></i>RANGE/STEP</div>
-        <div class="nav-card" onclick="loadCategory('forex', this)"><i class="fas fa-dollar-sign"></i>FOREX</div>
+    <!-- Navigation -->
+    <div class="nav-scroll" id="navContainer">
+        <button onclick="loadCategory('volatility', this)" class="active">VOLATILITY</button>
+        <button onclick="loadCategory('forex', this)">FOREX</button>
+        <button onclick="loadCategory('crashboom', this)">CRASH/BOOM</button>
+        <button onclick="loadCategory('jump', this)">JUMP</button>
+        <button onclick="loadCategory('range', this)">RANGE</button>
     </div>
 
-    <!-- market list card -->
-    <div class="card">
-        <table>
-            <thead><tr><th>Market</th><th>Code</th><th></th></tr></thead>
-            <tbody id="market-list"></tbody>
-        </table>
+    <!-- Market List (will be populated by JS) -->
+    <div class="market-list" id="marketList">
+        <div class="loading">Loading markets...</div>
     </div>
 
-    <!-- MODAL: fullscreen reef analysis -->
+    <!-- Analysis Modal -->
     <div id="modal">
-        <div class="modal-body">
-            <div class="modal-header">
-                <h4 id="mTitle" style="color:white; font-weight:600; letter-spacing:-0.5px;"> — </h4>
-                <div class="asset-badge" id="price-symbol">symbol</div>
-                <div class="close-btn" onclick="closeModal()">✕ CLOSE</div>
-            </div>
+        <div class="modal-header">
+            <span class="modal-title" id="modalTitle">Select an asset</span>
+            <button class="close-btn" onclick="closeModal()">CLOSE</button>
+        </div>
 
-            <!-- contract tabs -->
-            <div class="tabs">
-                <div class="tab active" onclick="switchContract('rise_fall', this)">Rise/Fall</div>
-                <div class="tab" onclick="switchContract('even_odd', this)">Even/Odd</div>
-                <div class="tab" onclick="switchContract('matches_differs', this)">Matches/Differs</div>
-                <div class="tab" onclick="switchContract('over_under', this)">Over/Under</div>
-            </div>
+        <div class="tabs" id="tabContainer">
+            <div class="tab active" onclick="switchMode('rise_fall', this)">RISE/FALL</div>
+            <div class="tab" onclick="switchMode('even_odd', this)">EVEN/ODD</div>
+            <div class="tab" onclick="switchMode('matches_differs', this)">MATCHES/DIFFERS</div>
+            <div class="tab" onclick="switchMode('over_under', this)">OVER/UNDER</div>
+        </div>
 
-            <!-- price header with live arrow -->
-            <div class="price-header">
-                <div id="live-price">0.0000<span class="active-digit-underline">0</span></div>
-                <div class="live-badge"><i class="fas fa-satellite-dish" style="margin-right:4px;"></i> LIVE FEED <span id="price-symbol-label">---</span></div>
-            </div>
+        <div class="price-header">
+            <div id="live-price">0.00000<span style="color:red; border-bottom:2px solid red;">0</span></div>
+        </div>
 
-            <!-- digit probability panel (shown only for non rise/fall) -->
-            <div id="digit-analysis-panel">
-                <div class="digit-grid" id="digit-grid"></div>
-            </div>
+        <div id="digit-panel">
+            <div class="digit-grid" id="digit-grid"></div>
+        </div>
 
-            <!-- chart container (TradingView) -->
-            <div id="chart-container"></div>
+        <div id="chart-container">
+            <div class="loading">Select an asset to load chart</div>
         </div>
     </div>
 
-    <!-- Link to external JavaScript file -->
     <script src="script.js"></script>
 </body>
-                                                                                                                                                              </html>
+</html>
