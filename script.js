@@ -1,16 +1,14 @@
 /**
  * Zion Trading Lab - Authoritative Direct Feed
- * Direct Sync with Deriv "Reef" Servers & Live Directional Arrows
+ * Direct Sync with Deriv "Reef" Servers - Simplified & Accurate
  */
 
-// WebSocket connection
 const ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
 let activeSub = null;
 let allSymbols = [];
 let currentSymbol = '';
 let currentMode = 'rise_fall';
-let lastPrice = 0; // Track previous price for directional arrows
-let reefDigitWindow = []; // Stores authoritative 100-digit history
+let digitData = []; // The absolute source of truth from the server (100 digits)
 
 // DOM elements
 const modal = document.getElementById('modal');
@@ -42,59 +40,88 @@ ws.onmessage = (msg) => {
         loadCategory('volatility', document.querySelector('.nav-card.active'));
     }
 
-    // AUTHENTIC PERCENTAGE PULL: Initial 100-Tick History for Real Percentages
+    // DIRECT SYNC: Replaces local "tick counts" with server history
     if (data.history) {
-        reefDigitWindow = [];
-        const pipSize = data.pip_size || 3;
-        data.history.prices.forEach(price => {
-            const priceStr = price.toFixed(pipSize);
-            const digit = parseInt(priceStr.slice(-1));
-            reefDigitWindow.push(digit);
-        });
-        renderReefStatistics();
+        const pipSize = data.pip_size || 0;
+        digitData = data.history.prices.map(p => 
+            parseInt(p.toFixed(pipSize).split('').pop())
+        );
+        renderExactStats();
     }
 
-    // LIVE AUTHORITATIVE STREAM: Update Price, Directional Arrows & Digit Probabilities
+    // LIVE AUTHORITATIVE STREAM
     if (data.tick) {
         activeSub = data.tick.id;
-        const currentPrice = data.tick.quote;
-        const pip_size = data.tick.pip_size || 3;
-        const priceStr = currentPrice.toFixed(pip_size);
-        const lastDigit = parseInt(priceStr.slice(-1));
-        const head = priceStr.slice(0, -1);
+        const pipSize = data.tick.pip_size || 3;
+        const priceStr = data.tick.quote.toFixed(pipSize);
+        const lastDigit = parseInt(priceStr.split('').pop());
 
-        // Determine Direction for Amazing Arrows
-        let directionArrow = "";
-        let arrowColor = "#ffffff";
-        if (lastPrice > 0) {
-            if (currentPrice > lastPrice) {
-                directionArrow = " ▲"; // Upwards movement
-                arrowColor = "#4caf50"; // Green
-            } else if (currentPrice < lastPrice) {
-                directionArrow = " ▼"; // Downwards movement
-                arrowColor = "#ff444f"; // Red
-            }
-        }
-        lastPrice = currentPrice;
+        // Update the array exactly as the server does (maintain 100-tick window)
+        digitData.push(lastDigit);
+        if (digitData.length > 100) digitData.shift();
 
-        // Update Running Price Header with Live Arrow
+        // Exact Price matching TradingView with highlighted last digit
         if (livePriceDiv) {
-            livePriceDiv.innerHTML = `
-                ${head}<span class="active-digit-underline">${lastDigit}</span>
-                <span style="color:${arrowColor}; font-size: 28px; margin-left: 12px; font-weight: 600;">${directionArrow}</span>
-            `;
+            livePriceDiv.innerHTML = 
+                `${priceStr.slice(0, -1)}<span style="color:#ff444f; border-bottom:3px solid #ff444f;">${lastDigit}</span>`;
         }
-
-        // Maintain the real 100-tick window exactly like the Reef platform
-        reefDigitWindow.push(lastDigit);
-        if (reefDigitWindow.length > 100) reefDigitWindow.shift();
 
         // Update digit statistics if not in rise_fall mode
         if (currentMode !== 'rise_fall') {
-            renderReefStatistics(lastDigit);
+            renderExactStats(lastDigit);
         }
     }
 };
+
+// Render exact statistics directly from digitData array
+function renderExactStats(activeDigit = null) {
+    if (digitData.length === 0) return;
+    
+    const counts = Array(10).fill(0);
+    digitData.forEach(d => counts[d]++);
+    const total = digitData.length;
+    const maxVal = Math.max(...counts);
+    const minVal = Math.min(...counts);
+
+    for (let i = 0; i <= 9; i++) {
+        // MATCHING CRITERIA: Precise decimal percentages
+        const rawPct = (counts[i] / total) * 100;
+        const displayPct = rawPct.toFixed(1);
+
+        const bar = document.getElementById(`bar-${i}`);
+        const label = document.getElementById(`p-${i}`);
+        const box = document.getElementById(`d-${i}`);
+
+        if (bar) bar.style.height = `${rawPct}%`;
+        if (label) {
+            label.innerText = `${displayPct}%`;
+            
+            // Color coding based on frequency
+            if (counts[i] === maxVal && maxVal !== minVal) {
+                label.style.color = "#4caf50"; // Green for highest
+            } else if (counts[i] === minVal && maxVal !== minVal) {
+                label.style.color = "#ff444f"; // Red for lowest
+            } else {
+                label.style.color = "#00f2fe"; // Neon blue for others
+            }
+        }
+        
+        // Active digit highlighting
+        if (box) {
+            if (activeDigit !== null && i === activeDigit) {
+                box.style.background = "rgba(0, 242, 254, 0.25)";
+                box.style.borderColor = "#00f2fe";
+                box.style.boxShadow = "0 0 15px rgba(0, 242, 254, 0.5)";
+                box.style.transform = "scale(1.05)";
+            } else {
+                box.style.background = "#1a1a1a";
+                box.style.borderColor = "#2e2e48";
+                box.style.boxShadow = "none";
+                box.style.transform = "scale(1)";
+            }
+        }
+    }
+}
 
 // Load market category
 window.loadCategory = function(cat, el) {
@@ -126,8 +153,7 @@ window.loadCategory = function(cat, el) {
 // Open analysis modal
 window.openAnalysis = function(name, symbol) {
     currentSymbol = symbol;
-    reefDigitWindow = [];
-    lastPrice = 0; // Reset price comparison
+    digitData = []; // Reset the authoritative data array
     mTitle.innerText = name;
     setPriceSymbolText(symbol);
     modal.style.display = 'block';
@@ -175,8 +201,8 @@ window.switchContract = function(mode, el) {
         digitPanel.style.display = 'block';
         chartView.style.height = '400px';
         if (!document.getElementById('digit-grid').innerHTML) buildDigitGrid();
-        const last = reefDigitWindow.length ? reefDigitWindow[reefDigitWindow.length - 1] : null;
-        renderReefStatistics(last);
+        const last = digitData.length ? digitData[digitData.length - 1] : null;
+        renderExactStats(last);
     }
 
     // Update chart
@@ -197,54 +223,6 @@ function buildDigitGrid() {
                 <div id="bar-${i}" class="d-bar"></div>
                 <div id="p-${i}" class="d-pct">0%</div>
             </div>`;
-    }
-}
-
-// Render reef statistics with digit probabilities
-function renderReefStatistics(activeDigit = null) {
-    if (!reefDigitWindow.length) return;
-    
-    const counts = Array(10).fill(0);
-    reefDigitWindow.forEach(d => counts[d]++);
-    const maxVal = Math.max(...counts);
-    const minVal = Math.min(...counts);
-    const total = reefDigitWindow.length;
-
-    for (let i = 0; i <= 9; i++) {
-        const realPercentage = total ? ((counts[i] / total) * 100).toFixed(1) : 0;
-        const bar = document.getElementById(`bar-${i}`);
-        const label = document.getElementById(`p-${i}`);
-        const box = document.getElementById(`d-${i}`);
-
-        if (label) {
-            label.innerText = realPercentage + "%";
-            
-            // Percentage Coloring Logic from Deriv platform
-            if (counts[i] === maxVal && maxVal !== minVal) {
-                label.style.color = "#4caf50"; // Green for highest occurrence
-            } else if (counts[i] === minVal && maxVal !== minVal) {
-                label.style.color = "#ff444f"; // Red for lowest occurrence
-            } else {
-                label.style.color = "#00f2fe"; // Standard Neon
-            }
-        }
-
-        if (bar) bar.style.height = realPercentage + "%";
-
-        // Black Box Active Glow State
-        if (box) {
-            if (activeDigit !== null && i === activeDigit) {
-                box.style.background = "#000000";
-                box.style.borderColor = "#ffffff";
-                box.style.boxShadow = "0 0 15px rgba(255,255,255,0.7)";
-                box.style.transform = "scale(1.05)";
-            } else {
-                box.style.background = "#161625";
-                box.style.borderColor = "#2e2e48";
-                box.style.boxShadow = "none";
-                box.style.transform = "scale(1)";
-            }
-        }
     }
 }
 
