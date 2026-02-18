@@ -4,7 +4,6 @@ let lastPrice = 0, reefDigitWindow = [], priceBuffer = [];
 
 ws.onopen = () => {
     ws.send(JSON.stringify({ "active_symbols": "brief", "product_type": "basic" }));
-    // Heartbeat to keep connection active
     setInterval(() => { if(ws.readyState === 1) ws.send(JSON.stringify({ping: 1})); }, 30000);
 };
 
@@ -12,7 +11,6 @@ ws.onmessage = (msg) => {
     const data = JSON.parse(msg.data);
     if (data.active_symbols) { allSymbols = data.active_symbols; loadCategory('volatility'); }
     
-    // FETCH ACCURATE 100-TICK HISTORY: Mirroring Deriv percentages
     if (data.history) {
         reefDigitWindow = data.history.prices.map(p => parseInt(p.toFixed(data.pip_size).slice(-1)));
         priceBuffer = data.history.prices;
@@ -24,7 +22,7 @@ ws.onmessage = (msg) => {
         const priceStr = currentPrice.toFixed(data.tick.pip_size);
         const lastDigit = parseInt(priceStr.slice(-1));
         
-        // Directional Arrows Logic
+        // Directional Arrow logic
         const arrowEl = document.getElementById('direction-arrow');
         if (lastPrice > 0 && arrowEl) {
             arrowEl.innerText = currentPrice > lastPrice ? "↑" : "↓";
@@ -32,9 +30,7 @@ ws.onmessage = (msg) => {
         }
 
         const priceDisplay = document.getElementById('live-price');
-        if (priceDisplay) {
-            priceDisplay.innerHTML = `${priceStr.slice(0, -1)}<span>${lastDigit}</span>`;
-        }
+        if (priceDisplay) { priceDisplay.innerHTML = `${priceStr.slice(0, -1)}<span>${lastDigit}</span>`; }
 
         reefDigitWindow.push(lastDigit);
         priceBuffer.push(currentPrice);
@@ -43,7 +39,7 @@ ws.onmessage = (msg) => {
 
         updateSignal(currentPrice, lastDigit);
         
-        // STRICT UI TOGGLE: Never show digits on price assets
+        // STRICT: Only show stats if not in Rise/Fall mode
         if (currentMode !== 'rise_fall') renderReefStatistics(lastDigit);
         lastPrice = currentPrice;
     }
@@ -56,15 +52,15 @@ function updateSignal(currentPrice, lastDigit) {
     let signal = "ANALYZING";
     let color = "var(--neon)";
 
+    // Stable Signals using Historical Averages
     if (currentMode === 'even_odd') {
-        const counts = Array(10).fill(0); reefDigitWindow.forEach(d => counts[d]++);
-        const evenCount = counts[0] + counts[2] + counts[4] + counts[6] + counts[8];
-        if (evenCount > 55) { signal = "STRONG EVEN ↑"; color = "var(--green)"; }
-        else if (evenCount < 45) { signal = "STRONG ODD ↓"; color = "var(--red)"; }
+        const evens = reefDigitWindow.filter(d => d % 2 === 0).length;
+        if (evens > 55) { signal = "STRONG EVEN ↑"; color = "var(--green)"; }
+        else if (evens < 45) { signal = "STRONG ODD ↓"; color = "var(--red)"; }
     } else if (currentMode === 'over_under') {
         const over4 = reefDigitWindow.filter(d => d > 4).length;
-        if (over4 > 55) { signal = "STRONG OVER 4 ↑"; color = "var(--green)"; }
-        else if (over4 < 45) { signal = "STRONG UNDER 4 ↓"; color = "var(--red)"; }
+        if (over4 > 56) { signal = "BUY OVER 4 ↑"; color = "var(--green)"; }
+        else if (over4 < 44) { signal = "BUY UNDER 4 ↓"; color = "var(--red)"; }
     } else {
         const momentum = currentPrice - priceBuffer[priceBuffer.length - 6];
         if (momentum > 0 && currentPrice > lastPrice) { signal = "BULLISH ↑"; color = "var(--green)"; }
@@ -94,9 +90,9 @@ window.openAnalysis = function(name, symbol) {
     currentSymbol = symbol;
     document.getElementById('mTitle').innerText = name;
     document.getElementById('modal').style.display = 'block';
-    
-    // Reset buffers for fresh 100-tick accurate data
     reefDigitWindow = []; priceBuffer = [];
+    
+    // Default to price mode
     switchContract('rise_fall', document.querySelector('.tab'));
     
     ws.send(JSON.stringify({ "ticks_history": symbol, "count": 100, "end": "latest", "style": "ticks" }));
@@ -112,7 +108,7 @@ window.switchContract = function(mode, el) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     el.classList.add('active');
     
-    // STRICT UI CONTROL: Digits ONLY for digit modes
+    // UI Logic: Digits ONLY for digit modes
     document.getElementById('digit-analysis-panel').style.display = (mode === 'rise_fall' ? 'none' : 'block');
     if (mode !== 'rise_fall') buildDigitGrid();
 }
