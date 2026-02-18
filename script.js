@@ -1,6 +1,6 @@
 /**
- * Zion Trading Lab - Exact Deriv Percentage Matching
- * Properly extracts digits and calculates percentages
+ * Zion Trading Lab - Direct Deriv Sync
+ * Full sync with Deriv platform percentages
  */
 
 const ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
@@ -24,7 +24,7 @@ ws.onopen = () => {
     ws.send(JSON.stringify({ "active_symbols": "brief", "product_type": "basic" }));
 };
 
-// Main message handler
+// Main message handler - Full Sync Command
 ws.onmessage = (msg) => {
     const data = JSON.parse(msg.data);
 
@@ -34,106 +34,56 @@ ws.onmessage = (msg) => {
         loadCategory('volatility');
     }
 
-    // COMMAND: Sync history once to align percentages with Deriv's widget
+    // 1. SYNC HISTORY: This aligns your percentages with the main platform
     if (data.history) {
-        console.log('Received history:', data.history.prices.length, 'ticks');
-        
-        // Clear existing data
-        digitData = [];
-        
-        // Extract digits from each price
-        data.history.prices.forEach(price => {
-            // Convert to string and get last digit before decimal
-            const priceStr = price.toString();
-            let lastDigit;
-            
-            if (priceStr.includes('.')) {
-                // If it has decimal, get the last digit before decimal
-                const beforeDecimal = priceStr.split('.')[0];
-                lastDigit = parseInt(beforeDecimal.slice(-1));
-            } else {
-                // If no decimal, get last digit of the whole number
-                lastDigit = parseInt(priceStr.slice(-1));
-            }
-            
-            // Ensure it's a valid digit 0-9
-            if (!isNaN(lastDigit) && lastDigit >= 0 && lastDigit <= 9) {
-                digitData.push(lastDigit);
-            }
-        });
-        
-        console.log('Extracted digits:', digitData);
-        renderExactStats();
+        const pipSize = data.pip_size || 0;
+        // Extracts the exact digits based on the asset's precision
+        digitData = data.history.prices.map(p => 
+            parseInt(p.toFixed(pipSize).split('').pop())
+        );
+        console.log('History synced:', digitData.length, 'digits');
+        renderDerivStats();
     }
 
-    // COMMAND: Real-time subscription for live digits
+    // 2. LIVE TICK: Processes the red digit exactly as it appears below
     if (data.tick) {
         activeSub = data.tick.id;
-        
-        // Extract last digit from tick
-        const price = data.tick.quote;
-        const priceStr = price.toString();
-        let lastDigit;
-        
-        if (priceStr.includes('.')) {
-            const beforeDecimal = priceStr.split('.')[0];
-            lastDigit = parseInt(beforeDecimal.slice(-1));
-        } else {
-            lastDigit = parseInt(priceStr.slice(-1));
+        const pipSize = data.tick.pip_size || 3;
+        const priceStr = data.tick.quote.toFixed(pipSize);
+        const lastDigit = parseInt(priceStr.split('').pop());
+
+        // Maintain the window at exactly 100 to match Deriv's default
+        digitData.push(lastDigit);
+        if (digitData.length > 100) digitData.shift();
+
+        // Update Live Price display
+        if (livePrice) {
+            livePrice.innerHTML = 
+                `${priceStr.slice(0, -1)}<span style="color:red; border-bottom:2px solid red;">${lastDigit}</span>`;
         }
-        
-        // Validate digit
-        if (!isNaN(lastDigit) && lastDigit >= 0 && lastDigit <= 9) {
-            // Keep the window at exactly 100 to match official stats
-            digitData.push(lastDigit);
-            if (digitData.length > 100) digitData.shift();
 
-            // Update live price display - show full price
-            if (livePrice) {
-                livePrice.innerHTML = priceStr;
-            }
-
-            if (currentMode !== 'rise_fall') {
-                renderExactStats(lastDigit);
-            }
+        if (currentMode !== 'rise_fall') {
+            renderDerivStats(lastDigit);
         }
     }
 };
 
-// Render exact statistics matching Deriv screenshot
-function renderExactStats(activeDigit = null) {
-    if (digitData.length === 0) {
-        console.log('No digit data to render');
-        return;
-    }
-    
-    console.log('Rendering stats for', digitData.length, 'digits:', digitData);
+// Render Deriv statistics with exact percentages
+function renderDerivStats(activeDigit = null) {
+    if (digitData.length === 0) return;
     
     const counts = Array(10).fill(0);
-    digitData.forEach(d => {
-        if (d >= 0 && d <= 9) {
-            counts[d]++;
-        }
-    });
-    
+    digitData.forEach(d => counts[d]++);
     const total = digitData.length;
-    console.log('Digit counts:', counts);
 
-    // Find max and min for coloring
+    // Find max and min for coloring (optional but nice)
     const maxVal = Math.max(...counts);
     const minVal = Math.min(...counts);
 
     for (let i = 0; i <= 9; i++) {
-        // Calculate percentage with EXACT decimal places like Deriv
+        // MATCHING CRITERIA: Precise decimal percentages as seen on your screen
         const rawPct = (counts[i] / total) * 100;
-        
-        // Format to match Deriv's style
-        let displayPct;
-        if (rawPct === Math.floor(rawPct)) {
-            displayPct = rawPct.toFixed(0) + '%'; // Whole numbers: "12%"
-        } else {
-            displayPct = rawPct.toFixed(1) + '%'; // Decimals: "10.3%"
-        }
+        const displayPct = rawPct.toFixed(1); // Gives you 10.1%, 8.3% etc.
 
         const bar = document.getElementById(`bar-${i}`);
         const label = document.getElementById(`p-${i}`);
@@ -144,9 +94,9 @@ function renderExactStats(activeDigit = null) {
         }
         
         if (label) {
-            label.innerText = displayPct;
+            label.innerText = displayPct + '%';
             
-            // Color coding exactly like Deriv screenshot
+            // Optional: Color coding based on frequency
             if (counts[i] === maxVal && maxVal !== minVal) {
                 label.style.color = "#4caf50"; // Green for highest
             } else if (counts[i] === minVal && maxVal !== minVal) {
@@ -156,11 +106,12 @@ function renderExactStats(activeDigit = null) {
             }
         }
         
+        // Highlight active digit box
         if (box) {
             if (activeDigit !== null && i === activeDigit) {
-                box.style.background = "rgba(0, 242, 254, 0.15)";
+                box.style.background = "rgba(0, 242, 254, 0.4)";
                 box.style.borderColor = "#00f2fe";
-                box.style.boxShadow = "0 0 10px rgba(0, 242, 254, 0.3)";
+                box.style.boxShadow = "0 0 10px rgba(0, 242, 254, 0.5)";
             } else {
                 box.style.background = "#1a1a1a";
                 box.style.borderColor = "#333";
@@ -170,7 +121,7 @@ function renderExactStats(activeDigit = null) {
     }
 }
 
-// Build digit grid with Deriv's exact layout
+// Build digit grid
 function buildDigitGrid() {
     const grid = document.getElementById('digit-grid');
     if (!grid) return;
@@ -197,6 +148,11 @@ window.loadCategory = function(category, activeBtn = null) {
     if (activeBtn) {
         document.querySelectorAll('.nav-scroll button').forEach(btn => btn.classList.remove('active'));
         activeBtn.classList.add('active');
+    }
+
+    if (!allSymbols.length) {
+        marketList.innerHTML = '<div class="loading">Loading markets...</div>';
+        return;
     }
 
     // Filter symbols based on category
@@ -288,7 +244,7 @@ window.switchMode = function(mode, tabElement) {
     } else {
         digitPanel.style.display = 'block';
         const lastDigit = digitData.length ? digitData[digitData.length - 1] : null;
-        renderExactStats(lastDigit);
+        renderDerivStats(lastDigit);
     }
 };
 
