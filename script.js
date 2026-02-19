@@ -1,7 +1,6 @@
 /**
- * Zion Trading Lab - Authoritative Direct Feed
- * Direct Sync with Deriv "Reef" Servers & Live Directional Arrows
- * Enhanced with Signal Engine + Market Dynamics + Volatility Scanner
+ * Zion Trading Lab - Complete Trading System
+ * Features: Signal Engine, Market Dynamics, Scanner, Trade Bridge, History, Risk Management, Session Filters
  */
 
 const ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
@@ -16,16 +15,45 @@ let lastSignal = null;
 let signalCooldown = 0;
 let activeSignalData = null;
 
-// Market Dynamics Tracking
+// Market Dynamics
 let tickTimes = [];
 let lastMetrics = {};
 let dynamicsHistory = [];
 
-// Scanner Data
+// Scanner
 let scannerData = {};
 let scannerInterval = null;
 
-// Signal Engine Configuration
+// History & Risk
+let signalHistory = JSON.parse(localStorage.getItem('zion_signals') || '[]');
+let riskSettings = {
+    maxDailyLoss: 100,
+    maxTradeAmount: 10,
+    dailyLossUsed: 0,
+    consecutiveLosses: 0,
+    tradingEnabled: true
+};
+
+// Bridge
+let bridgeConfig = {
+    webhookUrl: localStorage.getItem('zion_webhook') || '',
+    autoExecute: false,
+    lastSignal: null,
+    connected: false
+};
+
+// Alerts
+let alertSettings = {
+    sound: true,
+    vibration: true,
+    push: false,
+    auto: false
+};
+
+// Session tracking
+let currentSession = null;
+
+// ENHANCED: Digit-specific conditions for each contract type
 const SIGNAL_CONFIG = {
     rise_fall: {
         minTicks: 50,
@@ -33,31 +61,54 @@ const SIGNAL_CONFIG = {
         momentumThreshold: 5,
         minConsecutive: 4,
         volatilityMax: 0.05,
-        confirmationDelay: 10
+        confirmationDelay: 10,
+        description: "Price action trend following"
     },
     even_odd: {
         minTicks: 100,
-        dominanceThreshold: 0.60,
+        dominanceThreshold: 0.58,
         streakThreshold: 5,
         chiSquareThreshold: 3.84,
-        minGap: 10,
-        stabilityPeriods: 3
+        minGap: 8,
+        stabilityPeriods: 3,
+        description: "Digit parity dominance analysis",
+        digitConditions: {
+            minSample: 100,
+            evenOddRatio: 0.58,
+            maxStreakBeforeReversal: 5,
+            chiSquareMin: 3.84
+        }
     },
     matches_differs: {
         minTicks: 150,
-        probabilityThreshold: 0.15,
-        minOccurrence: 15,
-        entropyThreshold: 0.85,
+        probabilityThreshold: 0.12,
+        minOccurrence: 12,
+        entropyThreshold: 0.90,
         confidenceInterval: 0.95,
-        predictionStability: 5
+        predictionStability: 5,
+        description: "Specific digit probability clustering",
+        digitConditions: {
+            minSample: 150,
+            minProbability: 0.12,
+            minLeadMargin: 2,
+            maxEntropy: 0.90,
+            confidenceMin: 0.10
+        }
     },
     over_under: {
         minTicks: 100,
-        dominanceThreshold: 0.65,
+        dominanceThreshold: 0.62,
         thresholdDigit: 5,
         distributionBalance: 0.40,
         trendConsistency: 4,
-        rejectionThreshold: 0.10
+        rejectionThreshold: 0.10,
+        description: "Digit range dominance (0-4 vs 5-9)",
+        digitConditions: {
+            minSample: 100,
+            overUnderRatio: 0.62,
+            minTrendPeriods: 4,
+            pivotDigit: 4
+        }
     }
 };
 
@@ -65,9 +116,13 @@ let signalConfirmCount = 0;
 let lastPrediction = null;
 let predictionStabilityCount = 0;
 
+// Audio context for alerts
+const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
 ws.onopen = () => {
-    console.log("Zion Lab: Connected to Direct Reef Feed");
+    console.log("Zion Lab: Connected");
     ws.send(JSON.stringify({ "active_symbols": "brief", "product_type": "basic" }));
+    updateBridgeStatus('connected');
 };
 
 ws.onmessage = (msg) => {
@@ -88,6 +143,7 @@ ws.onmessage = (msg) => {
         renderReefStatistics();
         updateSignalEngine();
         updateDynamics();
+        updateScannerData(currentSymbol, data.history.prices);
     }
 
     if (data.tick) {
@@ -97,12 +153,20 @@ ws.onmessage = (msg) => {
         const lastDigit = parseInt(priceStr.slice(-1));
         const head = priceStr.slice(0, -1);
         
-        // Track tick velocity
         tickTimes.push(Date.now());
         if (tickTimes.length > 50) tickTimes.shift();
         
         priceHistory.push(currentPrice);
         if (priceHistory.length > 200) priceHistory.shift();
+        
+        // Update scanner data
+        if (!scannerData[currentSymbol]) {
+            scannerData[currentSymbol] = { ticks: [], volatility: 0, score: 0 };
+        }
+        scannerData[currentSymbol].ticks.push(currentPrice);
+        if (scannerData[currentSymbol].ticks.length > 50) {
+            scannerData[currentSymbol].ticks.shift();
+        }
         
         let directionArrow = "";
         let arrowColor = "#ffffff";
@@ -178,9 +242,9 @@ function openAnalysis(name, symbol) {
     dynamicsHistory = [];
     
     document.getElementById('mTitle').innerText = name;
+    document.getElementById('price-symbol').textContent = symbol.toUpperCase();
     document.getElementById('modal').style.display = 'block';
     
-    // Reset to signal panel
     switchPanel('signal', document.querySelector('.panel-nav-btn'));
     switchContract('rise_fall', document.querySelector('.tab'));
 
@@ -195,8 +259,8 @@ function openAnalysis(name, symbol) {
     if (activeSub) ws.send(JSON.stringify({ "forget": activeSub }));
     ws.send(JSON.stringify({ "ticks": symbol, "subscribe": 1 }));
     
-    // Start scanner updates
     startScanner();
+    updateSessionInfo();
 }
 
 function switchContract(mode, el) {
@@ -206,16 +270,13 @@ function switchContract(mode, el) {
 
     const digitPanel = document.getElementById('digit-analysis-panel');
     const chartView = document.getElementById('chart-container');
-    const signalPanel = document.getElementById('signal-panel');
 
     if (mode === 'rise_fall') {
         digitPanel.style.display = 'none';
-        chartView.style.height = '300px';
-        signalPanel.classList.add('active');
+        chartView.style.height = '250px';
     } else {
         digitPanel.style.display = 'block';
-        chartView.style.height = '250px';
-        signalPanel.classList.add('active');
+        chartView.style.height = '200px';
         buildDigitGrid();
     }
     
@@ -228,26 +289,34 @@ function switchContract(mode, el) {
     updateSignalEngine();
 }
 
-// NEW: Panel Switching
 function switchPanel(panelName, el) {
     document.querySelectorAll('.panel-nav-btn').forEach(b => b.classList.remove('active'));
-    el.classList.add('active');
+    if(el) el.classList.add('active');
     
-    document.querySelectorAll('.signal-panel, .dynamics-panel, .scanner-panel').forEach(p => {
+    document.querySelectorAll('.signal-panel, .dynamics-panel, .scanner-panel, .bridge-panel, .history-panel, .risk-panel, .session-panel').forEach(p => {
         p.classList.remove('active');
         p.style.display = 'none';
     });
     
-    if (panelName === 'signal') {
-        document.getElementById('signal-panel').style.display = 'block';
-    } else if (panelName === 'dynamics') {
-        document.getElementById('dynamics-panel').style.display = 'block';
-        document.getElementById('dynamics-panel').classList.add('active');
-        updateDynamics();
-    } else if (panelName === 'scanner') {
-        document.getElementById('scanner-panel').style.display = 'block';
-        document.getElementById('scanner-panel').classList.add('active');
-        updateScannerDisplay();
+    const panelMap = {
+        'signal': 'signal-panel',
+        'dynamics': 'dynamics-panel',
+        'scanner': 'scanner-panel',
+        'bridge': 'bridge-panel',
+        'history': 'history-panel',
+        'risk': 'risk-panel',
+        'session': 'session-panel'
+    };
+    
+    const panelId = panelMap[panelName];
+    if (panelId) {
+        const panel = document.getElementById(panelId);
+        panel.style.display = 'block';
+        panel.classList.add('active');
+        
+        if (panelName === 'history') renderHistory();
+        if (panelName === 'risk') updateRiskDisplay();
+        if (panelName === 'session') updateSessionInfo();
     }
 }
 
@@ -279,7 +348,6 @@ function renderReefStatistics(activeDigit) {
         
         if (label) {
             label.innerText = realPercentage + "%";
-            
             if (counts[i] === maxVal && maxVal !== minVal) {
                 label.style.color = "#4caf50";
             } else if (counts[i] === minVal && maxVal !== minVal) {
@@ -309,11 +377,23 @@ function renderReefStatistics(activeDigit) {
     }
 }
 
-// ==================== SIGNAL ENGINE ====================
+// ==================== ENHANCED SIGNAL ENGINE ====================
 
 function updateSignalEngine() {
     const panel = document.getElementById('signal-panel');
     if (panel.style.display === 'none') return;
+    
+    // Check risk limits
+    if (!riskSettings.tradingEnabled) {
+        displayRiskBlock();
+        return;
+    }
+    
+    // Check session
+    if (!isGoodTradingSession()) {
+        displaySessionBlock();
+        return;
+    }
     
     let result = null;
     
@@ -345,6 +425,13 @@ function updateSignalEngine() {
         if (predictionStabilityCount >= 3) {
             displaySignal(result);
             activeSignalData = result;
+            
+            // Trigger alerts and bridge
+            if (predictionStabilityCount === 3) {
+                triggerAlert(result);
+                sendToBridge(result);
+                addToHistory(result);
+            }
         } else {
             displayStabilizing(result);
         }
@@ -366,9 +453,7 @@ function generateRiseFallSignal() {
         detail: `${priceHistory.length}/${config.minTicks}`
     });
     
-    if (!hasMinTicks) {
-        return { conditions, overallPass: false };
-    }
+    if (!hasMinTicks) return { conditions, overallPass: false };
     
     const recent = priceHistory.slice(-config.minTicks);
     
@@ -407,33 +492,29 @@ function generateRiseFallSignal() {
     const trendStrength = Math.max(upRatio, downRatio);
     const maxConsecutive = Math.max(maxConsecutiveUp, maxConsecutiveDown);
     
-    const meetsTrendThreshold = trendStrength >= config.trendThreshold;
     conditions.push({
         name: `Trend Strength ≥ ${(config.trendThreshold * 100).toFixed(0)}%`,
-        status: meetsTrendThreshold ? 'PASS' : 'FAIL',
+        status: trendStrength >= config.trendThreshold ? 'PASS' : 'FAIL',
         detail: `${(trendStrength * 100).toFixed(1)}%`
     });
     
-    const meetsConsecutive = maxConsecutive >= config.minConsecutive;
     conditions.push({
         name: `Consecutive Moves ≥ ${config.minConsecutive}`,
-        status: meetsConsecutive ? 'PASS' : 'FAIL',
+        status: maxConsecutive >= config.minConsecutive ? 'PASS' : 'FAIL',
         detail: `${maxConsecutive} ticks`
     });
     
     const absMomentum = Math.abs(momentum);
-    const meetsMomentum = absMomentum >= config.momentumThreshold;
     conditions.push({
         name: `Momentum Score ≥ ${config.momentumThreshold}`,
-        status: meetsMomentum ? 'PASS' : 'FAIL',
+        status: absMomentum >= config.momentumThreshold ? 'PASS' : 'FAIL',
         detail: `Score: ${momentum}`
     });
     
     const volatility = calculateVolatility(recent);
-    const meetsVolatility = volatility <= config.volatilityMax;
     conditions.push({
         name: `Volatility ≤ ${(config.volatilityMax * 100).toFixed(0)}%`,
-        status: meetsVolatility ? 'PASS' : 'FAIL',
+        status: volatility <= config.volatilityMax ? 'PASS' : 'FAIL',
         detail: `${(volatility * 100).toFixed(2)}%`
     });
     
@@ -448,7 +529,7 @@ function generateRiseFallSignal() {
         confidence = Math.round(downRatio * 100);
     }
     
-    const overallPass = meetsTrendThreshold && meetsConsecutive && meetsMomentum && meetsVolatility;
+    const overallPass = conditions.every(c => c.status === 'PASS') && prediction !== null;
     
     return {
         type: 'rise_fall',
@@ -463,23 +544,25 @@ function generateRiseFallSignal() {
 
 function generateEvenOddSignal() {
     const config = SIGNAL_CONFIG.even_odd;
+    const digitConfig = config.digitConditions;
     const conditions = [];
     
-    const hasMinTicks = reefDigitWindow.length >= config.minTicks;
+    // Enhanced digit-specific conditions
+    const hasMinTicks = reefDigitWindow.length >= digitConfig.minSample;
     conditions.push({
-        name: `Minimum ${config.minTicks} Digits Collected`,
+        name: `Digit Sample ≥ ${digitConfig.minSample}`,
         status: hasMinTicks ? 'PASS' : 'FAIL',
-        detail: `${reefDigitWindow.length}/${config.minTicks}`
+        detail: `${reefDigitWindow.length}/${digitConfig.minSample}`
     });
     
-    if (!hasMinTicks) {
-        return { conditions, overallPass: false };
-    }
+    if (!hasMinTicks) return { conditions, overallPass: false };
     
-    const recent = reefDigitWindow.slice(-config.minTicks);
+    const recent = reefDigitWindow.slice(-digitConfig.minSample);
     
     let evenCount = 0, oddCount = 0;
     let currentStreak = 1, lastParity = null, maxStreak = 1;
+    let evenStreaks = [], oddStreaks = [];
+    let currentStreakType = null, currentStreakLen = 0;
     
     for (let digit of recent) {
         const isEven = digit % 2 === 0;
@@ -489,12 +572,21 @@ function generateEvenOddSignal() {
         if (lastParity !== null) {
             if (isEven === lastParity) {
                 currentStreak++;
-                maxStreak = Math.max(maxStreak, currentStreak);
+                currentStreakLen++;
             } else {
+                if (currentStreakType === 'even') evenStreaks.push(currentStreakLen);
+                else if (currentStreakType === 'odd') oddStreaks.push(currentStreakLen);
+                
                 currentStreak = 1;
+                currentStreakLen = 1;
+                currentStreakType = isEven ? 'even' : 'odd';
             }
+        } else {
+            currentStreakType = isEven ? 'even' : 'odd';
+            currentStreakLen = 1;
         }
         lastParity = isEven;
+        maxStreak = Math.max(maxStreak, currentStreak);
     }
     
     const total = evenCount + oddCount;
@@ -503,52 +595,53 @@ function generateEvenOddSignal() {
     const dominance = Math.max(evenRatio, oddRatio);
     const gap = Math.abs(evenCount - oddCount);
     
-    const meetsDominance = dominance >= config.dominanceThreshold;
     conditions.push({
-        name: `Dominance ≥ ${(config.dominanceThreshold * 100).toFixed(0)}%`,
-        status: meetsDominance ? 'PASS' : 'FAIL',
-        detail: `${(dominance * 100).toFixed(1)}%`
+        name: `Parity Dominance ≥ ${(digitConfig.evenOddRatio * 100).toFixed(0)}%`,
+        status: dominance >= digitConfig.evenOddRatio ? 'PASS' : 'FAIL',
+        detail: `${(dominance * 100).toFixed(1)}% (${evenCount}E/${oddCount}O)`
     });
     
-    const meetsGap = gap >= config.minGap;
     conditions.push({
         name: `Count Gap ≥ ${config.minGap}`,
-        status: meetsGap ? 'PASS' : 'FAIL',
+        status: gap >= config.minGap ? 'PASS' : 'FAIL',
         detail: `Gap: ${gap}`
     });
     
     const chiSquare = calculateChiSquare([evenCount, oddCount], [total/2, total/2]);
-    const meetsChiSquare = chiSquare >= config.chiSquareThreshold;
     conditions.push({
-        name: `Chi-Square ≥ ${config.chiSquareThreshold}`,
-        status: meetsChiSquare ? 'PASS' : 'FAIL',
+        name: `Chi-Square ≥ ${digitConfig.chiSquareMin}`,
+        status: chiSquare >= digitConfig.chiSquareMin ? 'PASS' : 'FAIL',
         detail: `χ² = ${chiSquare.toFixed(2)}`
     });
     
+    // Streak analysis for reversal detection
     const lastDigit = recent[recent.length - 1];
     const lastIsEven = lastDigit % 2 === 0;
     let prediction = null;
     let confidence = 0;
+    let strategy = '';
     
-    if (maxStreak >= config.streakThreshold) {
+    if (maxStreak >= digitConfig.maxStreakBeforeReversal) {
         prediction = lastIsEven ? 'ODD' : 'EVEN';
         confidence = 75;
+        strategy = 'Streak Reversal';
         conditions.push({
-            name: `Streak Reversal (Max: ${maxStreak})`,
+            name: `Streak Reversal Trigger (${maxStreak} streak)`,
             status: 'PASS',
-            detail: 'Reversal signal'
+            detail: 'Reversal strategy'
         });
     } else {
         prediction = evenRatio > oddRatio ? 'EVEN' : 'ODD';
         confidence = Math.round(dominance * 100);
+        strategy = 'Dominance Follow';
         conditions.push({
-            name: `Streak Check (Max: ${maxStreak})`,
-            status: maxStreak < config.streakThreshold ? 'PASS' : 'FAIL',
-            detail: 'Within limits'
+            name: `Streak Check (${maxStreak}/${digitConfig.maxStreakBeforeReversal})`,
+            status: maxStreak < digitConfig.maxStreakBeforeReversal ? 'PASS' : 'FAIL',
+            detail: strategy
         });
     }
     
-    const overallPass = meetsDominance && meetsGap && meetsChiSquare;
+    const overallPass = conditions.every(c => c.status === 'PASS');
     
     return {
         type: 'even_odd',
@@ -557,158 +650,150 @@ function generateEvenOddSignal() {
         strength: Math.min(5, Math.floor(confidence / 20)),
         conditions,
         overallPass,
-        metrics: { evenRatio, oddRatio, maxStreak, chiSquare }
+        strategy,
+        metrics: { evenRatio, oddRatio, maxStreak, chiSquare, gap }
     };
 }
 
 function generateMatchesDiffersSignal() {
     const config = SIGNAL_CONFIG.matches_differs;
+    const digitConfig = config.digitConditions;
     const conditions = [];
     
-    const hasMinTicks = reefDigitWindow.length >= config.minTicks;
+    const hasMinTicks = reefDigitWindow.length >= digitConfig.minSample;
     conditions.push({
-        name: `Minimum ${config.minTicks} Digits Collected`,
+        name: `Digit Sample ≥ ${digitConfig.minSample}`,
         status: hasMinTicks ? 'PASS' : 'FAIL',
-        detail: `${reefDigitWindow.length}/${config.minTicks}`
+        detail: `${reefDigitWindow.length}/${digitConfig.minSample}`
     });
     
-    if (!hasMinTicks) {
-        return { conditions, overallPass: false };
-    }
+    if (!hasMinTicks) return { conditions, overallPass: false };
     
     const counts = Array(10).fill(0);
     reefDigitWindow.forEach(d => counts[d]++);
     
     const total = reefDigitWindow.length;
     
-    let maxCount = 0;
-    let predictedDigit = -1;
-    let secondBest = 0;
+    // Find best candidate with margin analysis
+    let sortedDigits = counts.map((c, i) => ({ digit: i, count: c, prob: c/total }))
+        .sort((a, b) => b.count - a.count);
     
-    for (let i = 0; i <= 9; i++) {
-        if (counts[i] > maxCount) {
-            secondBest = maxCount;
-            maxCount = counts[i];
-            predictedDigit = i;
-        } else if (counts[i] > secondBest) {
-            secondBest = counts[i];
-        }
-    }
+    let best = sortedDigits[0];
+    let second = sortedDigits[1];
+    let margin = best.count - second.count;
     
-    const probability = maxCount / total;
-    const margin = maxCount - secondBest;
-    
-    const meetsProbability = probability >= config.probabilityThreshold;
     conditions.push({
-        name: `Probability ≥ ${(config.probabilityThreshold * 100).toFixed(0)}%`,
-        status: meetsProbability ? 'PASS' : 'FAIL',
-        detail: `${(probability * 100).toFixed(1)}%`
+        name: `Best Digit Probability ≥ ${(digitConfig.minProbability * 100).toFixed(0)}%`,
+        status: best.prob >= digitConfig.minProbability ? 'PASS' : 'FAIL',
+        detail: `Digit ${best.digit}: ${(best.prob * 100).toFixed(1)}%`
     });
     
-    const meetsOccurrence = maxCount >= config.minOccurrence;
+    conditions.push({
+        name: `Lead Margin ≥ ${digitConfig.minLeadMargin}`,
+        status: margin >= digitConfig.minLeadMargin ? 'PASS' : 'FAIL',
+        detail: `${margin} over digit ${second.digit}`
+    });
+    
     conditions.push({
         name: `Occurrences ≥ ${config.minOccurrence}`,
-        status: meetsOccurrence ? 'PASS' : 'FAIL',
-        detail: `${maxCount} times`
-    });
-    
-    const meetsMargin = margin >= 3;
-    conditions.push({
-        name: `Lead Margin ≥ 3`,
-        status: meetsMargin ? 'PASS' : 'FAIL',
-        detail: `Lead: ${margin}`
+        status: best.count >= config.minOccurrence ? 'PASS' : 'FAIL',
+        detail: `${best.count} times`
     });
     
     const entropy = calculateEntropy(counts, total);
-    const meetsEntropy = entropy <= config.entropyThreshold;
     conditions.push({
-        name: `Entropy ≤ ${config.entropyThreshold}`,
-        status: meetsEntropy ? 'PASS' : 'FAIL',
+        name: `Entropy ≤ ${digitConfig.maxEntropy}`,
+        status: entropy <= digitConfig.maxEntropy ? 'PASS' : 'FAIL',
         detail: `H = ${entropy.toFixed(3)}`
     });
     
-    const ci = calculateConfidenceInterval(maxCount, total);
-    const meetsCI = ci.lower > 0.10;
+    const ci = calculateConfidenceInterval(best.count, total);
     conditions.push({
-        name: `95% CI Lower > 10%`,
-        status: meetsCI ? 'PASS' : 'FAIL',
+        name: `95% CI Lower > ${(digitConfig.confidenceMin * 100).toFixed(0)}%`,
+        status: ci.lower > digitConfig.confidenceMin ? 'PASS' : 'FAIL',
         detail: `[${(ci.lower * 100).toFixed(1)}%, ${(ci.upper * 100).toFixed(1)}%]`
     });
     
-    const confidence = Math.round(probability * 100);
-    const overallPass = meetsProbability && meetsOccurrence && meetsMargin && meetsEntropy && meetsCI;
+    const confidence = Math.round(best.prob * 100);
+    const overallPass = conditions.every(c => c.status === 'PASS');
     
     return {
         type: 'matches_differs',
         prediction: 'MATCHES',
-        targetDigit: predictedDigit,
+        targetDigit: best.digit,
         confidence,
         strength: Math.min(5, Math.floor(confidence / 20)),
         conditions,
         overallPass,
-        metrics: { probability, entropy, margin }
+        alternativeDigits: sortedDigits.slice(1, 3).map(d => d.digit),
+        metrics: { probability: best.prob, entropy, margin }
     };
 }
 
 function generateOverUnderSignal() {
     const config = SIGNAL_CONFIG.over_under;
+    const digitConfig = config.digitConditions;
     const conditions = [];
     
-    const hasMinTicks = reefDigitWindow.length >= config.minTicks;
+    const hasMinTicks = reefDigitWindow.length >= digitConfig.minSample;
     conditions.push({
-        name: `Minimum ${config.minTicks} Digits Collected`,
+        name: `Digit Sample ≥ ${digitConfig.minSample}`,
         status: hasMinTicks ? 'PASS' : 'FAIL',
-        detail: `${reefDigitWindow.length}/${config.minTicks}`
+        detail: `${reefDigitWindow.length}/${digitConfig.minSample}`
     });
     
-    if (!hasMinTicks) {
-        return { conditions, overallPass: false };
-    }
+    if (!hasMinTicks) return { conditions, overallPass: false };
     
-    const recent = reefDigitWindow.slice(-config.minTicks);
+    const recent = reefDigitWindow.slice(-digitConfig.minSample);
     
-    let overCount = 0;
-    let underCount = 0;
-    let overTrend = 0, underTrend = 0;
-    let lastZone = null;
+    let overCount = 0;  // > 4
+    let underCount = 0; // <= 4
+    let overPeriods = 0, underPeriods = 0;
+    let lastZone = null, currentPeriodLen = 0;
+    let zoneSwitches = 0;
     
     for (let digit of recent) {
-        if (digit > 4) {
-            overCount++;
-            if (lastZone === 'over') overTrend++;
-        } else {
-            underCount++;
-            if (lastZone === 'under') underTrend++;
+        const isOver = digit > digitConfig.pivotDigit;
+        
+        if (isOver) overCount++;
+        else underCount++;
+        
+        if (lastZone !== null) {
+            if ((isOver && lastZone === 'over') || (!isOver && lastZone === 'under')) {
+                currentPeriodLen++;
+            } else {
+                zoneSwitches++;
+                if (lastZone === 'over') overPeriods++;
+                else underPeriods++;
+                currentPeriodLen = 1;
+            }
         }
-        lastZone = digit > 4 ? 'over' : 'under';
+        lastZone = isOver ? 'over' : 'under';
     }
     
     const total = overCount + underCount;
     const overRatio = overCount / total;
     const underRatio = underCount / total;
     const dominance = Math.max(overRatio, underRatio);
+    const dominantPeriods = Math.max(overPeriods, underPeriods);
     
-    const meetsDominance = dominance >= config.dominanceThreshold;
     conditions.push({
-        name: `Dominance ≥ ${(config.dominanceThreshold * 100).toFixed(0)}%`,
-        status: meetsDominance ? 'PASS' : 'FAIL',
-        detail: `${(dominance * 100).toFixed(1)}%`
+        name: `Range Dominance ≥ ${(digitConfig.overUnderRatio * 100).toFixed(0)}%`,
+        status: dominance >= digitConfig.overUnderRatio ? 'PASS' : 'FAIL',
+        detail: `${(dominance * 100).toFixed(1)}% (${overCount}O/${underCount}U)`
+    });
+    
+    conditions.push({
+        name: `Trend Periods ≥ ${digitConfig.minTrendPeriods}`,
+        status: dominantPeriods >= digitConfig.minTrendPeriods ? 'PASS' : 'FAIL',
+        detail: `${dominantPeriods} periods`
     });
     
     const balance = Math.min(overRatio, underRatio) / Math.max(overRatio, underRatio);
-    const meetsBalance = balance <= config.distributionBalance;
     conditions.push({
         name: `Distribution Imbalance`,
-        status: !meetsBalance ? 'PASS' : 'FAIL',
+        status: balance <= config.distributionBalance ? 'PASS' : 'FAIL',
         detail: `Ratio: ${(balance * 100).toFixed(1)}%`
-    });
-    
-    const dominantTrend = Math.max(overTrend, underTrend);
-    const meetsTrend = dominantTrend >= config.trendConsistency;
-    conditions.push({
-        name: `Trend Periods ≥ ${config.trendConsistency}`,
-        status: meetsTrend ? 'PASS' : 'FAIL',
-        detail: `${dominantTrend} periods`
     });
     
     let prediction = null;
@@ -717,15 +802,15 @@ function generateOverUnderSignal() {
     
     if (overRatio > underRatio) {
         prediction = 'OVER';
-        targetDigit = 4;
+        targetDigit = digitConfig.pivotDigit;
         confidence = Math.round(overRatio * 100);
     } else {
         prediction = 'UNDER';
-        targetDigit = 5;
+        targetDigit = digitConfig.pivotDigit + 1;
         confidence = Math.round(underRatio * 100);
     }
     
-    const overallPass = meetsDominance && !meetsBalance && meetsTrend;
+    const overallPass = conditions.every(c => c.status === 'PASS');
     
     return {
         type: 'over_under',
@@ -735,8 +820,288 @@ function generateOverUnderSignal() {
         strength: Math.min(5, Math.floor(confidence / 20)),
         conditions,
         overallPass,
-        metrics: { overRatio, underRatio, dominantTrend }
+        metrics: { overRatio, underRatio, dominantPeriods, zoneSwitches }
     };
+}
+
+// ==================== ALERTS & NOTIFICATIONS ====================
+
+function triggerAlert(signal) {
+    if (alertSettings.sound) playAlertSound();
+    if (alertSettings.vibration && navigator.vibrate) navigator.vibrate([200, 100, 200]);
+    if (alertSettings.push) sendPushNotification(signal);
+    
+    // Visual flash
+    document.body.style.animation = 'flash 0.5s';
+    setTimeout(() => document.body.style.animation = '', 500);
+}
+
+function playAlertSound() {
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.value = 800;
+    oscillator.type = 'sine';
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.5);
+}
+
+function sendPushNotification(signal) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Zion Trading Signal', {
+            body: `${signal.prediction} @ ${currentSymbol} (${signal.confidence}%)`,
+            icon: 'https://via.placeholder.com/64x64/4CAF50/FFFFFF?text=ZION'
+        });
+    }
+}
+
+// ==================== TRADE BRIDGE ====================
+
+function sendToBridge(signal) {
+    bridgeConfig.lastSignal = {
+        ...signal,
+        symbol: currentSymbol,
+        timestamp: new Date().toISOString(),
+        price: lastPrice
+    };
+    
+    updateBridgeDisplay();
+    
+    if (alertSettings.auto) {
+        executeTrade(signal);
+    }
+    
+    // Simulate webhook
+    if (bridgeConfig.webhookUrl) {
+        console.log('Sending to webhook:', bridgeConfig.webhookUrl, signal);
+        // fetch(bridgeConfig.webhookUrl, { method: 'POST', body: JSON.stringify(signal) });
+    }
+}
+
+function updateBridgeStatus(status) {
+    const indicator = document.getElementById('bridge-indicator');
+    const text = document.getElementById('bridge-text');
+    const connection = document.getElementById('bridge-connection');
+    
+    if (status === 'connected') {
+        indicator.className = 'status-indicator connected';
+        text.textContent = 'System Ready';
+        connection.textContent = '● ONLINE';
+        connection.style.color = '#4caf50';
+        bridgeConfig.connected = true;
+    } else {
+        indicator.className = 'status-indicator disconnected';
+        text.textContent = 'Disconnected';
+        connection.textContent = '● OFFLINE';
+        connection.style.color = '#ff444f';
+    }
+    
+    document.getElementById('execute-btn').disabled = !bridgeConfig.connected || !activeSignalData;
+}
+
+function updateBridgeDisplay() {
+    if (!bridgeConfig.lastSignal) return;
+    
+    document.getElementById('last-bridge-signal').textContent = 
+        `${bridgeConfig.lastSignal.prediction} (${bridgeConfig.lastSignal.confidence}%)`;
+    document.getElementById('auto-execute').textContent = alertSettings.auto ? 'ON' : 'OFF';
+    
+    updateBridgeStatus(bridgeConfig.connected ? 'connected' : 'disconnected');
+}
+
+function testBridge() {
+    updateBridgeStatus('connected');
+    alert('Bridge connection test successful!');
+}
+
+function manualExecute() {
+    if (activeSignalData) {
+        executeTrade(activeSignalData);
+        alert('Trade executed manually!');
+    }
+}
+
+function executeTrade(signal) {
+    // Add to history as pending
+    const trade = {
+        ...signal,
+        id: Date.now(),
+        status: 'pending',
+        result: null,
+        profit: 0
+    };
+    
+    signalHistory.unshift(trade);
+    saveHistory();
+    
+    // Simulate trade result after 1-5 minutes (for demo)
+    setTimeout(() => {
+        simulateTradeResult(trade.id);
+    }, 30000 + Math.random() * 120000);
+}
+
+function simulateTradeResult(tradeId) {
+    const trade = signalHistory.find(t => t.id === tradeId);
+    if (!trade) return;
+    
+    // 60% win rate simulation
+    const isWin = Math.random() > 0.4;
+    trade.status = 'completed';
+    trade.result = isWin ? 'win' : 'loss';
+    trade.profit = isWin ? riskSettings.maxTradeAmount * 0.94 : -riskSettings.maxTradeAmount;
+    
+    // Update risk tracking
+    if (!isWin) {
+        riskSettings.consecutiveLosses++;
+        riskSettings.dailyLossUsed += riskSettings.maxTradeAmount;
+        if (riskSettings.consecutiveLosses >= 3 || riskSettings.dailyLossUsed >= riskSettings.maxDailyLoss) {
+            riskSettings.tradingEnabled = false;
+        }
+    } else {
+        riskSettings.consecutiveLosses = 0;
+    }
+    
+    saveHistory();
+    updateRiskDisplay();
+    
+    if (document.getElementById('history-panel').classList.contains('active')) {
+        renderHistory();
+    }
+}
+
+// ==================== HISTORY ====================
+
+function addToHistory(signal) {
+    // Already added in executeTrade
+}
+
+function renderHistory() {
+    const list = document.getElementById('history-list');
+    const totalEl = document.getElementById('total-signals');
+    const winEl = document.getElementById('win-signals');
+    const lossEl = document.getElementById('loss-signals');
+    
+    const completed = signalHistory.filter(s => s.status === 'completed');
+    const wins = completed.filter(s => s.result === 'win').length;
+    const losses = completed.filter(s => s.result === 'loss').length;
+    
+    totalEl.textContent = completed.length;
+    winEl.textContent = wins;
+    lossEl.textContent = losses;
+    
+    list.innerHTML = '';
+    signalHistory.slice(0, 20).forEach(item => {
+        const div = document.createElement('div');
+        div.className = `history-item ${item.result || 'pending'}`;
+        
+        const time = new Date(item.timestamp || item.id).toLocaleTimeString();
+        const resultText = item.result ? (item.result === 'win' ? 'WIN' : 'LOSS') : 'PENDING';
+        const resultClass = item.result ? `result-${item.result}` : 'result-pending';
+        
+        div.innerHTML = `
+            <div>
+                <div class="history-time">${time}</div>
+                <div class="history-signal">${item.prediction} ${item.targetDigit || ''}</div>
+            </div>
+            <span class="history-result ${resultClass}">${resultText}</span>
+        `;
+        list.appendChild(div);
+    });
+}
+
+function clearHistory() {
+    if (confirm('Clear all history?')) {
+        signalHistory = [];
+        saveHistory();
+        renderHistory();
+    }
+}
+
+function saveHistory() {
+    localStorage.setItem('zion_signals', JSON.stringify(signalHistory));
+}
+
+// ==================== RISK MANAGEMENT ====================
+
+function updateRiskSettings() {
+    riskSettings.maxDailyLoss = parseFloat(document.getElementById('max-daily-loss').value) || 100;
+    riskSettings.maxTradeAmount = parseFloat(document.getElementById('max-trade-amount').value) || 10;
+    updateRiskDisplay();
+}
+
+function updateRiskDisplay() {
+    const usedEl = document.getElementById('daily-loss-used');
+    const consecEl = document.getElementById('consecutive-losses');
+    const warningEl = document.getElementById('risk-warning');
+    
+    usedEl.textContent = `$${riskSettings.dailyLossUsed} / $${riskSettings.maxDailyLoss}`;
+    consecEl.textContent = riskSettings.consecutiveLosses;
+    
+    if (riskSettings.dailyLossUsed >= riskSettings.maxDailyLoss * 0.8) {
+        usedEl.style.color = 'var(--red)';
+    }
+    
+    if (riskSettings.consecutiveLosses >= 2) {
+        consecEl.style.color = 'var(--red)';
+    }
+    
+    warningEl.style.display = riskSettings.tradingEnabled ? 'none' : 'block';
+}
+
+function displayRiskBlock() {
+    const status = document.getElementById('signal-status');
+    status.className = 'signal-status no-signal';
+    status.textContent = '🛑 RISK LIMIT REACHED - Trading Paused';
+}
+
+// ==================== SESSION FILTER ====================
+
+function updateSessionInfo() {
+    const hour = new Date().getUTCHours();
+    let session = null;
+    let quality = '';
+    
+    // Remove all active classes
+    document.querySelectorAll('.session-block').forEach(b => b.classList.remove('active'));
+    
+    if (hour >= 0 && hour < 9) {
+        session = 'ASIA';
+        document.getElementById('session-asia').classList.add('active');
+        quality = currentSymbol.includes('1') ? 'EXCELLENT' : 'MODERATE';
+    } else if (hour >= 9 && hour < 14) {
+        session = 'LONDON';
+        document.getElementById('session-london').classList.add('active');
+        quality = 'GOOD';
+    } else if (hour >= 14 && hour < 22) {
+        session = 'NEW YORK';
+        document.getElementById('session-ny').classList.add('active');
+        quality = 'EXCELLENT';
+    } else {
+        session = 'OVERLAP';
+        quality = 'GOOD';
+    }
+    
+    currentSession = session;
+    document.getElementById('session-quality').innerHTML = 
+        `Current Session: <strong>${session}</strong> | Quality: <strong style="color:${quality === 'EXCELLENT' ? '#4caf50' : '#ffc107'}">${quality}</strong>`;
+}
+
+function isGoodTradingSession() {
+    const hour = new Date().getUTCHours();
+    // Avoid low liquidity periods (00:00-02:00 UTC)
+    return !(hour >= 0 && hour < 2);
+}
+
+function displaySessionBlock() {
+    const status = document.getElementById('signal-status');
+    status.className = 'signal-status waiting';
+    status.textContent = '⏳ LOW LIQUIDITY PERIOD - Waiting for better session';
 }
 
 // ==================== MARKET DYNAMICS ====================
@@ -745,14 +1110,12 @@ function updateDynamics() {
     const panel = document.getElementById('dynamics-panel');
     if (!panel.classList.contains('active')) return;
     
-    // Tick Velocity
     let velocity = 0;
     if (tickTimes.length >= 2) {
         const timeSpan = (tickTimes[tickTimes.length - 1] - tickTimes[0]) / 1000;
         velocity = timeSpan > 0 ? (tickTimes.length / timeSpan).toFixed(1) : 0;
     }
     
-    // Price Momentum
     let momentum = 0;
     let momentumTrend = 'neutral';
     if (priceHistory.length >= 10) {
@@ -762,25 +1125,16 @@ function updateDynamics() {
         momentumTrend = change > 0.01 ? 'up' : change < -0.01 ? 'down' : 'neutral';
     }
     
-    // Volatility
     let vol = 0;
     let volTrend = 'neutral';
     if (priceHistory.length >= 20) {
-        const returns = [];
-        for (let i = 1; i < priceHistory.length; i++) {
-            returns.push((priceHistory[i] - priceHistory[i-1]) / priceHistory[i-1]);
-        }
-        const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
-        const variance = returns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / returns.length;
-        vol = (Math.sqrt(variance) * 100).toFixed(2);
-        
+        vol = (calculateVolatility(priceHistory.slice(-20)) * 100).toFixed(2);
         if (lastMetrics.volatility) {
-            volTrend = vol > lastMetrics.volatility * 1.1 ? 'up' : 
-                       vol < lastMetrics.volatility * 0.9 ? 'down' : 'neutral';
+            volTrend = parseFloat(vol) > lastMetrics.volatility * 1.1 ? 'up' : 
+                       parseFloat(vol) < lastMetrics.volatility * 0.9 ? 'down' : 'neutral';
         }
     }
     
-    // Trend Strength
     let strength = 0;
     let strengthTrend = 'neutral';
     if (priceHistory.length >= 30) {
@@ -799,21 +1153,19 @@ function updateDynamics() {
         }
     }
     
-    // Market Phase
     let phase = 'ACCUMULATION';
     let phaseColor = 'neutral';
     if (priceHistory.length > 50) {
         const shortMA = average(priceHistory.slice(-10));
         const longMA = average(priceHistory.slice(-50));
-        const recentVol = parseFloat(vol);
         
-        if (shortMA > longMA * 1.001 && recentVol > 0.02) {
+        if (shortMA > longMA * 1.001 && parseFloat(vol) > 0.02) {
             phase = 'MARK UP';
             phaseColor = 'up';
-        } else if (shortMA < longMA * 0.999 && recentVol > 0.02) {
+        } else if (shortMA < longMA * 0.999 && parseFloat(vol) > 0.02) {
             phase = 'MARK DOWN';
             phaseColor = 'down';
-        } else if (recentVol < 0.01) {
+        } else if (parseFloat(vol) < 0.01) {
             phase = 'CONSOLIDATION';
             phaseColor = 'neutral';
         } else {
@@ -822,90 +1174,42 @@ function updateDynamics() {
         }
     }
     
-    // Signal Quality
     let quality = 0;
     let qualityTrend = 'neutral';
     if (activeSignalData && activeSignalData.overallPass) {
         quality = activeSignalData.confidence;
         qualityTrend = 'up';
     } else if (reefDigitWindow.length > 50) {
-        // Calculate potential quality based on data consistency
         const counts = Array(10).fill(0);
         reefDigitWindow.forEach(d => counts[d]++);
         const maxFreq = Math.max(...counts);
         quality = Math.round((maxFreq / reefDigitWindow.length) * 100);
-        qualityTrend = quality > 15 ? 'up' : 'neutral';
     }
     
-    // Store metrics
     lastMetrics = { volatility: parseFloat(vol), strength };
-    dynamicsHistory.push({ velocity, momentum, vol, strength, quality, timestamp: Date.now() });
-    if (dynamicsHistory.length > 50) dynamicsHistory.shift();
     
-    // Update Display
     document.getElementById('tick-velocity').textContent = velocity + '/s';
-    document.getElementById('velocity-trend').textContent = getTrendArrow(velocity, lastMetrics.prevVelocity || velocity);
-    document.getElementById('velocity-trend').className = 'metric-trend trend-' + (velocity > (lastMetrics.prevVelocity || 0) ? 'up' : 'neutral');
-    
     document.getElementById('price-momentum').textContent = momentum + '%';
-    document.getElementById('momentum-trend').textContent = getTrendLabel(momentumTrend);
-    document.getElementById('momentum-trend').className = 'metric-trend trend-' + momentumTrend;
-    
     document.getElementById('vol-index').textContent = vol + '%';
-    document.getElementById('vol-trend').textContent = getTrendLabel(volTrend);
-    document.getElementById('vol-trend').className = 'metric-trend trend-' + volTrend;
-    
     document.getElementById('trend-strength').textContent = strength + '%';
-    document.getElementById('strength-trend').textContent = getTrendLabel(strengthTrend);
-    document.getElementById('strength-trend').className = 'metric-trend trend-' + strengthTrend;
-    
     document.getElementById('market-phase').textContent = phase;
-    document.getElementById('phase-indicator').textContent = getPhaseEmoji(phase);
-    document.getElementById('phase-indicator').className = 'metric-trend trend-' + phaseColor;
-    
     document.getElementById('signal-quality').textContent = quality + '%';
-    document.getElementById('quality-trend').textContent = quality > 70 ? '✓ Strong' : quality > 40 ? '→ Moderate' : '✗ Weak';
-    document.getElementById('quality-trend').className = 'metric-trend trend-' + (quality > 60 ? 'up' : quality > 30 ? 'neutral' : 'down');
     
-    lastMetrics.prevVelocity = parseFloat(velocity);
+    document.getElementById('momentum-trend').className = 'metric-trend trend-' + momentumTrend;
+    document.getElementById('vol-trend').className = 'metric-trend trend-' + volTrend;
+    document.getElementById('strength-trend').className = 'metric-trend trend-' + strengthTrend;
+    document.getElementById('phase-indicator').className = 'metric-trend trend-' + phaseColor;
+    document.getElementById('quality-trend').className = 'metric-trend trend-' + qualityTrend;
     
-    // Update timer
     const now = new Date();
     document.getElementById('dynamics-timer').textContent = now.toLocaleTimeString('en-US', { 
         hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' 
     });
 }
 
-function average(arr) {
-    return arr.reduce((a, b) => a + b, 0) / arr.length;
-}
-
-function getTrendArrow(current, previous) {
-    if (current > previous * 1.1) return '↑ Rising';
-    if (current < previous * 0.9) return '↓ Falling';
-    return '→ Stable';
-}
-
-function getTrendLabel(trend) {
-    const labels = { up: '↑ Rising', down: '↓ Falling', neutral: '→ Stable' };
-    return labels[trend] || '→ Stable';
-}
-
-function getPhaseEmoji(phase) {
-    const emojis = {
-        'ACCUMULATION': '⬇ Sideways',
-        'MARK UP': '🚀 Bullish',
-        'MARK DOWN': '🔻 Bearish',
-        'CONSOLIDATION': '➡ Range',
-        'DISTRIBUTION': '⚠ Choppy'
-    };
-    return emojis[phase] || '→ Analyzing';
-}
-
-// ==================== VOLATILITY SCANNER ====================
+// ==================== SCANNER ====================
 
 function initScanner() {
-    // Initialize scanner data for all volatility indices
     const volIndices = allSymbols.filter(s => 
         s.market === 'synthetic_index' && 
         !s.display_name.toLowerCase().includes('jump') && 
@@ -930,22 +1234,50 @@ function initScanner() {
 function startScanner() {
     if (scannerInterval) clearInterval(scannerInterval);
     
-    // Subscribe to all volatility indices for scanning
     const volIndices = allSymbols.filter(s => 
         s.market === 'synthetic_index' && 
         !s.display_name.toLowerCase().includes('jump') && 
         !s.display_name.toLowerCase().includes('step')
     );
     
-    // Subscribe to ticks for scanner (throttled)
     volIndices.forEach((s, index) => {
         setTimeout(() => {
             ws.send(JSON.stringify({ "ticks": s.symbol, "subscribe": 1 }));
         }, index * 100);
     });
     
-    // Update display every 2 seconds
     scannerInterval = setInterval(updateScannerDisplay, 2000);
+}
+
+function updateScannerData(symbol, prices) {
+    if (!scannerData[symbol]) return;
+    
+    scannerData[symbol].ticks = prices.slice(-50);
+    scannerData[symbol].lastUpdate = Date.now();
+    
+    if (prices.length > 20) {
+        const vol = calculateVolatility(prices.slice(-20));
+        scannerData[symbol].volatility = vol;
+        
+        // Calculate score
+        let score = 0;
+        const volScore = Math.min(40, (vol * 1000));
+        score += volScore;
+        
+        const recent = prices.slice(-20);
+        let consistentMoves = 0;
+        for (let i = 1; i < recent.length; i++) {
+            if (recent[i] !== recent[i-1]) consistentMoves++;
+        }
+        const trendScore = (consistentMoves / 19) * 30;
+        score += trendScore;
+        
+        const activityScore = Math.min(30, prices.length / 5);
+        score += activityScore;
+        
+        scannerData[symbol].score = Math.round(score);
+        scannerData[symbol].signalReady = score > 60 && vol > 0.001 && vol < 0.05;
+    }
 }
 
 function updateScannerDisplay() {
@@ -955,41 +1287,10 @@ function updateScannerDisplay() {
     const grid = document.getElementById('scanner-grid');
     grid.innerHTML = '';
     
-    // Calculate scores for all markets
-    const scoredMarkets = Object.values(scannerData).map(market => {
-        let score = 0;
-        
-        if (market.ticks.length > 20) {
-            // Volatility score (0-40)
-            const vol = calculateVolatility(market.ticks.slice(-20));
-            const volScore = Math.min(40, (vol * 1000));
-            score += volScore;
-            
-            // Trend consistency (0-30)
-            const recent = market.ticks.slice(-20);
-            let consistentMoves = 0;
-            for (let i = 1; i < recent.length; i++) {
-                if (recent[i] !== recent[i-1]) consistentMoves++;
-            }
-            const trendScore = (consistentMoves / 19) * 30;
-            score += trendScore;
-            
-            // Activity level (0-30)
-            const activityScore = Math.min(30, market.ticks.length / 5);
-            score += activityScore;
-            
-            market.volatility = (vol * 100).toFixed(2);
-            market.score = Math.round(score);
-            market.signalReady = score > 60 && vol > 0.001 && vol < 0.05;
-        }
-        
-        return market;
-    });
+    const scoredMarkets = Object.values(scannerData)
+        .filter(m => m.ticks.length > 0)
+        .sort((a, b) => b.score - a.score);
     
-    // Sort by score
-    scoredMarkets.sort((a, b) => b.score - a.score);
-    
-    // Display top markets
     scoredMarkets.slice(0, 8).forEach((market, index) => {
         const isBest = index === 0 && market.signalReady;
         const card = document.createElement('div');
@@ -1009,7 +1310,6 @@ function updateScannerDisplay() {
         grid.appendChild(card);
     });
     
-    // Update status
     const readyCount = scoredMarkets.filter(m => m.signalReady).length;
     document.getElementById('scanner-status').textContent = `● ${readyCount} READY`;
 }
@@ -1042,7 +1342,7 @@ function displayConditions(result) {
     });
     
     verdict.className = `overall-verdict ${result.overallPass ? 'pass' : 'fail'}`;
-    verdict.textContent = result.overallPass ? '✓ ALL CONDITIONS PASSED - SIGNAL VALID' : '✗ CONDITIONS NOT MET - NO SIGNAL';
+    verdict.textContent = result.overallPass ? '✓ ALL CONDITIONS PASSED' : '✗ CONDITIONS NOT MET';
 }
 
 function displaySignal(signal) {
@@ -1157,13 +1457,12 @@ function displayNoSignal(result) {
 function updateSignalTimer() {
     const timer = document.getElementById('signal-timer');
     const now = new Date();
-    const timeStr = now.toLocaleTimeString('en-US', { 
+    timer.textContent = now.toLocaleTimeString('en-US', { 
         hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' 
     });
-    timer.textContent = timeStr;
 }
 
-// ==================== MATHEMATICAL HELPERS ====================
+// ==================== UTILITY FUNCTIONS ====================
 
 function calculateVolatility(prices) {
     if (prices.length < 2) return 0;
@@ -1205,8 +1504,87 @@ function calculateConfidenceInterval(successes, trials) {
     };
 }
 
+function average(arr) {
+    return arr.reduce((a, b) => a + b, 0) / arr.length;
+}
+
+// ==================== UI CONTROLS ====================
+
+function toggleAlertPanel() {
+    const panel = document.getElementById('alert-panel');
+    panel.classList.toggle('show');
+}
+
+function toggleSetting(type) {
+    alertSettings[type] = !alertSettings[type];
+    document.getElementById(`${type}-toggle`).classList.toggle('active');
+    
+    if (type === 'push' && alertSettings.push && 'Notification' in window) {
+        Notification.requestPermission();
+    }
+    
+    if (type === 'auto') {
+        document.getElementById('auto-execute').textContent = alertSettings.auto ? 'ON' : 'OFF';
+    }
+}
+
+function exportData() {
+    const data = {
+        signals: signalHistory,
+        settings: riskSettings,
+        exportTime: new Date().toISOString()
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `zion_trading_data_${Date.now()}.json`;
+    a.click();
+    
+    // Also export CSV
+    const csv = convertToCSV(signalHistory);
+    const csvBlob = new Blob([csv], { type: 'text/csv' });
+    const csvUrl = URL.createObjectURL(csvBlob);
+    const csvA = document.createElement('a');
+    csvA.href = csvUrl;
+    csvA.download = `zion_signals_${Date.now()}.csv`;
+    csvA.click();
+}
+
+function convertToCSV(data) {
+    const headers = ['ID', 'Time', 'Symbol', 'Type', 'Prediction', 'Confidence', 'Result', 'Profit'];
+    const rows = data.map(item => [
+        item.id,
+        new Date(item.timestamp || item.id).toISOString(),
+        item.symbol || 'unknown',
+        item.type,
+        item.prediction + (item.targetDigit !== undefined ? item.targetDigit : ''),
+        item.confidence,
+        item.result || 'pending',
+        item.profit || 0
+    ]);
+    return [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+}
+
 function closeModal() {
     document.getElementById('modal').style.display = 'none';
     if (activeSub) ws.send(JSON.stringify({ "forget": activeSub }));
     if (scannerInterval) clearInterval(scannerInterval);
+    document.getElementById('alert-panel').classList.remove('show');
 }
+
+// Request notification permission on load
+if ('Notification' in window) {
+    Notification.requestPermission();
+}
+
+// Add flash animation
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes flash {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; background: rgba(76, 175, 80, 0.2); }
+    }
+`;
+document.head.appendChild(style);
