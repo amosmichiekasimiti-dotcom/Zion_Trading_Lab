@@ -866,3 +866,21 @@ function closeModal() {
     document.getElementById('modal').style.display = 'none';
     if (activeSub) ws.send(JSON.stringify({ "forget": activeSub }));
 }
+// Help Modal Functions
+function openHelp() {
+    document.getElementById('help-modal').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeHelp() {
+    document.getElementById('help-modal').style.display = 'none';
+    document.body.style.overflow = '';
+}
+
+// Close help modal when clicking outside
+document.getElementById('help-modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeHelp();
+    }
+});
+
