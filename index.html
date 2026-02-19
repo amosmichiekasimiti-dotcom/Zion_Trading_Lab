@@ -3,54 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zion Trading Lab | Upgraded</title>
+    <title>Zion Trading Lab</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
+    <style>
+        :root { --red: #ff444f; --green: #4caf50; --gold: #ffd700; --bg: #0a0e17; --card: #161b22; --border: #30363d; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #e6edf3; margin: 0; padding: 10px; }
+        .price-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        #live-price { font-size: 32px; font-weight: bold; }
+        .active-digit { color: var(--red); border-bottom: 3px solid var(--red); }
+        .engine-panel { background: var(--card); border: 1px solid var(--gold); border-radius: 12px; padding: 15px; margin-bottom: 15px; }
+        .signal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .signal-box { background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; text-align: center; border: 1px solid var(--border); }
+        .value { font-size: 24px; font-weight: bold; margin-top: 5px; }
+        .conditions-list { background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px; }
+        .condition { display: flex; justify-content: space-between; font-size: 13px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .status { font-weight: bold; text-transform: uppercase; }
+        .status-passed { color: var(--green); }
+        #chart-container { border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: #000; height: 400px; }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <div class="price-card">
-            <div id="live-price">0.0000<span class="active-digit">0</span></div>
-            <div style="text-align: right;">
-                <small style="color: #8b949e;">LIVE FEED</small><br>
-                <span id="price-symbol" style="font-weight: bold; color: var(--red);">1HZ50V</span>
-            </div>
+    <div class="price-card">
+        <div id="live-price">0.0000<span class="active-digit">0</span></div>
+        <div style="text-align: right;"><small style="color: #8b949e;">LIVE FEED</small><br><span id="price-symbol" style="font-weight: bold; color: var(--red);">1HZ50V</span></div>
+    </div>
+
+    <div class="engine-panel">
+        <div style="color: var(--gold); font-weight: bold; margin-bottom: 10px;"><i class="fas fa-robot"></i> Digit Engine</div>
+        <div id="engine-status" style="font-size: 11px; margin-bottom: 15px;">ANALYZING...</div>
+        
+        <div class="signal-grid">
+            <div class="signal-box"><small>Signal</small><div id="primary-signal" class="value">WAIT</div></div>
+            <div class="signal-box"><small>Trend</small><div id="market-direction" class="value">--</div></div>
         </div>
 
-        <div class="engine-panel">
-            <div class="engine-header"><i class="fas fa-microchip"></i> Digit Analysis Engine</div>
-            <div id="engine-status" style="font-size: 10px; color: var(--gold); margin-bottom: 10px;">ANALYZING TICK DATA...</div>
-            
-            <div class="signal-grid">
-                <div class="signal-box">
-                    <small style="color: #8b949e;">Signal</small>
-                    <div id="primary-signal" class="value" style="color: var(--blue);">WAIT</div>
-                </div>
-                <div class="signal-box">
-                    <small style="color: #8b949e;">Trend</small>
-                    <div id="market-direction" class="value">--</div>
-                </div>
-            </div>
-
-            <div class="conditions-list">
-                <div class="condition">
-                    <span>Pattern Recognition</span>
-                    <span id="cond-pattern" class="status status-checking">Checking</span>
-                </div>
-                <div class="condition">
-                    <span>Volatility Filter</span>
-                    <span id="cond-vol" class="status status-checking">Checking</span>
-                </div>
-                <div class="condition">
-                    <span>Momentum Confirmation</span>
-                    <span id="cond-momentum" class="status status-checking">Checking</span>
-                </div>
-            </div>
+        <div class="conditions-list">
+            <div class="condition">Pattern Recognition <span id="cond-pattern" class="status">Checking</span></div>
+            <div class="condition">Volatility Filter <span id="cond-vol" class="status">Checking</span></div>
+            <div class="condition">Momentum Confirmation <span id="cond-momentum" class="status">Checking</span></div>
         </div>
+    </div>
 
-        <div id="chart-container">
-            <iframe id="trading-chart" src="" width="100%" height="400" frameborder="0"></iframe>
-        </div>
+    <div id="chart-container">
+        <iframe id="tv-chart" src="" width="100%" height="100%" frameborder="0"></iframe>
     </div>
 
     <script src="script.js"></script>
