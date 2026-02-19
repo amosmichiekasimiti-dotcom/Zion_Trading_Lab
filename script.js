@@ -1,10 +1,14 @@
 /**
- * Zion Trading Lab - Complete Trading System
- * Features: Signal Engine, Market Dynamics, Scanner, Trade Bridge, History, Risk Management, Session Filters
+ * Zion Trading Lab - Complete Trading System with All Ticks Support
+ * Features: Signal Engine, Market Dynamics, Scanner, All Ticks Data, Trade Bridge, History, Risk Management, Session Filters
  */
 
 const ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
 let activeSub = null;
+let allTicksSub = null; // NEW: Subscription ID for all ticks
+let allTicksData = []; // NEW: Store all ticks data
+let allTicksActive = false; // NEW: Track if all ticks is active
+
 let allSymbols = [];
 let currentSymbol = '';
 let currentMode = 'rise_fall';
@@ -128,6 +132,11 @@ ws.onopen = () => {
 ws.onmessage = (msg) => {
     const data = JSON.parse(msg.data);
 
+    // NEW: Handle all ticks data
+    if (data.tick && allTicksActive) {
+        handleAllTicksData(data.tick);
+    }
+
     if (data.active_symbols) { 
         allSymbols = data.active_symbols; 
         loadCategory('volatility'); 
@@ -146,7 +155,7 @@ ws.onmessage = (msg) => {
         updateScannerData(currentSymbol, data.history.prices);
     }
 
-    if (data.tick) {
+    if (data.tick && data.tick.symbol === currentSymbol) {
         activeSub = data.tick.id;
         const currentPrice = data.tick.quote;
         const priceStr = currentPrice.toFixed(data.tick.pip_size);
@@ -200,6 +209,154 @@ ws.onmessage = (msg) => {
         updateDynamics();
     }
 };
+
+// NEW: Handle all ticks data for comprehensive market analysis
+function handleAllTicksData(tick) {
+    const symbol = tick.symbol;
+    const price = tick.quote;
+    const pipSize = tick.pip_size || 2;
+    const priceStr = price.toFixed(pipSize);
+    const lastDigit = parseInt(priceStr.slice(-1));
+    
+    // Store tick data
+    allTicksData.unshift({
+        symbol: symbol,
+        price: price,
+        digit: lastDigit,
+        time: new Date().toLocaleTimeString(),
+        timestamp: Date.now()
+    });
+    
+    // Keep only last 50 ticks
+    if (allTicksData.length > 50) {
+        allTicksData = allTicksData.slice(0, 50);
+    }
+    
+    // Update all ticks display if panel is active
+    const panel = document.getElementById('all-ticks-panel');
+    if (panel && panel.classList.contains('active')) {
+        renderAllTicksDisplay();
+    }
+    
+    // Update scanner data for this symbol
+    if (!scannerData[symbol]) {
+        scannerData[symbol] = {
+            name: symbol,
+            symbol: symbol,
+            ticks: [],
+            lastDigit: lastDigit,
+            digitHistory: []
+        };
+    }
+    
+    scannerData[symbol].ticks.push(price);
+    scannerData[symbol].lastDigit = lastDigit;
+    scannerData[symbol].digitHistory.push(lastDigit);
+    
+    if (scannerData[symbol].ticks.length > 100) {
+        scannerData[symbol].ticks.shift();
+    }
+    if (scannerData[symbol].digitHistory.length > 100) {
+        scannerData[symbol].digitHistory.shift();
+    }
+    
+    // Update digit analysis if this is current symbol and we're in digit mode
+    if (symbol === currentSymbol && currentMode !== 'rise_fall') {
+        // Enhance digit analysis with all ticks data
+        enhanceDigitAnalysis(symbol);
+    }
+}
+
+// NEW: Render all ticks display
+function renderAllTicksDisplay() {
+    const container = document.getElementById('all-ticks-data');
+    if (!container) return;
+    
+    if (allTicksData.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">Waiting for tick data...</div>';
+        return;
+    }
+    
+    let html = '';
+    allTicksData.slice(0, 20).forEach(tick => {
+        html += `
+            <div class="tick-row">
+                <span class="tick-symbol">${tick.symbol}</span>
+                <span class="tick-price">${tick.price.toFixed(4)}</span>
+                <span class="tick-digit">${tick.digit}</span>
+                <span class="tick-time">${tick.time}</span>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+// NEW: Subscribe to all ticks
+function subscribeAllTicks() {
+    if (allTicksSub) {
+        ws.send(JSON.stringify({ "forget": allTicksSub }));
+    }
+    
+    ws.send(JSON.stringify({ "ticks": "all", "subscribe": 1 }));
+    allTicksActive = true;
+    
+    document.getElementById('all-ticks-status').textContent = 'LIVE';
+    document.getElementById('all-ticks-status').className = 'all-ticks-status active';
+    
+    console.log("Subscribed to all ticks: {\"ticks\":\"all\",\"subscribe\":1}");
+}
+
+// NEW: Unsubscribe from all ticks
+function unsubscribeAllTicks() {
+    if (allTicksSub) {
+        ws.send(JSON.stringify({ "forget": allTicksSub }));
+        allTicksSub = null;
+    }
+    
+    // Alternative unsubscribe method
+    ws.send(JSON.stringify({ "ticks": "all", "subscribe": 0 }));
+    
+    allTicksActive = false;
+    
+    document.getElementById('all-ticks-status').textContent = 'OFFLINE';
+    document.getElementById('all-ticks-status').className = 'all-ticks-status';
+    
+    console.log("Unsubscribed from all ticks");
+}
+
+// NEW: Enhance digit analysis with all ticks data
+function enhanceDigitAnalysis(symbol) {
+    if (!scannerData[symbol] || !scannerData[symbol].digitHistory) return;
+    
+    const digitHistory = scannerData[symbol].digitHistory;
+    if (digitHistory.length < 20) return;
+    
+    // Calculate enhanced statistics from all ticks
+    const counts = Array(10).fill(0);
+    digitHistory.forEach(d => counts[d]++);
+    
+    const total = digitHistory.length;
+    const percentages = counts.map(c => ((c / total) * 100).toFixed(1));
+    
+    // Find hot and cold digits
+    const maxCount = Math.max(...counts);
+    const minCount = Math.min(...counts);
+    const hotDigits = counts.map((c, i) => c === maxCount ? i : null).filter(x => x !== null);
+    const coldDigits = counts.map((c, i) => c === minCount ? i : null).filter(x => x !== null);
+    
+    // Store enhanced data for signal generation
+    window.enhancedDigitStats = {
+        counts,
+        percentages,
+        hotDigits,
+        coldDigits,
+        totalSamples: total,
+        lastUpdated: Date.now()
+    };
+    
+    console.log(`Enhanced digit analysis for ${symbol}:`, window.enhancedDigitStats);
+}
 
 function loadCategory(cat, el) {
     if(el) {
@@ -259,6 +416,11 @@ function openAnalysis(name, symbol) {
     if (activeSub) ws.send(JSON.stringify({ "forget": activeSub }));
     ws.send(JSON.stringify({ "ticks": symbol, "subscribe": 1 }));
     
+    // NEW: Auto-subscribe to all ticks for enhanced digit analysis
+    if (!allTicksActive) {
+        subscribeAllTicks();
+    }
+    
     startScanner();
     updateSessionInfo();
 }
@@ -293,7 +455,7 @@ function switchPanel(panelName, el) {
     document.querySelectorAll('.panel-nav-btn').forEach(b => b.classList.remove('active'));
     if(el) el.classList.add('active');
     
-    document.querySelectorAll('.signal-panel, .dynamics-panel, .scanner-panel, .bridge-panel, .history-panel, .risk-panel, .session-panel').forEach(p => {
+    document.querySelectorAll('.signal-panel, .dynamics-panel, .scanner-panel, .all-ticks-panel, .bridge-panel, .history-panel, .risk-panel, .session-panel').forEach(p => {
         p.classList.remove('active');
         p.style.display = 'none';
     });
@@ -302,6 +464,7 @@ function switchPanel(panelName, el) {
         'signal': 'signal-panel',
         'dynamics': 'dynamics-panel',
         'scanner': 'scanner-panel',
+        'allticks': 'all-ticks-panel',
         'bridge': 'bridge-panel',
         'history': 'history-panel',
         'risk': 'risk-panel',
@@ -317,6 +480,7 @@ function switchPanel(panelName, el) {
         if (panelName === 'history') renderHistory();
         if (panelName === 'risk') updateRiskDisplay();
         if (panelName === 'session') updateSessionInfo();
+        if (panelName === 'allticks') renderAllTicksDisplay();
     }
 }
 
@@ -547,17 +711,25 @@ function generateEvenOddSignal() {
     const digitConfig = config.digitConditions;
     const conditions = [];
     
-    // Enhanced digit-specific conditions
-    const hasMinTicks = reefDigitWindow.length >= digitConfig.minSample;
+    // ENHANCED: Use all ticks data if available
+    let digitSource = reefDigitWindow;
+    if (allTicksActive && scannerData[currentSymbol] && scannerData[currentSymbol].digitHistory) {
+        const allTicksDigits = scannerData[currentSymbol].digitHistory;
+        if (allTicksDigits.length > reefDigitWindow.length) {
+            digitSource = allTicksDigits;
+        }
+    }
+    
+    const hasMinTicks = digitSource.length >= digitConfig.minSample;
     conditions.push({
         name: `Digit Sample ≥ ${digitConfig.minSample}`,
         status: hasMinTicks ? 'PASS' : 'FAIL',
-        detail: `${reefDigitWindow.length}/${digitConfig.minSample}`
+        detail: `${digitSource.length}/${digitConfig.minSample} ${allTicksActive ? '(All Ticks)' : ''}`
     });
     
     if (!hasMinTicks) return { conditions, overallPass: false };
     
-    const recent = reefDigitWindow.slice(-digitConfig.minSample);
+    const recent = digitSource.slice(-digitConfig.minSample);
     
     let evenCount = 0, oddCount = 0;
     let currentStreak = 1, lastParity = null, maxStreak = 1;
@@ -614,7 +786,6 @@ function generateEvenOddSignal() {
         detail: `χ² = ${chiSquare.toFixed(2)}`
     });
     
-    // Streak analysis for reversal detection
     const lastDigit = recent[recent.length - 1];
     const lastIsEven = lastDigit % 2 === 0;
     let prediction = null;
@@ -651,6 +822,7 @@ function generateEvenOddSignal() {
         conditions,
         overallPass,
         strategy,
+        dataSource: allTicksActive ? 'all_ticks' : 'standard',
         metrics: { evenRatio, oddRatio, maxStreak, chiSquare, gap }
     };
 }
@@ -660,21 +832,29 @@ function generateMatchesDiffersSignal() {
     const digitConfig = config.digitConditions;
     const conditions = [];
     
-    const hasMinTicks = reefDigitWindow.length >= digitConfig.minSample;
+    // ENHANCED: Use all ticks data if available
+    let digitSource = reefDigitWindow;
+    if (allTicksActive && scannerData[currentSymbol] && scannerData[currentSymbol].digitHistory) {
+        const allTicksDigits = scannerData[currentSymbol].digitHistory;
+        if (allTicksDigits.length > reefDigitWindow.length) {
+            digitSource = allTicksDigits;
+        }
+    }
+    
+    const hasMinTicks = digitSource.length >= digitConfig.minSample;
     conditions.push({
         name: `Digit Sample ≥ ${digitConfig.minSample}`,
         status: hasMinTicks ? 'PASS' : 'FAIL',
-        detail: `${reefDigitWindow.length}/${digitConfig.minSample}`
+        detail: `${digitSource.length}/${digitConfig.minSample} ${allTicksActive ? '(All Ticks)' : ''}`
     });
     
     if (!hasMinTicks) return { conditions, overallPass: false };
     
     const counts = Array(10).fill(0);
-    reefDigitWindow.forEach(d => counts[d]++);
+    digitSource.forEach(d => counts[d]++);
     
-    const total = reefDigitWindow.length;
+    const total = digitSource.length;
     
-    // Find best candidate with margin analysis
     let sortedDigits = counts.map((c, i) => ({ digit: i, count: c, prob: c/total }))
         .sort((a, b) => b.count - a.count);
     
@@ -725,6 +905,7 @@ function generateMatchesDiffersSignal() {
         strength: Math.min(5, Math.floor(confidence / 20)),
         conditions,
         overallPass,
+        dataSource: allTicksActive ? 'all_ticks' : 'standard',
         alternativeDigits: sortedDigits.slice(1, 3).map(d => d.digit),
         metrics: { probability: best.prob, entropy, margin }
     };
@@ -735,19 +916,28 @@ function generateOverUnderSignal() {
     const digitConfig = config.digitConditions;
     const conditions = [];
     
-    const hasMinTicks = reefDigitWindow.length >= digitConfig.minSample;
+    // ENHANCED: Use all ticks data if available
+    let digitSource = reefDigitWindow;
+    if (allTicksActive && scannerData[currentSymbol] && scannerData[currentSymbol].digitHistory) {
+        const allTicksDigits = scannerData[currentSymbol].digitHistory;
+        if (allTicksDigits.length > reefDigitWindow.length) {
+            digitSource = allTicksDigits;
+        }
+    }
+    
+    const hasMinTicks = digitSource.length >= digitConfig.minSample;
     conditions.push({
         name: `Digit Sample ≥ ${digitConfig.minSample}`,
         status: hasMinTicks ? 'PASS' : 'FAIL',
-        detail: `${reefDigitWindow.length}/${digitConfig.minSample}`
+        detail: `${digitSource.length}/${digitConfig.minSample} ${allTicksActive ? '(All Ticks)' : ''}`
     });
     
     if (!hasMinTicks) return { conditions, overallPass: false };
     
-    const recent = reefDigitWindow.slice(-digitConfig.minSample);
+    const recent = digitSource.slice(-digitConfig.minSample);
     
-    let overCount = 0;  // > 4
-    let underCount = 0; // <= 4
+    let overCount = 0;
+    let underCount = 0;
     let overPeriods = 0, underPeriods = 0;
     let lastZone = null, currentPeriodLen = 0;
     let zoneSwitches = 0;
@@ -820,6 +1010,7 @@ function generateOverUnderSignal() {
         strength: Math.min(5, Math.floor(confidence / 20)),
         conditions,
         overallPass,
+        dataSource: allTicksActive ? 'all_ticks' : 'standard',
         metrics: { overRatio, underRatio, dominantPeriods, zoneSwitches }
     };
 }
@@ -831,7 +1022,6 @@ function triggerAlert(signal) {
     if (alertSettings.vibration && navigator.vibrate) navigator.vibrate([200, 100, 200]);
     if (alertSettings.push) sendPushNotification(signal);
     
-    // Visual flash
     document.body.style.animation = 'flash 0.5s';
     setTimeout(() => document.body.style.animation = '', 500);
 }
@@ -877,10 +1067,8 @@ function sendToBridge(signal) {
         executeTrade(signal);
     }
     
-    // Simulate webhook
     if (bridgeConfig.webhookUrl) {
         console.log('Sending to webhook:', bridgeConfig.webhookUrl, signal);
-        // fetch(bridgeConfig.webhookUrl, { method: 'POST', body: JSON.stringify(signal) });
     }
 }
 
@@ -928,7 +1116,6 @@ function manualExecute() {
 }
 
 function executeTrade(signal) {
-    // Add to history as pending
     const trade = {
         ...signal,
         id: Date.now(),
@@ -940,7 +1127,6 @@ function executeTrade(signal) {
     signalHistory.unshift(trade);
     saveHistory();
     
-    // Simulate trade result after 1-5 minutes (for demo)
     setTimeout(() => {
         simulateTradeResult(trade.id);
     }, 30000 + Math.random() * 120000);
@@ -950,13 +1136,11 @@ function simulateTradeResult(tradeId) {
     const trade = signalHistory.find(t => t.id === tradeId);
     if (!trade) return;
     
-    // 60% win rate simulation
     const isWin = Math.random() > 0.4;
     trade.status = 'completed';
     trade.result = isWin ? 'win' : 'loss';
     trade.profit = isWin ? riskSettings.maxTradeAmount * 0.94 : -riskSettings.maxTradeAmount;
     
-    // Update risk tracking
     if (!isWin) {
         riskSettings.consecutiveLosses++;
         riskSettings.dailyLossUsed += riskSettings.maxTradeAmount;
@@ -1067,13 +1251,12 @@ function updateSessionInfo() {
     let session = null;
     let quality = '';
     
-    // Remove all active classes
     document.querySelectorAll('.session-block').forEach(b => b.classList.remove('active'));
     
     if (hour >= 0 && hour < 9) {
         session = 'ASIA';
         document.getElementById('session-asia').classList.add('active');
-        quality = currentSymbol.includes('1') ? 'EXCELLENT' : 'MODERATE';
+        quality = currentSymbol && currentSymbol.includes('1') ? 'EXCELLENT' : 'MODERATE';
     } else if (hour >= 9 && hour < 14) {
         session = 'LONDON';
         document.getElementById('session-london').classList.add('active');
@@ -1094,7 +1277,6 @@ function updateSessionInfo() {
 
 function isGoodTradingSession() {
     const hour = new Date().getUTCHours();
-    // Avoid low liquidity periods (00:00-02:00 UTC)
     return !(hour >= 0 && hour < 2);
 }
 
@@ -1259,7 +1441,6 @@ function updateScannerData(symbol, prices) {
         const vol = calculateVolatility(prices.slice(-20));
         scannerData[symbol].volatility = vol;
         
-        // Calculate score
         let score = 0;
         const volScore = Math.min(40, (vol * 1000));
         score += volScore;
@@ -1340,6 +1521,20 @@ function displayConditions(result) {
         `;
         list.appendChild(row);
     });
+    
+    // Add data source indicator
+    if (result.dataSource) {
+        const sourceRow = document.createElement('div');
+        sourceRow.className = 'condition-row';
+        sourceRow.style.background = 'rgba(0,242,254,0.1)';
+        sourceRow.innerHTML = `
+            <span class="condition-label" style="color: var(--blue);">Data Source</span>
+            <span class="condition-status" style="color: var(--blue);">
+                ${result.dataSource === 'all_ticks' ? 'ALL TICKS (ENHANCED)' : 'STANDARD'}
+            </span>
+        `;
+        list.appendChild(sourceRow);
+    }
     
     verdict.className = `overall-verdict ${result.overallPass ? 'pass' : 'fail'}`;
     verdict.textContent = result.overallPass ? '✓ ALL CONDITIONS PASSED' : '✗ CONDITIONS NOT MET';
@@ -1434,7 +1629,8 @@ function displayNoSignal(result) {
     if (currentMode === 'rise_fall') {
         progress = `${priceHistory.length}/${SIGNAL_CONFIG.rise_fall.minTicks}`;
     } else {
-        progress = `${reefDigitWindow.length}/${SIGNAL_CONFIG[currentMode].minTicks}`;
+        const source = allTicksActive ? 'All Ticks' : 'Standard';
+        progress = `${reefDigitWindow.length}/${SIGNAL_CONFIG[currentMode].minTicks} (${source})`;
     }
     
     display.innerHTML = `
@@ -1532,6 +1728,7 @@ function exportData() {
     const data = {
         signals: signalHistory,
         settings: riskSettings,
+        allTicksData: allTicksData.slice(0, 100), // Include recent all ticks data
         exportTime: new Date().toISOString()
     };
     
@@ -1542,7 +1739,6 @@ function exportData() {
     a.download = `zion_trading_data_${Date.now()}.json`;
     a.click();
     
-    // Also export CSV
     const csv = convertToCSV(signalHistory);
     const csvBlob = new Blob([csv], { type: 'text/csv' });
     const csvUrl = URL.createObjectURL(csvBlob);
@@ -1553,7 +1749,7 @@ function exportData() {
 }
 
 function convertToCSV(data) {
-    const headers = ['ID', 'Time', 'Symbol', 'Type', 'Prediction', 'Confidence', 'Result', 'Profit'];
+    const headers = ['ID', 'Time', 'Symbol', 'Type', 'Prediction', 'Confidence', 'DataSource', 'Result', 'Profit'];
     const rows = data.map(item => [
         item.id,
         new Date(item.timestamp || item.id).toISOString(),
@@ -1561,6 +1757,7 @@ function convertToCSV(data) {
         item.type,
         item.prediction + (item.targetDigit !== undefined ? item.targetDigit : ''),
         item.confidence,
+        item.dataSource || 'standard',
         item.result || 'pending',
         item.profit || 0
     ]);
@@ -1571,6 +1768,12 @@ function closeModal() {
     document.getElementById('modal').style.display = 'none';
     if (activeSub) ws.send(JSON.stringify({ "forget": activeSub }));
     if (scannerInterval) clearInterval(scannerInterval);
+    
+    // Unsubscribe from all ticks when closing modal
+    if (allTicksActive) {
+        unsubscribeAllTicks();
+    }
+    
     document.getElementById('alert-panel').classList.remove('show');
 }
 
