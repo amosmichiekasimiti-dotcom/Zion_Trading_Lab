@@ -281,7 +281,7 @@
             border-color: var(--purple);
         }
 
-        /* NEW: Trade Bridge Panel */
+        /* Trade Bridge Panel */
         .bridge-panel {
             background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
             padding: 15px;
@@ -351,7 +351,7 @@
         .bridge-btn.test { background: var(--blue); color: white; }
         .bridge-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* NEW: Signal History Panel */
+        /* Signal History Panel */
         .history-panel {
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             padding: 15px;
@@ -410,7 +410,7 @@
         .result-loss { background: var(--red); color: white; }
         .result-pending { background: #ffc107; color: black; }
 
-        /* NEW: Risk Management Panel */
+        /* Risk Management Panel */
         .risk-panel {
             background: linear-gradient(135deg, #3e1c1c 0%, #2c0b0b 100%);
             padding: 15px;
@@ -462,7 +462,7 @@
             text-align: center;
         }
 
-        /* NEW: Session Filter Panel */
+        /* Session Filter Panel */
         .session-panel {
             background: linear-gradient(135deg, #1c3e1c 0%, #0b2c0b 100%);
             padding: 15px;
@@ -511,7 +511,7 @@
             color: #aaa;
         }
 
-        /* NEW: Alert Settings */
+        /* Alert Settings */
         .alert-toggle {
             position: fixed;
             bottom: 20px;
@@ -597,6 +597,54 @@
             cursor: pointer;
             z-index: 1000;
         }
+
+        /* NEW: All Ticks Data Panel */
+        .all-ticks-panel {
+            background: linear-gradient(135deg, #1a0a2e 0%, #0f0520 100%);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 2px solid var(--purple);
+            display: none;
+            flex-shrink: 0;
+        }
+        .all-ticks-panel.active { display: block; }
+        .all-ticks-header {
+            color: var(--gold);
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .all-ticks-status {
+            font-size: 10px;
+            padding: 4px 8px;
+            border-radius: 10px;
+            background: rgba(0,0,0,0.3);
+        }
+        .all-ticks-status.active { background: var(--green); color: white; }
+        .all-ticks-data {
+            background: rgba(0,0,0,0.3);
+            border-radius: 6px;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .tick-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid #333;
+        }
+        .tick-row:last-child { border-bottom: none; }
+        .tick-symbol { color: var(--blue); }
+        .tick-price { color: white; }
+        .tick-digit { color: var(--gold); font-weight: bold; }
+        .tick-time { color: #666; font-size: 9px; }
     </style>
 </head>
 <body>
@@ -639,6 +687,7 @@
                 <div class="panel-nav-btn active" onclick="switchPanel('signal', this)">📊 Signal</div>
                 <div class="panel-nav-btn" onclick="switchPanel('dynamics', this)">⚡ Dynamics</div>
                 <div class="panel-nav-btn" onclick="switchPanel('scanner', this)">🔍 Scanner</div>
+                <div class="panel-nav-btn" onclick="switchPanel('allticks', this)">📡 All Ticks</div>
                 <div class="panel-nav-btn" onclick="switchPanel('bridge', this)">🔗 Bridge</div>
                 <div class="panel-nav-btn" onclick="switchPanel('history', this)">📜 History</div>
                 <div class="panel-nav-btn" onclick="switchPanel('risk', this)">🛡️ Risk</div>
@@ -728,7 +777,31 @@
                 </div>
             </div>
 
-            <!-- NEW: Trade Bridge Panel -->
+            <!-- NEW: All Ticks Data Panel -->
+            <div id="all-ticks-panel" class="all-ticks-panel">
+                <div class="all-ticks-header">
+                    <span><i class="fas fa-satellite-dish"></i> ALL TICKS STREAM</span>
+                    <span class="all-ticks-status active" id="all-ticks-status">LIVE</span>
+                </div>
+                <div style="font-size: 10px; color: #aaa; margin-bottom: 8px;">
+                    Subscribed to: {"ticks":"all","subscribe":1}
+                </div>
+                <div class="all-ticks-data" id="all-ticks-data">
+                    <div style="text-align: center; color: #666; padding: 20px;">
+                        Waiting for tick data...
+                    </div>
+                </div>
+                <div style="margin-top: 8px; display: flex; gap: 8px;">
+                    <button onclick="subscribeAllTicks()" style="flex:1; padding: 8px; background: var(--green); color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer;">
+                        SUBSCRIBE ALL
+                    </button>
+                    <button onclick="unsubscribeAllTicks()" style="flex:1; padding: 8px; background: var(--red); color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer;">
+                        UNSUBSCRIBE
+                    </button>
+                </div>
+            </div>
+
+            <!-- Trade Bridge Panel -->
             <div id="bridge-panel" class="bridge-panel">
                 <div class="bridge-header">
                     <span><i class="fas fa-robot"></i> XML BOT BRIDGE</span>
@@ -758,7 +831,7 @@
                 </div>
             </div>
 
-            <!-- NEW: Signal History Panel -->
+            <!-- Signal History Panel -->
             <div id="history-panel" class="history-panel">
                 <div class="history-header">
                     <span><i class="fas fa-history"></i> SIGNAL HISTORY</span>
@@ -781,7 +854,7 @@
                 <div class="history-list" id="history-list"></div>
             </div>
 
-            <!-- NEW: Risk Management Panel -->
+            <!-- Risk Management Panel -->
             <div id="risk-panel" class="risk-panel">
                 <div class="risk-header">
                     <span><i class="fas fa-shield-alt"></i> RISK MANAGEMENT</span>
@@ -809,7 +882,7 @@
                 </div>
             </div>
 
-            <!-- NEW: Session Filter Panel -->
+            <!-- Session Filter Panel -->
             <div id="session-panel" class="session-panel">
                 <div class="session-header">
                     <span><i class="fas fa-globe"></i> TRADING SESSIONS</span>
