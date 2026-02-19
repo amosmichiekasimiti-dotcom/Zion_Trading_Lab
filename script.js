@@ -9,7 +9,7 @@ let allSymbols = [];
 let currentSymbol = '';
 let currentMode = 'rise_fall';
 let lastPrice = 0;
-let reefDigitWindow = [];
+let derivDigitWindow = []; // Fixed typo: was reefDigitWindow
 let priceHistory = [];
 let tickHistory = []; // For AI analysis
 
@@ -40,11 +40,11 @@ const CONDITIONS = {
     digitDistribution: {
         name: 'Digit Distribution Balance',
         check: (data) => {
-            if (reefDigitWindow.length < 50) return { pass: false, value: 0 };
+            if (derivDigitWindow.length < 50) return { pass: false, value: 0 }; // Fixed typo
             const counts = Array(10).fill(0);
-            reefDigitWindow.forEach(d => counts[d]++);
+            derivDigitWindow.forEach(d => counts[d]++); // Fixed typo
             const max = Math.max(...counts);
-            const balance = (max / reefDigitWindow.length) * 100;
+            const balance = (max / derivDigitWindow.length) * 100; // Fixed typo
             // Pass if no digit dominates >40%
             return { pass: balance < 40, value: (100 - balance).toFixed(1) };
         }
@@ -52,12 +52,12 @@ const CONDITIONS = {
     consecutivePattern: {
         name: 'Consecutive Pattern Break',
         check: (data) => {
-            if (reefDigitWindow.length < 20) return { pass: false, value: 0 };
+            if (derivDigitWindow.length < 20) return { pass: false, value: 0 }; // Fixed typo
             let maxStreak = 1;
             let currentStreak = 1;
-            for (let i = 1; i < reefDigitWindow.length; i++) {
-                const isEven = reefDigitWindow[i] % 2 === 0;
-                const prevIsEven = reefDigitWindow[i-1] % 2 === 0;
+            for (let i = 1; i < derivDigitWindow.length; i++) { // Fixed typo
+                const isEven = derivDigitWindow[i] % 2 === 0; // Fixed typo
+                const prevIsEven = derivDigitWindow[i-1] % 2 === 0; // Fixed typo
                 if (isEven === prevIsEven) {
                     currentStreak++;
                     maxStreak = Math.max(maxStreak, currentStreak);
@@ -72,8 +72,8 @@ const CONDITIONS = {
     statisticalEdge: {
         name: 'Statistical Edge (>60%)',
         check: (data) => {
-            if (reefDigitWindow.length < 50) return { pass: false, value: 0 };
-            const recent = reefDigitWindow.slice(-50);
+            if (derivDigitWindow.length < 50) return { pass: false, value: 0 }; // Fixed typo
+            const recent = derivDigitWindow.slice(-50); // Fixed typo
             let evenCount = recent.filter(d => d % 2 === 0).length;
             let oddCount = 50 - evenCount;
             const dominance = (Math.max(evenCount, oddCount) / 50) * 100;
@@ -116,14 +116,14 @@ ws.onmessage = (msg) => {
     }
 
     if (data.history) { 
-        reefDigitWindow = []; 
+        derivDigitWindow = []; // Fixed typo
         priceHistory = [];
         data.history.prices.forEach((price, idx) => {
             const digit = parseInt(price.toFixed(data.pip_size).slice(-1));
-            reefDigitWindow.push(digit);
+            derivDigitWindow.push(digit); // Fixed typo
             priceHistory.push(price);
         });
-        renderReefStatistics();
+        renderDerivStatistics(); // Fixed function name
         updateAIEngine();
     }
 
@@ -138,8 +138,8 @@ ws.onmessage = (msg) => {
         priceHistory.push(currentPrice);
         if (priceHistory.length > 100) priceHistory.shift();
         
-        reefDigitWindow.push(lastDigit);
-        if (reefDigitWindow.length > 100) reefDigitWindow.shift();
+        derivDigitWindow.push(lastDigit); // Fixed typo
+        if (derivDigitWindow.length > 100) derivDigitWindow.shift(); // Fixed typo
         
         tickHistory.push({
             price: currentPrice,
@@ -171,7 +171,7 @@ ws.onmessage = (msg) => {
         `;
 
         if (currentMode !== 'rise_fall') {
-            renderReefStatistics(lastDigit);
+            renderDerivStatistics(lastDigit); // Fixed function name
         }
         
         updateAIEngine();
@@ -209,12 +209,12 @@ function calculateMetrics() {
     }
     
     // Reversion probability
-    if (reefDigitWindow.length >= 20) {
+    if (derivDigitWindow.length >= 20) { // Fixed typo
         let streaks = 0;
         let currentStreak = 1;
-        for (let i = 1; i < reefDigitWindow.length; i++) {
-            const isEven = reefDigitWindow[i] % 2 === 0;
-            const prevIsEven = reefDigitWindow[i-1] % 2 === 0;
+        for (let i = 1; i < derivDigitWindow.length; i++) { // Fixed typo
+            const isEven = derivDigitWindow[i] % 2 === 0; // Fixed typo
+            const prevIsEven = derivDigitWindow[i-1] % 2 === 0; // Fixed typo
             if (isEven === prevIsEven) {
                 currentStreak++;
                 if (currentStreak === 3) streaks++;
@@ -262,10 +262,10 @@ function generateSignal() {
     if (currentMode === 'rise_fall') {
         return aiState.metrics.momentum > 0 ? 'RISE' : 'FALL';
     } else if (currentMode === 'even_odd') {
-        const lastDigit = reefDigitWindow[reefDigitWindow.length - 1];
+        const lastDigit = derivDigitWindow[derivDigitWindow.length - 1]; // Fixed typo
         return lastDigit % 2 === 0 ? 'ODD' : 'EVEN'; // Mean reversion
     } else if (currentMode === 'over_under') {
-        const lastDigit = reefDigitWindow[reefDigitWindow.length - 1];
+        const lastDigit = derivDigitWindow[derivDigitWindow.length - 1]; // Fixed typo
         return lastDigit > 4 ? 'UNDER' : 'OVER'; // Mean reversion
     } else if (currentMode === 'matches_differs') {
         return 'MATCH';
@@ -274,8 +274,8 @@ function generateSignal() {
 }
 
 function determineDirection() {
-    if (reefDigitWindow.length === 0) return '--';
-    const lastDigit = reefDigitWindow[reefDigitWindow.length - 1];
+    if (derivDigitWindow.length === 0) return '--'; // Fixed typo
+    const lastDigit = derivDigitWindow[derivDigitWindow.length - 1]; // Fixed typo
     
     if (currentMode === 'even_odd') {
         return lastDigit % 2 === 0 ? 'EVEN' : 'ODD';
@@ -378,7 +378,7 @@ function loadCategory(cat, el) {
 
 function openAnalysis(name, symbol) {
     currentSymbol = symbol;
-    reefDigitWindow = []; 
+    derivDigitWindow = []; // Fixed typo
     priceHistory = [];
     tickHistory = [];
     lastPrice = 0;
@@ -514,15 +514,15 @@ function buildDigitGrid() {
     }
 }
 
-function renderReefStatistics(activeDigit) {
+function renderDerivStatistics(activeDigit) { // Fixed function name: was renderReefStatistics
     const counts = Array(10).fill(0);
-    reefDigitWindow.forEach(d => counts[d]++);
+    derivDigitWindow.forEach(d => counts[d]++); // Fixed typo
 
     const maxVal = Math.max(...counts);
     const minVal = Math.min(...counts);
 
     for (let i = 0; i <= 9; i++) {
-        const realPercentage = reefDigitWindow.length > 0 ? ((counts[i] / reefDigitWindow.length) * 100).toFixed(1) : 0;
+        const realPercentage = derivDigitWindow.length > 0 ? ((counts[i] / derivDigitWindow.length) * 100).toFixed(1) : 0; // Fixed typo
         const bar = document.getElementById(`bar-${i}`);
         const label = document.getElementById(`p-${i}`);
         const box = document.getElementById(`d-${i}`);
