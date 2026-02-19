@@ -1,171 +1,433 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zion Trading Lab | Universal Feed</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        :root { --red: #ff444f; --dark: #1e1e1e; --green: #4caf50; --gold: #ffd700; --blue: #00f2fe; }
-        body { font-family: sans-serif; background: #f4f7f6; margin: 0; padding: 10px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        
-        /* Navigation */
-        .nav-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(85px, 1fr)); gap: 8px; margin-bottom: 15px; }
-        .nav-card { background: white; padding: 10px; border-radius: 10px; text-align: center; cursor: pointer; border: 1px solid #ddd; font-size: 10px; font-weight: 800; color: #666; }
-        .nav-card.active { background: var(--red); color: white; border-color: var(--red); }
-        
-        .card { background: white; border-radius: 12px; flex-grow: 1; overflow-y: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        table { width: 100%; border-collapse: collapse; }
-        td, th { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 13px; }
-        .btn-view { background: var(--dark); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Zion Trading Lab | Universal Feed</title>
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+   <style>
+       :root { --red: #ff444f; --dark: #1e1e1e; --green: #4caf50; --gold: #ffd700; --blue: #00f2fe; --purple: #9c27b0; --orange: #ff9800; }
+       body { font-family: sans-serif; background: #f4f7f6; margin: 0; padding: 10px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+       
+       /* Navigation */
+       .nav-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(85px, 1fr)); gap: 8px; margin-bottom: 15px; }
+       .nav-card { background: white; padding: 10px; border-radius: 10px; text-align: center; cursor: pointer; border: 1px solid #ddd; font-size: 10px; font-weight: 800; color: #666; }
+       .nav-card.active { background: var(--red); color: white; border-color: var(--red); }
+       
+       .card { background: white; border-radius: 12px; flex-grow: 1; overflow-y: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+       table { width: 100%; border-collapse: collapse; }
+       td, th { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 13px; }
+       .btn-view { background: var(--dark); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
 
-        /* Full Screen Modal */
-        #modal { display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; background:white; }
-        .modal-body { height: 100%; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box; }
-        
-        /* Universal Price Header */
-        .price-header { background: #111; color: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-        #live-price { font-size: 28px; font-family: 'Courier New', monospace; font-weight: bold; }
-        #live-price span { color: var(--red); border-bottom: 2px solid var(--red); }
+       /* Full Screen Modal */
+       #modal { display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; background:white; }
+       .modal-body { height: 100%; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box; overflow-y: auto; }
+       
+       /* Universal Price Header */
+       .price-header { background: #111; color: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+       #live-price { font-size: 28px; font-family: 'Courier New', monospace; font-weight: bold; }
+       #live-price span { color: var(--red); border-bottom: 2px solid var(--red); }
 
-        /* Digit Panel (Only for Even/Odd, etc.) */
-        #digit-analysis-panel { display: none; margin-bottom: 10px; }
-        .digit-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; background: #000; padding: 5px; border-radius: 4px; }
-        .d-box { background: #1a1a1a; height: 45px; display: flex; flex-direction: column-reverse; align-items: center; position: relative; border: 1px solid #333; }
-        .d-bar { width: 100%; background: #323738; transition: height 0.3s; }
-        .d-num { position: absolute; top: 2px; font-size: 11px; color: white; font-weight: bold; }
-        .d-pct { font-size: 9px; color: var(--blue); font-weight: bold; margin-bottom: 2px; }
-        
-        #chart-container { flex-grow: 1; border-radius: 8px; overflow: hidden; border: 1px solid #ddd; }
-        .tabs { display: flex; gap: 5px; margin-bottom: 10px; overflow-x: auto; }
-        .tab { padding: 8px 15px; border-radius: 20px; border: 1px solid #ddd; background: #f0f0f0; font-size: 11px; font-weight: bold; cursor: pointer; }
-        .tab.active { background: var(--red); color: white; }
+       /* Digit Panel (Only for Even/Odd, etc.) */
+       #digit-analysis-panel { display: none; margin-bottom: 10px; }
+       .digit-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; background: #000; padding: 5px; border-radius: 4px; }
+       .d-box { background: #1a1a1a; height: 45px; display: flex; flex-direction: column-reverse; align-items: center; position: relative; border: 1px solid #333; }
+       .d-bar { width: 100%; background: #323738; transition: height 0.3s; }
+       .d-num { position: absolute; top: 2px; font-size: 11px; color: white; font-weight: bold; }
+       .d-pct { font-size: 9px; color: var(--blue); font-weight: bold; margin-bottom: 2px; }
+       
+       #chart-container { flex-grow: 1; border-radius: 8px; overflow: hidden; border: 1px solid #ddd; min-height: 300px; }
+       .tabs { display: flex; gap: 5px; margin-bottom: 10px; overflow-x: auto; }
+       .tab { padding: 8px 15px; border-radius: 20px; border: 1px solid #ddd; background: #f0f0f0; font-size: 11px; font-weight: bold; cursor: pointer; }
+       .tab.active { background: var(--red); color: white; }
 
-        /* Signal Engine Styles */
-        .signal-panel { 
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
-            padding: 15px; 
-            border-radius: 8px; 
-            margin-bottom: 10px; 
-            border: 2px solid #333;
-            display: none;
-        }
-        .signal-panel.active { display: block; }
-        .signal-header { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            margin-bottom: 10px; 
-            color: var(--gold);
-            font-weight: bold;
-            font-size: 14px;
-        }
-        .signal-display {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 20px;
-            padding: 15px;
-            background: rgba(0,0,0,0.3);
-            border-radius: 8px;
-        }
-        .signal-box {
-            text-align: center;
-            padding: 15px 25px;
-            border-radius: 8px;
-            min-width: 120px;
-        }
-        .signal-box.rise { background: rgba(76, 175, 80, 0.2); border: 2px solid var(--green); }
-        .signal-box.fall { background: rgba(255, 68, 79, 0.2); border: 2px solid var(--red); }
-        .signal-box.even { background: rgba(0, 242, 254, 0.2); border: 2px solid var(--blue); }
-        .signal-box.odd { background: rgba(255, 215, 0, 0.2); border: 2px solid var(--gold); }
-        .signal-box.matches { background: rgba(76, 175, 80, 0.2); border: 2px solid var(--green); }
-        .signal-box.differs { background: rgba(255, 68, 79, 0.2); border: 2px solid var(--red); }
-        .signal-box.over { background: rgba(76, 175, 80, 0.2); border: 2px solid var(--green); }
-        .signal-box.under { background: rgba(255, 68, 79, 0.2); border: 2px solid var(--red); }
-        .signal-label { font-size: 10px; color: #888; text-transform: uppercase; margin-bottom: 5px; }
-        .signal-value { font-size: 24px; font-weight: bold; color: white; }
-        .signal-confidence { font-size: 11px; margin-top: 5px; }
-        .signal-strength { display: flex; gap: 3px; justify-content: center; margin-top: 8px; }
-        .strength-bar { width: 8px; height: 4px; background: #333; border-radius: 2px; }
-        .strength-bar.active { background: var(--green); }
-        .signal-status { 
-            text-align: center; 
-            padding: 8px; 
-            margin-top: 10px; 
-            border-radius: 4px; 
-            font-size: 12px; 
-            font-weight: bold;
-        }
-        .signal-status.ready { background: rgba(76, 175, 80, 0.3); color: var(--green); }
-        .signal-status.waiting { background: rgba(255, 193, 7, 0.3); color: #ffc107; }
-        .signal-status.no-signal { background: rgba(108, 117, 125, 0.3); color: #6c757d; }
-        .prediction-digit { font-size: 36px; color: var(--gold); font-weight: bold; }
-    </style>
+       /* Signal Engine Styles */
+       .signal-panel { 
+           background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
+           padding: 15px; 
+           border-radius: 8px; 
+           margin-bottom: 10px; 
+           border: 2px solid #333;
+           display: none;
+       }
+       .signal-panel.active { display: block; }
+       .signal-header { 
+           display: flex; 
+           justify-content: space-between; 
+           align-items: center; 
+           margin-bottom: 10px; 
+           color: var(--gold);
+           font-weight: bold;
+           font-size: 14px;
+       }
+       .signal-display {
+           display: flex;
+           justify-content: center;
+           align-items: center;
+           gap: 20px;
+           padding: 15px;
+           background: rgba(0,0,0,0.3);
+           border-radius: 8px;
+       }
+       .signal-box {
+           text-align: center;
+           padding: 15px 25px;
+           border-radius: 8px;
+           min-width: 120px;
+       }
+       .signal-box.rise { background: rgba(76, 175, 80, 0.2); border: 2px solid var(--green); }
+       .signal-box.fall { background: rgba(255, 68, 79, 0.2); border: 2px solid var(--red); }
+       .signal-box.even { background: rgba(0, 242, 254, 0.2); border: 2px solid var(--blue); }
+       .signal-box.odd { background: rgba(255, 215, 0, 0.2); border: 2px solid var(--gold); }
+       .signal-box.matches { background: rgba(76, 175, 80, 0.2); border: 2px solid var(--green); }
+       .signal-box.differs { background: rgba(255, 68, 79, 0.2); border: 2px solid var(--red); }
+       .signal-box.over { background: rgba(76, 175, 80, 0.2); border: 2px solid var(--green); }
+       .signal-box.under { background: rgba(255, 68, 79, 0.2); border: 2px solid var(--red); }
+       .signal-label { font-size: 10px; color: #888; text-transform: uppercase; margin-bottom: 5px; }
+       .signal-value { font-size: 24px; font-weight: bold; color: white; }
+       .signal-confidence { font-size: 11px; margin-top: 5px; }
+       .signal-strength { display: flex; gap: 3px; justify-content: center; margin-top: 8px; }
+       .strength-bar { width: 8px; height: 4px; background: #333; border-radius: 2px; }
+       .strength-bar.active { background: var(--green); }
+       .signal-status { 
+           text-align: center; 
+           padding: 8px; 
+           margin-top: 10px; 
+           border-radius: 4px; 
+           font-size: 12px; 
+           font-weight: bold;
+       }
+       .signal-status.ready { background: rgba(76, 175, 80, 0.3); color: var(--green); }
+       .signal-status.waiting { background: rgba(255, 193, 7, 0.3); color: #ffc107; }
+       .signal-status.no-signal { background: rgba(108, 117, 125, 0.3); color: #6c757d; }
+       .prediction-digit { font-size: 36px; color: var(--gold); font-weight: bold; }
+       
+       /* Condition Checker Styles */
+       .conditions-panel {
+           background: rgba(0,0,0,0.4);
+           border-radius: 6px;
+           padding: 10px;
+           margin-top: 10px;
+           font-size: 11px;
+       }
+       .condition-row {
+           display: flex;
+           justify-content: space-between;
+           padding: 4px 0;
+           border-bottom: 1px solid #333;
+       }
+       .condition-row:last-child { border-bottom: none; }
+       .condition-label { color: #aaa; }
+       .condition-status { font-weight: bold; }
+       .condition-status.pass { color: var(--green); }
+       .condition-status.fail { color: var(--red); }
+       .overall-verdict {
+           text-align: center;
+           padding: 8px;
+           margin-top: 8px;
+           border-radius: 4px;
+           font-weight: bold;
+           text-transform: uppercase;
+       }
+       .overall-verdict.pass { background: rgba(76, 175, 80, 0.3); color: var(--green); }
+       .overall-verdict.fail { background: rgba(255, 68, 79, 0.3); color: var(--red); }
+
+       /* NEW: Market Dynamics Panel */
+       .dynamics-panel {
+           background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+           padding: 15px;
+           border-radius: 8px;
+           margin-bottom: 10px;
+           border: 2px solid #4a90e2;
+           display: none;
+       }
+       .dynamics-panel.active { display: block; }
+       .dynamics-header {
+           color: var(--gold);
+           font-weight: bold;
+           font-size: 14px;
+           margin-bottom: 10px;
+           display: flex;
+           justify-content: space-between;
+           align-items: center;
+       }
+       .metric-grid {
+           display: grid;
+           grid-template-columns: repeat(2, 1fr);
+           gap: 8px;
+       }
+       .metric-box {
+           background: rgba(0,0,0,0.3);
+           padding: 10px;
+           border-radius: 6px;
+           text-align: center;
+       }
+       .metric-label {
+           font-size: 9px;
+           color: #aaa;
+           text-transform: uppercase;
+           margin-bottom: 4px;
+       }
+       .metric-value {
+           font-size: 16px;
+           font-weight: bold;
+           color: white;
+       }
+       .metric-trend {
+           font-size: 10px;
+           margin-top: 2px;
+       }
+       .trend-up { color: var(--green); }
+       .trend-down { color: var(--red); }
+       .trend-neutral { color: #888; }
+
+       /* NEW: Volatility Scanner Panel */
+       .scanner-panel {
+           background: linear-gradient(135deg, #2d1b4e 0%, #1a0f2e 100%);
+           padding: 15px;
+           border-radius: 8px;
+           margin-bottom: 10px;
+           border: 2px solid var(--purple);
+           display: none;
+       }
+       .scanner-panel.active { display: block; }
+       .scanner-header {
+           color: var(--gold);
+           font-weight: bold;
+           font-size: 14px;
+           margin-bottom: 10px;
+           display: flex;
+           justify-content: space-between;
+           align-items: center;
+       }
+       .scanner-grid {
+           display: grid;
+           grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+           gap: 8px;
+           max-height: 200px;
+           overflow-y: auto;
+       }
+       .market-card {
+           background: rgba(0,0,0,0.4);
+           padding: 10px;
+           border-radius: 6px;
+           border: 1px solid #444;
+           cursor: pointer;
+           transition: all 0.3s;
+       }
+       .market-card:hover {
+           border-color: var(--gold);
+           transform: scale(1.02);
+       }
+       .market-card.best {
+           border: 2px solid var(--green);
+           background: rgba(76, 175, 80, 0.2);
+       }
+       .market-name {
+           font-size: 10px;
+           color: #aaa;
+           margin-bottom: 4px;
+       }
+       .market-score {
+           font-size: 18px;
+           font-weight: bold;
+           color: white;
+       }
+       .market-status {
+           font-size: 9px;
+           margin-top: 4px;
+           padding: 2px 6px;
+           border-radius: 10px;
+           display: inline-block;
+       }
+       .status-ready { background: var(--green); color: white; }
+       .status-wait { background: #666; color: #ccc; }
+       .scanner-legend {
+           margin-top: 10px;
+           padding: 8px;
+           background: rgba(0,0,0,0.3);
+           border-radius: 4px;
+           font-size: 10px;
+           color: #aaa;
+       }
+
+       /* NEW: Panel Navigation */
+       .panel-nav {
+           display: flex;
+           gap: 5px;
+           margin-bottom: 10px;
+           overflow-x: auto;
+           padding: 5px 0;
+       }
+       .panel-nav-btn {
+           padding: 8px 12px;
+           border-radius: 15px;
+           border: 1px solid #ddd;
+           background: #f0f0f0;
+           font-size: 10px;
+           font-weight: bold;
+           cursor: pointer;
+           white-space: nowrap;
+       }
+       .panel-nav-btn.active {
+           background: var(--purple);
+           color: white;
+           border-color: var(--purple);
+       }
+
+       /* Scroll indicator */
+       .scroll-hint {
+           text-align: center;
+           padding: 5px;
+           font-size: 10px;
+           color: #666;
+           background: rgba(0,0,0,0.05);
+           border-radius: 4px;
+           margin-bottom: 10px;
+       }
+   </style>
 </head>
 <body>
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <h3 style="margin:0;">Zion Trading Lab</h3>
-        <div id="status" style="color:#4caf50; font-weight:bold; font-size:12px;">● Connected</div>
-    </div>
+   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+       <h3 style="margin:0;">Zion Trading Lab</h3>
+       <div id="status" style="color:#4caf50; font-weight:bold; font-size:12px;">● Connected</div>
+   </div>
 
-    <div class="nav-grid">
-        <div class="nav-card active" onclick="loadCategory('volatility', this)">VOLATILITY</div>
-        <div class="nav-card" onclick="loadCategory('crashboom', this)">CRASH/BOOM</div>
-        <div class="nav-card" onclick="loadCategory('jump', this)">JUMP</div>
-        <div class="nav-card" onclick="loadCategory('range', this)">RANGE/STEP</div>
-        <div class="nav-card" onclick="loadCategory('forex', this)">FOREX</div>
-    </div>
+   <div class="nav-grid">
+       <div class="nav-card active" onclick="loadCategory('volatility', this)">VOLATILITY</div>
+       <div class="nav-card" onclick="loadCategory('crashboom', this)">CRASH/BOOM</div>
+       <div class="nav-card" onclick="loadCategory('jump', this)">JUMP</div>
+       <div class="nav-card" onclick="loadCategory('range', this)">RANGE/STEP</div>
+       <div class="nav-card" onclick="loadCategory('forex', this)">FOREX</div>
+   </div>
 
-    <div class="card">
-        <table>
-            <thead><tr><th>Market</th><th>Symbol</th><th>Action</th></tr></thead>
-            <tbody id="market-list"></tbody>
-        </table>
-    </div>
+   <div class="card">
+       <table>
+           <thead><tr><th>Market</th><th>Symbol</th><th>Action</th></tr></thead>
+           <tbody id="market-list"></tbody>
+       </table>
+   </div>
 
-    <div id="modal">
-        <div class="modal-body">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <h4 id="mTitle" style="margin:0;">Asset</h4>
-                <button onclick="closeModal()" style="background:var(--red); color:white; border:none; padding:5px 15px; border-radius:5px; font-weight:bold;">CLOSE</button>
-            </div>
+   <div id="modal">
+       <div class="modal-body">
+           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+               <h4 id="mTitle" style="margin:0;">Asset</h4>
+               <button onclick="closeModal()" style="background:var(--red); color:white; border:none; padding:5px 15px; border-radius:5px; font-weight:bold;">CLOSE</button>
+           </div>
 
-            <div class="tabs">
-                <div class="tab active" onclick="switchContract('rise_fall', this)">Rise/Fall</div>
-                <div class="tab" onclick="switchContract('even_odd', this)">Even/Odd</div>
-                <div class="tab" onclick="switchContract('matches_differs', this)">Matches/Differs</div>
-                <div class="tab" onclick="switchContract('over_under', this)">Over/Under</div>
-            </div>
+           <div class="tabs">
+               <div class="tab active" onclick="switchContract('rise_fall', this)">Rise/Fall</div>
+               <div class="tab" onclick="switchContract('even_odd', this)">Even/Odd</div>
+               <div class="tab" onclick="switchContract('matches_differs', this)">Matches/Differs</div>
+               <div class="tab" onclick="switchContract('over_under', this)">Over/Under</div>
+           </div>
 
-            <!-- Signal Engine Panel -->
-            <div id="signal-panel" class="signal-panel">
-                <div class="signal-header">
-                    <span><i class="fas fa-bolt"></i> SIGNAL ENGINE</span>
-                    <span id="signal-timer">--:--</span>
-                </div>
-                <div class="signal-display" id="signal-display">
-                    <div class="signal-box">
-                        <div class="signal-label">Analyzing...</div>
-                        <div class="signal-value">--</div>
-                    </div>
-                </div>
-                <div class="signal-strength" id="signal-strength"></div>
-                <div class="signal-status no-signal" id="signal-status">Collecting market data...</div>
-            </div>
+           <!-- Panel Navigation -->
+           <div class="panel-nav">
+               <div class="panel-nav-btn active" onclick="switchPanel('signal', this)">📊 Signal</div>
+               <div class="panel-nav-btn" onclick="switchPanel('dynamics', this)">⚡ Dynamics</div>
+               <div class="panel-nav-btn" onclick="switchPanel('scanner', this)">🔍 Scanner</div>
+           </div>
 
-            <div class="price-header">
-                <div id="live-price">0.0000<span>0</span></div>
-                <div style="text-align:right;"><small style="color:#888; display:block;">LIVE FEED</small><span id="price-symbol" style="font-size:10px; font-weight:bold;">---</span></div>
-            </div>
+           <div class="scroll-hint">↓ Scroll down for more panels ↓</div>
 
-            <div id="digit-analysis-panel">
-                <div class="digit-grid" id="digit-grid"></div>
-            </div>
+           <!-- Signal Engine Panel -->
+           <div id="signal-panel" class="signal-panel active-panel">
+               <div class="signal-header">
+                   <span><i class="fas fa-bolt"></i> SIGNAL ENGINE</span>
+                   <span id="signal-timer">--:--</span>
+               </div>
+               <div class="signal-display" id="signal-display">
+                   <div class="signal-box">
+                       <div class="signal-label">Analyzing...</div>
+                       <div class="signal-value">--</div>
+                   </div>
+               </div>
+               <div class="signal-strength" id="signal-strength"></div>
+               <div class="signal-status no-signal" id="signal-status">Collecting market data...</div>
+               
+               <!-- Conditions Checker -->
+               <div class="conditions-panel" id="conditions-panel" style="display: none;">
+                   <div style="color: var(--gold); font-weight: bold; margin-bottom: 8px; text-align: center;">
+                       <i class="fas fa-tasks"></i> VALIDATION CHECKPOINTS
+                   </div>
+                   <div id="conditions-list"></div>
+                   <div class="overall-verdict fail" id="overall-verdict">SIGNAL LOCKED</div>
+               </div>
+           </div>
 
-            <div id="chart-container"></div>
-        </div>
-    </div>
-    <script src="script.js"></script>
+           <!-- Market Dynamics Panel -->
+           <div id="dynamics-panel" class="dynamics-panel">
+               <div class="dynamics-header">
+                   <span><i class="fas fa-chart-line"></i> MARKET DYNAMICS</span>
+                   <span id="dynamics-timer">--:--</span>
+               </div>
+               <div class="metric-grid" id="metrics-grid">
+                   <div class="metric-box">
+                       <div class="metric-label">Tick Velocity</div>
+                       <div class="metric-value" id="tick-velocity">--</div>
+                       <div class="metric-trend trend-neutral" id="velocity-trend">→ Stable</div>
+                   </div>
+                   <div class="metric-box">
+                       <div class="metric-label">Price Momentum</div>
+                       <div class="metric-value" id="price-momentum">--</div>
+                       <div class="metric-trend trend-neutral" id="momentum-trend">→ Neutral</div>
+                   </div>
+                   <div class="metric-box">
+                       <div class="metric-label">Volatility Index</div>
+                       <div class="metric-value" id="vol-index">--%</div>
+                       <div class="metric-trend trend-neutral" id="vol-trend">→ Normal</div>
+                   </div>
+                   <div class="metric-box">
+                       <div class="metric-label">Trend Strength</div>
+                       <div class="metric-value" id="trend-strength">--</div>
+                       <div class="metric-trend trend-neutral" id="strength-trend">→ Sideways</div>
+                   </div>
+                   <div class="metric-box">
+                       <div class="metric-label">Market Phase</div>
+                       <div class="metric-value" id="market-phase">--</div>
+                       <div class="metric-trend trend-neutral" id="phase-indicator">→ Analyzing</div>
+                   </div>
+                   <div class="metric-box">
+                       <div class="metric-label">Signal Quality</div>
+                       <div class="metric-value" id="signal-quality">--%</div>
+                       <div class="metric-trend trend-neutral" id="quality-trend">→ Calculating</div>
+                   </div>
+               </div>
+               <div style="margin-top: 10px; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 4px; font-size: 10px; color: #aaa;">
+                   <i class="fas fa-info-circle"></i> Real-time market behavior analysis based on tick flow and price action
+               </div>
+           </div>
+
+           <!-- Volatility Scanner Panel -->
+           <div id="scanner-panel" class="scanner-panel">
+               <div class="scanner-header">
+                   <span><i class="fas fa-radar"></i> VOLATILITY SCANNER</span>
+                   <span id="scanner-status" style="font-size: 10px; color: var(--green);">● LIVE</span>
+               </div>
+               <div class="scanner-grid" id="scanner-grid">
+                   <!-- Scanner cards injected here -->
+               </div>
+               <div class="scanner-legend">
+                   <strong>Legend:</strong> 
+                   <span style="color: var(--green);">■ Best Opportunity</span> | 
+                   <span style="color: #888;">■ Monitoring</span> | 
+                   Score = Signal Strength × Trend Quality
+               </div>
+           </div>
+
+           <div class="price-header">
+               <div id="live-price">0.0000<span>0</span></div>
+               <div style="text-align:right;"><small style="color:#888; display:block;">LIVE FEED</small><span id="price-symbol" style="font-size:10px; font-weight:bold;">---</span></div>
+           </div>
+
+           <div id="digit-analysis-panel">
+               <div class="digit-grid" id="digit-grid"></div>
+           </div>
+
+           <div id="chart-container"></div>
+       </div>
+   </div>
+   <script src="script.js"></script>
 </body>
 </html>
