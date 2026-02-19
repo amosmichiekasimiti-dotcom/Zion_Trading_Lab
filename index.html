@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="english">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -261,7 +261,7 @@
         }
         
         /* Other Panels */
-        .dynamics-panel, .scanner-panel, .bridge-panel, .history-panel, .risk-panel, .session-panel {
+        .dynamics-panel, .scanner-panel, .bridge-panel, .history-panel, .risk-panel, .session-panel, .correlation-panel, .backtest-panel, .sentiment-panel, .ml-panel, .multitf-panel, .execution-panel {
             background: var(--panel-bg);
             padding: 15px;
             border-radius: 12px;
@@ -271,7 +271,9 @@
             flex-shrink: 0;
         }
         .dynamics-panel.active, .scanner-panel.active, .bridge-panel.active, 
-        .history-panel.active, .risk-panel.active, .session-panel.active { display: block; }
+        .history-panel.active, .risk-panel.active, .session-panel.active,
+        .correlation-panel.active, .backtest-panel.active, .sentiment-panel.active,
+        .ml-panel.active, .multitf-panel.active, .execution-panel.active { display: block; }
         
         /* Price Header */
         .price-header { 
@@ -348,6 +350,294 @@
             min-height: 750px !important;
             height: 750px !important;
         }
+
+        /* NEW PANEL STYLES */
+        
+        /* Mini Panel Grid */
+        .mini-panel-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .mini-card {
+            background: var(--panel-bg);
+            border-radius: 12px;
+            padding: 15px;
+            border: 1px solid #333;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .mini-card:hover {
+            border-color: var(--gold);
+            transform: translateY(-2px);
+        }
+        .mini-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .mini-card-title {
+            font-size: 11px;
+            color: #888;
+            text-transform: uppercase;
+        }
+        .mini-card-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+        .mini-card-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .mini-card-sub {
+            font-size: 10px;
+            color: #666;
+        }
+
+        /* Risk Panel */
+        .risk-meters {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .risk-meter {
+            text-align: center;
+        }
+        .risk-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 0 auto 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+            position: relative;
+        }
+        .risk-circle::before {
+            content: '';
+            position: absolute;
+            inset: 5px;
+            border-radius: 50%;
+            background: var(--panel-bg);
+        }
+        .risk-circle span {
+            position: relative;
+            z-index: 1;
+        }
+        .risk-label {
+            font-size: 11px;
+            color: #888;
+        }
+
+        /* Session Heatmap */
+        .session-heatmap {
+            display: grid;
+            grid-template-columns: repeat(24, 1fr);
+            gap: 2px;
+            margin-bottom: 15px;
+        }
+        .heat-cell {
+            aspect-ratio: 1;
+            border-radius: 2px;
+            font-size: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Correlation Matrix */
+        .corr-matrix {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+        }
+        .corr-cell {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        .corr-cell.header {
+            background: transparent;
+            font-size: 10px;
+            color: #888;
+        }
+
+        /* Backtest Stats */
+        .backtest-chart {
+            height: 200px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            margin-bottom: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+        .equity-line {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60%;
+            background: linear-gradient(to top, rgba(76,175,80,0.3), transparent);
+        }
+
+        /* Sentiment Gauge */
+        .sentiment-gauge {
+            width: 200px;
+            height: 100px;
+            margin: 0 auto;
+            position: relative;
+        }
+        .gauge-arc {
+            width: 200px;
+            height: 100px;
+            border-radius: 100px 100px 0 0;
+            background: conic-gradient(from 180deg, var(--red) 0deg, var(--gold) 90deg, var(--green) 180deg);
+            position: relative;
+        }
+        .gauge-needle {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 4px;
+            height: 90px;
+            background: white;
+            transform-origin: bottom center;
+            transform: translateX(-50%) rotate(-45deg);
+            transition: transform 0.5s;
+        }
+
+        /* ML Prediction */
+        .prediction-bar {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .pred-label {
+            width: 60px;
+            font-size: 12px;
+        }
+        .pred-bar-bg {
+            flex: 1;
+            height: 20px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 0 10px;
+        }
+        .pred-bar-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s;
+        }
+
+        /* Multi-Timeframe */
+        .tf-alignment {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+        .tf-item {
+            text-align: center;
+        }
+        .tf-circle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            border: 3px solid;
+        }
+        .tf-label {
+            font-size: 11px;
+            color: #888;
+        }
+
+        /* Execution Panel */
+        .execution-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .exec-btn {
+            padding: 20px;
+            border-radius: 12px;
+            border: none;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .exec-btn.rise {
+            background: var(--green);
+            color: white;
+        }
+        .exec-btn.fall {
+            background: var(--red);
+            color: white;
+        }
+        .exec-btn:active {
+            transform: scale(0.95);
+        }
+        .bot-duration {
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .duration-slider {
+            width: 100%;
+            margin: 10px 0;
+        }
+        .trade-log {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .trade-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid #333;
+            font-size: 12px;
+        }
+        .trade-profit {
+            color: var(--green);
+        }
+        .trade-loss {
+            color: var(--red);
+        }
+
+        /* XML Bot Bridge Output */
+        .xml-output {
+            background: #000;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            color: var(--green);
+            margin-top: 10px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
     </style>
 </head>
 <body>
@@ -387,11 +677,15 @@
 
             <!-- Panel Navigation -->
             <div class="panel-nav">
-                <div class="panel-nav-btn active" onclick="switchPanel('signal', this)">🤖 AI Engine</div>
-                <div class="panel-nav-btn" onclick="switchPanel('dynamics', this)">⚡ Dynamics</div>
-                <div class="panel-nav-btn" onclick="switchPanel('scanner', this)">🔍 Scanner</div>
-                <div class="panel-nav-btn" onclick="switchPanel('bridge', this)">🔗 Bridge</div>
-                <div class="panel-nav-btn" onclick="switchPanel('history', this)">📜 History</div>
+                <div class="panel-nav-btn active" onclick="switchPanel('signal', this)">🤖 AI</div>
+                <div class="panel-nav-btn" onclick="switchPanel('risk', this)">💰 Risk</div>
+                <div class="panel-nav-btn" onclick="switchPanel('session', this)">🕐 Session</div>
+                <div class="panel-nav-btn" onclick="switchPanel('correlation', this)">🔗 Corr</div>
+                <div class="panel-nav-btn" onclick="switchPanel('backtest', this)">⏪ Backtest</div>
+                <div class="panel-nav-btn" onclick="switchPanel('sentiment', this)">📊 Sentiment</div>
+                <div class="panel-nav-btn" onclick="switchPanel('ml', this)">🧠 ML</div>
+                <div class="panel-nav-btn" onclick="switchPanel('multitf', this)">📈 Multi-TF</div>
+                <div class="panel-nav-btn" onclick="switchPanel('execution', this)">⚡ Execute</div>
             </div>
 
             <div class="scroll-hint">↓ Scroll for more panels ↓</div>
@@ -461,7 +755,309 @@
                 </ol>
             </div>
 
-            <!-- Other Panels (Dynamics, Scanner, Bridge, History) -->
+            <!-- RISK MANAGEMENT PANEL -->
+            <div id="risk-panel" class="risk-panel">
+                <h4 style="color: var(--gold); margin-bottom: 15px;">💰 Risk Management</h4>
+                
+                <div class="risk-meters">
+                    <div class="risk-meter">
+                        <div class="risk-circle" id="risk-kelly" style="background: conic-gradient(var(--green) 0deg, var(--green) 120deg, transparent 120deg);">
+                            <span>33%</span>
+                        </div>
+                        <div class="risk-label">Kelly %</div>
+                    </div>
+                    <div class="risk-meter">
+                        <div class="risk-circle" id="risk-drawdown" style="background: conic-gradient(var(--red) 0deg, var(--red) 45deg, transparent 45deg);">
+                            <span>12%</span>
+                        </div>
+                        <div class="risk-label">Max DD</div>
+                    </div>
+                    <div class="risk-meter">
+                        <div class="risk-circle" id="risk-var" style="background: conic-gradient(var(--gold) 0deg, var(--gold) 90deg, transparent 90deg);">
+                            <span>5%</span>
+                        </div>
+                        <div class="risk-label">Daily VaR</div>
+                    </div>
+                </div>
+
+                <div class="bot-duration">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <span>Bot Runtime Limit</span>
+                        <span id="runtime-display" style="color:var(--gold); font-weight:bold;">30 min</span>
+                    </div>
+                    <input type="range" class="duration-slider" id="bot-runtime" min="5" max="240" value="30" onchange="updateRuntime(this.value)">
+                    <div style="display:flex; justify-content:space-between; font-size:10px; color:#666;">
+                        <span>5m</span>
+                        <span>4h</span>
+                    </div>
+                </div>
+
+                <div class="info-item" style="margin-bottom:10px;">
+                    <strong>Position Size:</strong> <span id="position-size">0.35</span> lots
+                </div>
+                <div class="info-item" style="margin-bottom:10px;">
+                    <strong>Stop Loss:</strong> <span id="stop-loss">20</span> ticks
+                </div>
+                <div class="info-item">
+                    <strong>Take Profit:</strong> <span id="take-profit">40</span> ticks (2:1 R:R)
+                </div>
+            </div>
+
+            <!-- SESSION ANALYTICS PANEL -->
+            <div id="session-panel" class="session-panel">
+                <h4 style="color: var(--gold); margin-bottom: 15px;">🕐 Session Analytics</h4>
+                
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:11px;">
+                    <span>00:00</span>
+                    <span>12:00</span>
+                    <span>23:00</span>
+                </div>
+                <div class="session-heatmap" id="session-heatmap">
+                    <!-- Heatmap cells generated by JS -->
+                </div>
+
+                <div style="display:flex; justify-content:space-around; margin:15px 0;">
+                    <div style="text-align:center;">
+                        <div style="font-size:24px; font-weight:bold; color:var(--green);">68%</div>
+                        <div style="font-size:10px; color:#888;">Asian</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <div style="font-size:24px; font-weight:bold; color:var(--gold);">82%</div>
+                        <div style="font-size:10px; color:#888;">London</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <div style="font-size:24px; font-weight:bold; color:var(--red);">45%</div>
+                        <div style="font-size:10px; color:#888;">New York</div>
+                    </div>
+                </div>
+
+                <div class="info-item">
+                    <strong>Optimal Window:</strong> <span style="color:var(--gold);">08:00 - 11:00 UTC</span>
+                </div>
+                <div class="info-item">
+                    <strong>Current Session:</strong> <span id="current-session" style="color:var(--blue);">London</span>
+                </div>
+            </div>
+
+            <!-- CORRELATION PANEL -->
+            <div id="correlation-panel" class="correlation-panel">
+                <h4 style="color: var(--gold); margin-bottom: 15px;">🔗 Correlation Matrix</h4>
+                
+                <div class="corr-matrix" id="corr-matrix">
+                    <!-- Matrix generated by JS -->
+                </div>
+
+                <div style="margin-top:15px; padding:10px; background:rgba(0,0,0,0.3); border-radius:8px;">
+                    <div style="font-size:12px; margin-bottom:5px;"><strong>Signal Confirmation:</strong></div>
+                    <div id="corr-signals" style="font-size:11px; color:#aaa;">
+                        V75 ↗ confirmed by V100 ↗ (0.85)<br>
+                        V50 ↘ diverges from V75 ↗ (-0.32)
+                    </div>
+                </div>
+            </div>
+
+            <!-- BACKTEST PANEL -->
+            <div id="backtest-panel" class="backtest-panel">
+                <h4 style="color: var(--gold); margin-bottom: 15px;">⏪ Strategy Backtest</h4>
+                
+                <div class="backtest-chart">
+                    <div class="equity-line" id="equity-line"></div>
+                    <div style="position:absolute; top:10px; left:10px; font-size:12px;">
+                        <div>Win Rate: <span style="color:var(--green);">73.5%</span></div>
+                        <div>Profit Factor: <span style="color:var(--green);">2.4</span></div>
+                    </div>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-name">TRADES</div>
+                        <div class="metric-value">156</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-name">SHARPE</div>
+                        <div class="metric-value">1.8</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-name">MAX DD</div>
+                        <div class="metric-value" style="color:var(--red);">-12%</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-name">EXP</div>
+                        <div class="metric-value" style="color:var(--green);">+$245</div>
+                    </div>
+                </div>
+
+                <div class="info-item">
+                    <strong>Recommendation:</strong> <span id="backtest-rec" style="color:var(--green);">Strategy performing well - RUN BOT</span>
+                </div>
+            </div>
+
+            <!-- SENTIMENT PANEL -->
+            <div id="sentiment-panel" class="sentiment-panel">
+                <h4 style="color: var(--gold); margin-bottom: 15px;">📊 Market Sentiment</h4>
+                
+                <div class="sentiment-gauge">
+                    <div class="gauge-arc">
+                        <div class="gauge-needle" id="sentiment-needle"></div>
+                    </div>
+                </div>
+                <div style="text-align:center; margin-bottom:15px;">
+                    <div style="font-size:32px; font-weight:bold;" id="sentiment-value">GREED</div>
+                    <div style="font-size:12px; color:#888;">Index: 75/100</div>
+                </div>
+
+                <div class="mini-panel-grid">
+                    <div class="mini-card">
+                        <div class="mini-card-header">
+                            <span class="mini-card-title">Volatility Index</span>
+                            <div class="mini-card-icon" style="background:rgba(255,68,79,0.2); color:var(--red);">⚡</div>
+                        </div>
+                        <div class="mini-card-value" style="color:var(--red);">HIGH</div>
+                        <div class="mini-card-sub">VIX: 24.5</div>
+                    </div>
+                    <div class="mini-card">
+                        <div class="mini-card-header">
+                            <span class="mini-card-title">Put/Call Ratio</span>
+                            <div class="mini-card-icon" style="background:rgba(76,175,80,0.2); color:var(--green);">📈</div>
+                        </div>
+                        <div class="mini-card-value" style="color:var(--green);">0.72</div>
+                        <div class="mini-card-sub">Bullish bias</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ML PREDICTION PANEL -->
+            <div id="ml-panel" class="ml-panel">
+                <h4 style="color: var(--gold); margin-bottom: 15px;">🧠 ML Prediction Engine</h4>
+                
+                <div style="margin-bottom:20px;">
+                    <div class="prediction-bar">
+                        <span class="pred-label">RISE</span>
+                        <div class="pred-bar-bg">
+                            <div class="pred-bar-fill" id="pred-rise" style="width:65%; background:var(--green);"></div>
+                        </div>
+                        <span id="pred-rise-val">65%</span>
+                    </div>
+                    <div class="prediction-bar">
+                        <span class="pred-label">FALL</span>
+                        <div class="pred-bar-bg">
+                            <div class="pred-bar-fill" id="pred-fall" style="width:35%; background:var(--red);"></div>
+                        </div>
+                        <span id="pred-fall-val">35%</span>
+                    </div>
+                </div>
+
+                <div class="info-item" style="margin-bottom:10px;">
+                    <strong>Model:</strong> LSTM Ensemble (5-fold)
+                </div>
+                <div class="info-item" style="margin-bottom:10px;">
+                    <strong>Accuracy:</strong> <span style="color:var(--green);">78.3%</span> (last 100 predictions)
+                </div>
+                <div class="info-item">
+                    <strong>Next Tick Forecast:</strong> <span id="ml-forecast" style="color:var(--gold); font-weight:bold;">RISE (confidence: 65%)</span>
+                </div>
+
+                <div style="margin-top:15px; padding:10px; background:rgba(0,0,0,0.3); border-radius:8px; font-size:11px; color:#888;">
+                    Pattern detected: Bullish flag formation (87% reliability)
+                </div>
+            </div>
+
+            <!-- MULTI-TIMEFRAME PANEL -->
+            <div id="multitf-panel" class="multitf-panel">
+                <h4 style="color: var(--gold); margin-bottom: 15px;">📈 Multi-Timeframe Analysis</h4>
+                
+                <div class="tf-alignment">
+                    <div class="tf-item">
+                        <div class="tf-circle" id="tf-1m" style="border-color:var(--green); color:var(--green);">▲</div>
+                        <div class="tf-label">1M</div>
+                    </div>
+                    <div class="tf-item">
+                        <div class="tf-circle" id="tf-5m" style="border-color:var(--green); color:var(--green);">▲</div>
+                        <div class="tf-label">5M</div>
+                    </div>
+                    <div class="tf-item">
+                        <div class="tf-circle" id="tf-15m" style="border-color:var(--gold); color:var(--gold);">—</div>
+                        <div class="tf-label">15M</div>
+                    </div>
+                    <div class="tf-item">
+                        <div class="tf-circle" id="tf-1h" style="border-color:var(--red); color:var(--red);">▼</div>
+                        <div class="tf-label">1H</div>
+                    </div>
+                </div>
+
+                <div style="text-align:center; padding:15px; background:rgba(0,0,0,0.3); border-radius:8px; margin-bottom:15px;">
+                    <div style="font-size:14px; margin-bottom:5px;">Trend Alignment Score</div>
+                    <div style="font-size:36px; font-weight:bold; color:var(--gold);" id="tf-score">50%</div>
+                    <div style="font-size:11px; color:#888;">Mixed signals - caution advised</div>
+                </div>
+
+                <div class="info-item">
+                    <strong>Recommendation:</strong> <span id="tf-rec">Wait for 1H trend confirmation</span>
+                </div>
+            </div>
+
+            <!-- EXECUTION PANEL -->
+            <div id="execution-panel" class="execution-panel">
+                <h4 style="color: var(--gold); margin-bottom: 15px;">⚡ XML Bot Execution</h4>
+                
+                <div class="execution-grid">
+                    <button class="exec-btn rise" onclick="executeTrade('RISE')">
+                        <i class="fas fa-arrow-up"></i> RISE
+                    </button>
+                    <button class="exec-btn fall" onclick="executeTrade('FALL')">
+                        <i class="fas fa-arrow-down"></i> FALL
+                    </button>
+                </div>
+
+                <div class="bot-duration">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <span>Auto-Stop After</span>
+                        <span id="exec-runtime" style="color:var(--gold); font-weight:bold;">30 min</span>
+                    </div>
+                    <input type="range" class="duration-slider" id="exec-duration" min="5" max="240" value="30" onchange="updateExecDuration(this.value)">
+                    <div style="display:flex; justify-content:space-between; font-size:10px; color:#666;">
+                        <span>5m</span>
+                        <span>4h</span>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:10px; margin-bottom:15px;">
+                    <button onclick="startBot()" id="start-btn" style="flex:1; padding:15px; background:var(--green); color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">
+                        <i class="fas fa-play"></i> START BOT
+                    </button>
+                    <button onclick="stopBot()" id="stop-btn" style="flex:1; padding:15px; background:var(--red); color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; opacity:0.5;" disabled>
+                        <i class="fas fa-stop"></i> STOP
+                    </button>
+                </div>
+
+                <div class="xml-output" id="xml-output">
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;deriv-bot&gt;
+  &lt;strategy&gt;
+    &lt;signal&gt;WAIT&lt;/signal&gt;
+    &lt;confidence&gt;40%&lt;/confidence&gt;
+    &lt;duration&gt;30min&lt;/duration&gt;
+    &lt;status&gt;STANDBY&lt;/status&gt;
+  &lt;/strategy&gt;
+&lt;/deriv-bot&gt;
+                </div>
+
+                <div style="margin-top:15px;">
+                    <div style="font-size:12px; margin-bottom:10px;"><strong>Recent Trades:</strong></div>
+                    <div class="trade-log" id="trade-log">
+                        <div class="trade-item">
+                            <span>V75 1s RISE</span>
+                            <span class="trade-profit">+$12.50</span>
+                        </div>
+                        <div class="trade-item">
+                            <span>V50 1s FALL</span>
+                            <span class="trade-loss">-$5.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Other Original Panels -->
             <div id="dynamics-panel" class="dynamics-panel">
                 <h4 style="color: var(--gold); margin-bottom: 15px;">⚡ Market Dynamics</h4>
                 <div id="dynamics-content">Loading...</div>
