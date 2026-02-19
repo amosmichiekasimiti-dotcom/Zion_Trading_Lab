@@ -3,101 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zion Trading Lab | Universal Feed</title>
+    <title>Zion Trading Lab | Upgraded</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="header-bar">
-        <h3>Zion Trading Lab</h3>
-        <div id="status">● Connected</div>
-    </div>
-
-    <div class="nav-grid">
-        <div class="nav-card active" onclick="loadCategory('volatility', this)">VOLATILITY</div>
-        <div class="nav-card" onclick="loadCategory('crashboom', this)">CRASH/BOOM</div>
-        <div class="nav-card" onclick="loadCategory('jump', this)">JUMP</div>
-        <div class="nav-card" onclick="loadCategory('range', this)">RANGE/STEP</div>
-        <div class="nav-card" onclick="loadCategory('forex', this)">FOREX</div>
-    </div>
-
-    <div class="card">
-        <table>
-            <thead><tr><th>Market</th><th>Symbol</th><th>Action</th></tr></thead>
-            <tbody id="market-list"></tbody>
-        </table>
-    </div>
-
-    <div id="modal">
-        <div class="modal-body">
-            <div class="modal-nav">
-                <h4 id="mTitle">Asset</h4>
-                <button onclick="closeModal()" class="close-btn">CLOSE</button>
+    <div class="container">
+        <div class="price-card">
+            <div id="live-price">0.0000<span class="active-digit">0</span></div>
+            <div style="text-align: right;">
+                <small style="color: #8b949e;">LIVE FEED</small><br>
+                <span id="price-symbol" style="font-weight: bold; color: var(--red);">1HZ50V</span>
             </div>
+        </div>
 
-            <div class="tabs">
-                <div class="tab active" onclick="switchContract('rise_fall', this)">Rise/Fall</div>
-                <div class="tab" onclick="switchContract('even_odd', this)">Even/Odd</div>
-                <div class="tab" onclick="switchContract('matches_differs', this)">Matches/Differs</div>
-                <div class="tab" onclick="switchContract('over_under', this)">Over/Under</div>
-            </div>
-
-            <div class="price-header">
-                <div id="live-price">0.0000<span class="active-digit">0</span></div>
-                <div class="price-info">
-                    <small>LIVE FEED</small>
-                    <span id="price-symbol">---</span>
+        <div class="engine-panel">
+            <div class="engine-header"><i class="fas fa-microchip"></i> Digit Analysis Engine</div>
+            <div id="engine-status" style="font-size: 10px; color: var(--gold); margin-bottom: 10px;">ANALYZING TICK DATA...</div>
+            
+            <div class="signal-grid">
+                <div class="signal-box">
+                    <small style="color: #8b949e;">Signal</small>
+                    <div id="primary-signal" class="value" style="color: var(--blue);">WAIT</div>
+                </div>
+                <div class="signal-box">
+                    <small style="color: #8b949e;">Trend</small>
+                    <div id="market-direction" class="value">--</div>
                 </div>
             </div>
 
-            <div class="engines-container">
-                <div id="risefall-engine-panel">
-                    <div class="engine-header">
-                        <div class="engine-title rf-color"><i class="fas fa-chart-line"></i> Rise/Fall Engine</div>
-                        <div class="signal-strength" id="rf-signal-strength">ANALYZING...</div>
-                    </div>
-                    <div class="signal-main">
-                        <div class="signal-box">
-                            <div class="signal-label">Direction</div>
-                            <div class="signal-value" id="rf-primary-signal">WAIT</div>
-                            <div id="rf-primary-confidence" class="signal-confidence signal-wait">CALCULATING</div>
-                        </div>
-                        <div class="signal-box">
-                            <div class="signal-label">Entry</div>
-                            <div class="signal-value" id="rf-entry-timing">--</div>
-                            <div id="rf-entry-confidence" class="signal-confidence signal-wait">WAITING</div>
-                        </div>
-                    </div>
-                    <div class="trend-visualizer" id="trend-visualizer"></div>
+            <div class="conditions-list">
+                <div class="condition">
+                    <span>Pattern Recognition</span>
+                    <span id="cond-pattern" class="status status-checking">Checking</span>
                 </div>
-
-                <div id="signal-engine-panel">
-                    <div class="engine-header">
-                        <div class="engine-title digit-color"><i class="fas fa-robot"></i> Digit Engine</div>
-                        <div class="signal-strength" id="signal-strength">ANALYZING...</div>
-                    </div>
-                    <div class="signal-main">
-                        <div class="signal-box">
-                            <div class="signal-label">Signal</div>
-                            <div class="signal-value" id="primary-signal">WAIT</div>
-                            <div id="primary-confidence" class="signal-confidence signal-wait">CALCULATING</div>
-                        </div>
-                        <div class="signal-box">
-                            <div class="signal-label">Trend</div>
-                            <div class="signal-value" id="market-direction">--</div>
-                            <div id="direction-confidence" class="signal-confidence signal-wait">NEUTRAL</div>
-                        </div>
-                    </div>
+                <div class="condition">
+                    <span>Volatility Filter</span>
+                    <span id="cond-vol" class="status status-checking">Checking</span>
+                </div>
+                <div class="condition">
+                    <span>Momentum Confirmation</span>
+                    <span id="cond-momentum" class="status status-checking">Checking</span>
                 </div>
             </div>
+        </div>
 
-            <div id="digit-analysis-panel">
-                <div class="digit-grid" id="digit-grid"></div>
-            </div>
-
-            <div id="chart-container">
-                <div id="tv-widget"></div>
-            </div>
+        <div id="chart-container">
+            <iframe id="trading-chart" src="" width="100%" height="400" frameborder="0"></iframe>
         </div>
     </div>
 
