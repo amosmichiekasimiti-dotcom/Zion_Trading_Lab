@@ -20,9 +20,9 @@
         td, th { padding: 12px; text-align: left; border-bottom: 1px solid #333; font-size: 13px; color: #ccc; }
         .btn-view { background: var(--blue); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
 
-        /* Full Screen Modal */
-        #modal { display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; background: var(--bg-dark); overflow: hidden; }
-        .modal-body { height: 100%; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 80px; }
+        /* Full Screen Modal - Fixed for vertical scrolling */
+        #modal { display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; background: var(--bg-dark); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .modal-body { min-height: 100%; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box; padding-bottom: 80px; }
         
         /* AI Signal Engine Panel */
         .ai-engine-panel {
