@@ -1,8 +1,7 @@
 /**
  * Zion Trading Lab - Authoritative Direct Feed
  * Direct Sync with Deriv "Reef" Servers & Live Directional Arrows
- * Enhanced with Signal Engine for Rise/Fall, Even/Odd, Matches/Differs, Over/Under
- * WITH STRICT CONDITION VALIDATION FOR LONG-LASTING SIGNALS
+ * Enhanced with Signal Engine + Market Dynamics + Volatility Scanner
  */
 
 const ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
@@ -10,50 +9,58 @@ let activeSub = null;
 let allSymbols = [];
 let currentSymbol = '';
 let currentMode = 'rise_fall';
-let lastPrice = 0; // Track previous price for directional arrows
-let reefDigitWindow = []; // Stores authoritative 100-digit history
-let priceHistory = []; // For rise/fall analysis
+let lastPrice = 0;
+let reefDigitWindow = [];
+let priceHistory = [];
 let lastSignal = null;
 let signalCooldown = 0;
-let activeSignalData = null; // Store current signal for persistence
+let activeSignalData = null;
 
-// Signal Engine Configuration - STRICT CONDITIONS FOR LONG-LASTING SIGNALS
+// Market Dynamics Tracking
+let tickTimes = [];
+let lastMetrics = {};
+let dynamicsHistory = [];
+
+// Scanner Data
+let scannerData = {};
+let scannerInterval = null;
+
+// Signal Engine Configuration
 const SIGNAL_CONFIG = {
     rise_fall: {
-        minTicks: 50,              // Minimum price ticks required
-        trendThreshold: 0.70,      // 70% directional bias required
-        momentumThreshold: 5,      // Minimum momentum score
-        minConsecutive: 4,         // Minimum consecutive moves in direction
-        volatilityMax: 0.05,       // Maximum allowed volatility (5%)
-        confirmationDelay: 10      // Ticks to confirm trend
+        minTicks: 50,
+        trendThreshold: 0.70,
+        momentumThreshold: 5,
+        minConsecutive: 4,
+        volatilityMax: 0.05,
+        confirmationDelay: 10
     },
     even_odd: {
-        minTicks: 100,             // Minimum digit history required
-        dominanceThreshold: 0.60,  // 60% dominance required
-        streakThreshold: 5,        // Maximum streak before reversal
-        chiSquareThreshold: 3.84,  // Chi-square test for randomness
-        minGap: 10,                // Minimum gap between even/odd counts
-        stabilityPeriods: 3        // Periods of stability required
+        minTicks: 100,
+        dominanceThreshold: 0.60,
+        streakThreshold: 5,
+        chiSquareThreshold: 3.84,
+        minGap: 10,
+        stabilityPeriods: 3
     },
     matches_differs: {
-        minTicks: 150,             // Extensive history needed
-        probabilityThreshold: 0.15,// 15% minimum for digit
-        minOccurrence: 15,         // Minimum occurrences
-        entropyThreshold: 0.85,    // Maximum entropy allowed
-        confidenceInterval: 0.95,  // 95% confidence required
-        predictionStability: 5     // Stable prediction for 5 ticks
+        minTicks: 150,
+        probabilityThreshold: 0.15,
+        minOccurrence: 15,
+        entropyThreshold: 0.85,
+        confidenceInterval: 0.95,
+        predictionStability: 5
     },
     over_under: {
-        minTicks: 100,             // Minimum digit history
-        dominanceThreshold: 0.65,  // 65% dominance required
-        thresholdDigit: 5,         // Pivot digit
-        distributionBalance: 0.40, // Balance check
-        trendConsistency: 4,       // Consistent trend periods
-        rejectionThreshold: 0.10   // Maximum rejection rate
+        minTicks: 100,
+        dominanceThreshold: 0.65,
+        thresholdDigit: 5,
+        distributionBalance: 0.40,
+        trendConsistency: 4,
+        rejectionThreshold: 0.10
     }
 };
 
-// Signal persistence variables
 let signalConfirmCount = 0;
 let lastPrediction = null;
 let predictionStabilityCount = 0;
@@ -66,13 +73,12 @@ ws.onopen = () => {
 ws.onmessage = (msg) => {
     const data = JSON.parse(msg.data);
 
-    // Initial Symbol Loading
     if (data.active_symbols) { 
         allSymbols = data.active_symbols; 
         loadCategory('volatility'); 
+        initScanner();
     }
 
-    // AUTHENTIC PERCENTAGE PULL: Initial 100-Tick History for Real Percentages
     if (data.history) {
         reefDigitWindow = []; 
         data.history.prices.forEach(price => {
@@ -81,9 +87,9 @@ ws.onmessage = (msg) => {
         });
         renderReefStatistics();
         updateSignalEngine();
+        updateDynamics();
     }
 
-    // LIVE AUTHORITATIVE STREAM: Update Price, Directional Arrows & Digit Probabilities
     if (data.tick) {
         activeSub = data.tick.id;
         const currentPrice = data.tick.quote;
@@ -91,25 +97,26 @@ ws.onmessage = (msg) => {
         const lastDigit = parseInt(priceStr.slice(-1));
         const head = priceStr.slice(0, -1);
         
-        // Update price history for rise/fall
+        // Track tick velocity
+        tickTimes.push(Date.now());
+        if (tickTimes.length > 50) tickTimes.shift();
+        
         priceHistory.push(currentPrice);
         if (priceHistory.length > 200) priceHistory.shift();
         
-        // Determine Direction for Amazing Arrows
         let directionArrow = "";
         let arrowColor = "#ffffff";
         if (lastPrice > 0) {
             if (currentPrice > lastPrice) {
-                directionArrow = " ▲"; // Upwards movement
-                arrowColor = "#4caf50"; // Green
+                directionArrow = " ▲";
+                arrowColor = "#4caf50";
             } else if (currentPrice < lastPrice) {
-                directionArrow = " ▼"; // Downwards movement
-                arrowColor = "#ff444f"; // Red
+                directionArrow = " ▼";
+                arrowColor = "#ff444f";
             }
         }
         lastPrice = currentPrice;
 
-        // Update Running Price Header with Live Arrow
         const priceDisplay = document.getElementById('live-price');
         if (priceDisplay) {
             priceDisplay.innerHTML = `
@@ -118,7 +125,6 @@ ws.onmessage = (msg) => {
             `;
         }
 
-        // Maintain the real 100-tick window exactly like the Reef platform
         reefDigitWindow.push(lastDigit);
         if (reefDigitWindow.length > 100) reefDigitWindow.shift();
         
@@ -126,8 +132,8 @@ ws.onmessage = (msg) => {
             renderReefStatistics(lastDigit);
         }
         
-        // Update Signal Engine
         updateSignalEngine();
+        updateDynamics();
     }
 };
 
@@ -168,13 +174,16 @@ function openAnalysis(name, symbol) {
     signalConfirmCount = 0;
     lastPrediction = null;
     predictionStabilityCount = 0;
+    tickTimes = [];
+    dynamicsHistory = [];
     
     document.getElementById('mTitle').innerText = name;
     document.getElementById('modal').style.display = 'block';
     
+    // Reset to signal panel
+    switchPanel('signal', document.querySelector('.panel-nav-btn'));
     switchContract('rise_fall', document.querySelector('.tab'));
 
-    // DIRECT REEF COMMAND: Request authoritative 100-tick history state
     ws.send(JSON.stringify({
         "ticks_history": symbol,
         "adjust_start_time": 1,
@@ -183,9 +192,11 @@ function openAnalysis(name, symbol) {
         "style": "ticks"
     }));
 
-    // Subscribe to live authoritative updates
     if (activeSub) ws.send(JSON.stringify({ "forget": activeSub }));
     ws.send(JSON.stringify({ "ticks": symbol, "subscribe": 1 }));
+    
+    // Start scanner updates
+    startScanner();
 }
 
 function switchContract(mode, el) {
@@ -199,24 +210,45 @@ function switchContract(mode, el) {
 
     if (mode === 'rise_fall') {
         digitPanel.style.display = 'none';
-        chartView.style.height = '100%';
+        chartView.style.height = '300px';
         signalPanel.classList.add('active');
     } else {
         digitPanel.style.display = 'block';
-        chartView.style.height = '400px';
+        chartView.style.height = '250px';
         signalPanel.classList.add('active');
         buildDigitGrid();
     }
     
-    // TradingView Candle Chart synchronized with price
     chartView.innerHTML = `<iframe src="https://tradingview.binary.com/v2/main.php?symbol=${currentSymbol}&theme=light" width="100%" height="100%" frameborder="0"></iframe>`;
     
-    // Reset signal tracking
     signalConfirmCount = 0;
     lastPrediction = null;
     predictionStabilityCount = 0;
     
     updateSignalEngine();
+}
+
+// NEW: Panel Switching
+function switchPanel(panelName, el) {
+    document.querySelectorAll('.panel-nav-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    
+    document.querySelectorAll('.signal-panel, .dynamics-panel, .scanner-panel').forEach(p => {
+        p.classList.remove('active');
+        p.style.display = 'none';
+    });
+    
+    if (panelName === 'signal') {
+        document.getElementById('signal-panel').style.display = 'block';
+    } else if (panelName === 'dynamics') {
+        document.getElementById('dynamics-panel').style.display = 'block';
+        document.getElementById('dynamics-panel').classList.add('active');
+        updateDynamics();
+    } else if (panelName === 'scanner') {
+        document.getElementById('scanner-panel').style.display = 'block';
+        document.getElementById('scanner-panel').classList.add('active');
+        updateScannerDisplay();
+    }
 }
 
 function buildDigitGrid() {
@@ -236,7 +268,6 @@ function renderReefStatistics(activeDigit) {
     const counts = Array(10).fill(0);
     reefDigitWindow.forEach(d => counts[d]++);
 
-    // Find Max and Min to match Red/Green coloring in screenshots
     const maxVal = Math.max(...counts);
     const minVal = Math.min(...counts);
 
@@ -249,19 +280,17 @@ function renderReefStatistics(activeDigit) {
         if (label) {
             label.innerText = realPercentage + "%";
             
-            // Percentage Coloring Logic from Deriv platform
             if (counts[i] === maxVal && maxVal !== minVal) {
-                label.style.color = "#4caf50"; // Green for highest occurrence
+                label.style.color = "#4caf50";
             } else if (counts[i] === minVal && maxVal !== minVal) {
-                label.style.color = "#ff444f"; // Red for lowest occurrence
+                label.style.color = "#ff444f";
             } else {
-                label.style.color = "#00f2fe"; // Standard Neon
+                label.style.color = "#00f2fe";
             }
         }
         
         if (bar) bar.style.height = realPercentage + "%";
 
-        // Black Box Active Glow State
         if (i === activeDigit) {
             if (box) {
                 box.style.background = "#000000";
@@ -280,11 +309,11 @@ function renderReefStatistics(activeDigit) {
     }
 }
 
-// ==================== ENHANCED SIGNAL ENGINE WITH STRICT CONDITIONS ====================
+// ==================== SIGNAL ENGINE ====================
 
 function updateSignalEngine() {
     const panel = document.getElementById('signal-panel');
-    if (!panel.classList.add('active')) return;
+    if (panel.style.display === 'none') return;
     
     let result = null;
     
@@ -303,12 +332,9 @@ function updateSignalEngine() {
             break;
     }
     
-    // Display conditions regardless of pass/fail
     displayConditions(result);
     
-    // Only show signal if ALL conditions pass
     if (result && result.overallPass) {
-        // Check for signal stability
         if (lastPrediction === result.prediction) {
             predictionStabilityCount++;
         } else {
@@ -316,7 +342,6 @@ function updateSignalEngine() {
             lastPrediction = result.prediction;
         }
         
-        // Require stability before confirming
         if (predictionStabilityCount >= 3) {
             displaySignal(result);
             activeSignalData = result;
@@ -334,7 +359,6 @@ function generateRiseFallSignal() {
     const config = SIGNAL_CONFIG.rise_fall;
     const conditions = [];
     
-    // Condition 1: Minimum Data
     const hasMinTicks = priceHistory.length >= config.minTicks;
     conditions.push({
         name: `Minimum ${config.minTicks} Ticks Collected`,
@@ -348,9 +372,7 @@ function generateRiseFallSignal() {
     
     const recent = priceHistory.slice(-config.minTicks);
     
-    // Condition 2: Calculate momentum and consecutive moves
     let upMoves = 0, downMoves = 0, momentum = 0;
-    let consecutiveUp = 0, consecutiveDown = 0;
     let maxConsecutiveUp = 0, maxConsecutiveDown = 0;
     let currentConsecutive = 0;
     let lastDirection = null;
@@ -382,9 +404,9 @@ function generateRiseFallSignal() {
     const totalMoves = upMoves + downMoves;
     const upRatio = totalMoves > 0 ? upMoves / totalMoves : 0;
     const downRatio = totalMoves > 0 ? downMoves / totalMoves : 0;
-    
-    // Condition 2: Trend Threshold
     const trendStrength = Math.max(upRatio, downRatio);
+    const maxConsecutive = Math.max(maxConsecutiveUp, maxConsecutiveDown);
+    
     const meetsTrendThreshold = trendStrength >= config.trendThreshold;
     conditions.push({
         name: `Trend Strength ≥ ${(config.trendThreshold * 100).toFixed(0)}%`,
@@ -392,8 +414,6 @@ function generateRiseFallSignal() {
         detail: `${(trendStrength * 100).toFixed(1)}%`
     });
     
-    // Condition 3: Consecutive Moves
-    const maxConsecutive = Math.max(maxConsecutiveUp, maxConsecutiveDown);
     const meetsConsecutive = maxConsecutive >= config.minConsecutive;
     conditions.push({
         name: `Consecutive Moves ≥ ${config.minConsecutive}`,
@@ -401,7 +421,6 @@ function generateRiseFallSignal() {
         detail: `${maxConsecutive} ticks`
     });
     
-    // Condition 4: Momentum Threshold
     const absMomentum = Math.abs(momentum);
     const meetsMomentum = absMomentum >= config.momentumThreshold;
     conditions.push({
@@ -410,7 +429,6 @@ function generateRiseFallSignal() {
         detail: `Score: ${momentum}`
     });
     
-    // Condition 5: Volatility Check
     const volatility = calculateVolatility(recent);
     const meetsVolatility = volatility <= config.volatilityMax;
     conditions.push({
@@ -419,7 +437,6 @@ function generateRiseFallSignal() {
         detail: `${(volatility * 100).toFixed(2)}%`
     });
     
-    // Determine prediction
     let prediction = null;
     let confidence = 0;
     
@@ -448,7 +465,6 @@ function generateEvenOddSignal() {
     const config = SIGNAL_CONFIG.even_odd;
     const conditions = [];
     
-    // Condition 1: Minimum Data
     const hasMinTicks = reefDigitWindow.length >= config.minTicks;
     conditions.push({
         name: `Minimum ${config.minTicks} Digits Collected`,
@@ -462,7 +478,6 @@ function generateEvenOddSignal() {
     
     const recent = reefDigitWindow.slice(-config.minTicks);
     
-    // Calculate statistics
     let evenCount = 0, oddCount = 0;
     let currentStreak = 1, lastParity = null, maxStreak = 1;
     
@@ -488,7 +503,6 @@ function generateEvenOddSignal() {
     const dominance = Math.max(evenRatio, oddRatio);
     const gap = Math.abs(evenCount - oddCount);
     
-    // Condition 2: Dominance Threshold
     const meetsDominance = dominance >= config.dominanceThreshold;
     conditions.push({
         name: `Dominance ≥ ${(config.dominanceThreshold * 100).toFixed(0)}%`,
@@ -496,7 +510,6 @@ function generateEvenOddSignal() {
         detail: `${(dominance * 100).toFixed(1)}%`
     });
     
-    // Condition 3: Gap Requirement
     const meetsGap = gap >= config.minGap;
     conditions.push({
         name: `Count Gap ≥ ${config.minGap}`,
@@ -504,7 +517,6 @@ function generateEvenOddSignal() {
         detail: `Gap: ${gap}`
     });
     
-    // Condition 4: Chi-Square Randomness Test
     const chiSquare = calculateChiSquare([evenCount, oddCount], [total/2, total/2]);
     const meetsChiSquare = chiSquare >= config.chiSquareThreshold;
     conditions.push({
@@ -513,14 +525,12 @@ function generateEvenOddSignal() {
         detail: `χ² = ${chiSquare.toFixed(2)}`
     });
     
-    // Condition 5: Streak Check (reversal opportunity or stable)
     const lastDigit = recent[recent.length - 1];
     const lastIsEven = lastDigit % 2 === 0;
     let prediction = null;
     let confidence = 0;
     
     if (maxStreak >= config.streakThreshold) {
-        // Reversal opportunity
         prediction = lastIsEven ? 'ODD' : 'EVEN';
         confidence = 75;
         conditions.push({
@@ -555,7 +565,6 @@ function generateMatchesDiffersSignal() {
     const config = SIGNAL_CONFIG.matches_differs;
     const conditions = [];
     
-    // Condition 1: Minimum Data
     const hasMinTicks = reefDigitWindow.length >= config.minTicks;
     conditions.push({
         name: `Minimum ${config.minTicks} Digits Collected`,
@@ -567,13 +576,11 @@ function generateMatchesDiffersSignal() {
         return { conditions, overallPass: false };
     }
     
-    // Calculate digit frequencies
     const counts = Array(10).fill(0);
     reefDigitWindow.forEach(d => counts[d]++);
     
     const total = reefDigitWindow.length;
     
-    // Find best candidate
     let maxCount = 0;
     let predictedDigit = -1;
     let secondBest = 0;
@@ -591,7 +598,6 @@ function generateMatchesDiffersSignal() {
     const probability = maxCount / total;
     const margin = maxCount - secondBest;
     
-    // Condition 2: Probability Threshold
     const meetsProbability = probability >= config.probabilityThreshold;
     conditions.push({
         name: `Probability ≥ ${(config.probabilityThreshold * 100).toFixed(0)}%`,
@@ -599,7 +605,6 @@ function generateMatchesDiffersSignal() {
         detail: `${(probability * 100).toFixed(1)}%`
     });
     
-    // Condition 3: Minimum Occurrence
     const meetsOccurrence = maxCount >= config.minOccurrence;
     conditions.push({
         name: `Occurrences ≥ ${config.minOccurrence}`,
@@ -607,7 +612,6 @@ function generateMatchesDiffersSignal() {
         detail: `${maxCount} times`
     });
     
-    // Condition 4: Margin from Second Best
     const meetsMargin = margin >= 3;
     conditions.push({
         name: `Lead Margin ≥ 3`,
@@ -615,7 +619,6 @@ function generateMatchesDiffersSignal() {
         detail: `Lead: ${margin}`
     });
     
-    // Condition 5: Entropy Check (lower is more predictable)
     const entropy = calculateEntropy(counts, total);
     const meetsEntropy = entropy <= config.entropyThreshold;
     conditions.push({
@@ -624,9 +627,8 @@ function generateMatchesDiffersSignal() {
         detail: `H = ${entropy.toFixed(3)}`
     });
     
-    // Condition 6: Confidence Interval (95%)
     const ci = calculateConfidenceInterval(maxCount, total);
-    const meetsCI = ci.lower > 0.10; // Lower bound above 10%
+    const meetsCI = ci.lower > 0.10;
     conditions.push({
         name: `95% CI Lower > 10%`,
         status: meetsCI ? 'PASS' : 'FAIL',
@@ -652,7 +654,6 @@ function generateOverUnderSignal() {
     const config = SIGNAL_CONFIG.over_under;
     const conditions = [];
     
-    // Condition 1: Minimum Data
     const hasMinTicks = reefDigitWindow.length >= config.minTicks;
     conditions.push({
         name: `Minimum ${config.minTicks} Digits Collected`,
@@ -666,9 +667,8 @@ function generateOverUnderSignal() {
     
     const recent = reefDigitWindow.slice(-config.minTicks);
     
-    // Calculate distribution
-    let overCount = 0;  // digits > 4 (5,6,7,8,9)
-    let underCount = 0; // digits < 5 (0,1,2,3,4)
+    let overCount = 0;
+    let underCount = 0;
     let overTrend = 0, underTrend = 0;
     let lastZone = null;
     
@@ -688,7 +688,6 @@ function generateOverUnderSignal() {
     const underRatio = underCount / total;
     const dominance = Math.max(overRatio, underRatio);
     
-    // Condition 2: Dominance Threshold
     const meetsDominance = dominance >= config.dominanceThreshold;
     conditions.push({
         name: `Dominance ≥ ${(config.dominanceThreshold * 100).toFixed(0)}%`,
@@ -696,16 +695,14 @@ function generateOverUnderSignal() {
         detail: `${(dominance * 100).toFixed(1)}%`
     });
     
-    // Condition 3: Distribution Balance Check
     const balance = Math.min(overRatio, underRatio) / Math.max(overRatio, underRatio);
     const meetsBalance = balance <= config.distributionBalance;
     conditions.push({
         name: `Distribution Imbalance`,
-        status: !meetsBalance ? 'PASS' : 'FAIL', // We want imbalance
+        status: !meetsBalance ? 'PASS' : 'FAIL',
         detail: `Ratio: ${(balance * 100).toFixed(1)}%`
     });
     
-    // Condition 4: Trend Consistency
     const dominantTrend = Math.max(overTrend, underTrend);
     const meetsTrend = dominantTrend >= config.trendConsistency;
     conditions.push({
@@ -714,7 +711,6 @@ function generateOverUnderSignal() {
         detail: `${dominantTrend} periods`
     });
     
-    // Determine prediction
     let prediction = null;
     let targetDigit = null;
     let confidence = 0;
@@ -741,6 +737,281 @@ function generateOverUnderSignal() {
         overallPass,
         metrics: { overRatio, underRatio, dominantTrend }
     };
+}
+
+// ==================== MARKET DYNAMICS ====================
+
+function updateDynamics() {
+    const panel = document.getElementById('dynamics-panel');
+    if (!panel.classList.contains('active')) return;
+    
+    // Tick Velocity
+    let velocity = 0;
+    if (tickTimes.length >= 2) {
+        const timeSpan = (tickTimes[tickTimes.length - 1] - tickTimes[0]) / 1000;
+        velocity = timeSpan > 0 ? (tickTimes.length / timeSpan).toFixed(1) : 0;
+    }
+    
+    // Price Momentum
+    let momentum = 0;
+    let momentumTrend = 'neutral';
+    if (priceHistory.length >= 10) {
+        const recent = priceHistory.slice(-10);
+        const change = ((recent[recent.length - 1] - recent[0]) / recent[0]) * 100;
+        momentum = change.toFixed(3);
+        momentumTrend = change > 0.01 ? 'up' : change < -0.01 ? 'down' : 'neutral';
+    }
+    
+    // Volatility
+    let vol = 0;
+    let volTrend = 'neutral';
+    if (priceHistory.length >= 20) {
+        const returns = [];
+        for (let i = 1; i < priceHistory.length; i++) {
+            returns.push((priceHistory[i] - priceHistory[i-1]) / priceHistory[i-1]);
+        }
+        const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
+        const variance = returns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / returns.length;
+        vol = (Math.sqrt(variance) * 100).toFixed(2);
+        
+        if (lastMetrics.volatility) {
+            volTrend = vol > lastMetrics.volatility * 1.1 ? 'up' : 
+                       vol < lastMetrics.volatility * 0.9 ? 'down' : 'neutral';
+        }
+    }
+    
+    // Trend Strength
+    let strength = 0;
+    let strengthTrend = 'neutral';
+    if (priceHistory.length >= 30) {
+        const recent = priceHistory.slice(-30);
+        let ups = 0, downs = 0;
+        for (let i = 1; i < recent.length; i++) {
+            if (recent[i] > recent[i-1]) ups++;
+            else if (recent[i] < recent[i-1]) downs++;
+        }
+        const total = ups + downs;
+        strength = total > 0 ? Math.round((Math.max(ups, downs) / total) * 100) : 0;
+        
+        if (lastMetrics.strength) {
+            strengthTrend = strength > lastMetrics.strength + 5 ? 'up' : 
+                           strength < lastMetrics.strength - 5 ? 'down' : 'neutral';
+        }
+    }
+    
+    // Market Phase
+    let phase = 'ACCUMULATION';
+    let phaseColor = 'neutral';
+    if (priceHistory.length > 50) {
+        const shortMA = average(priceHistory.slice(-10));
+        const longMA = average(priceHistory.slice(-50));
+        const recentVol = parseFloat(vol);
+        
+        if (shortMA > longMA * 1.001 && recentVol > 0.02) {
+            phase = 'MARK UP';
+            phaseColor = 'up';
+        } else if (shortMA < longMA * 0.999 && recentVol > 0.02) {
+            phase = 'MARK DOWN';
+            phaseColor = 'down';
+        } else if (recentVol < 0.01) {
+            phase = 'CONSOLIDATION';
+            phaseColor = 'neutral';
+        } else {
+            phase = 'DISTRIBUTION';
+            phaseColor = 'down';
+        }
+    }
+    
+    // Signal Quality
+    let quality = 0;
+    let qualityTrend = 'neutral';
+    if (activeSignalData && activeSignalData.overallPass) {
+        quality = activeSignalData.confidence;
+        qualityTrend = 'up';
+    } else if (reefDigitWindow.length > 50) {
+        // Calculate potential quality based on data consistency
+        const counts = Array(10).fill(0);
+        reefDigitWindow.forEach(d => counts[d]++);
+        const maxFreq = Math.max(...counts);
+        quality = Math.round((maxFreq / reefDigitWindow.length) * 100);
+        qualityTrend = quality > 15 ? 'up' : 'neutral';
+    }
+    
+    // Store metrics
+    lastMetrics = { volatility: parseFloat(vol), strength };
+    dynamicsHistory.push({ velocity, momentum, vol, strength, quality, timestamp: Date.now() });
+    if (dynamicsHistory.length > 50) dynamicsHistory.shift();
+    
+    // Update Display
+    document.getElementById('tick-velocity').textContent = velocity + '/s';
+    document.getElementById('velocity-trend').textContent = getTrendArrow(velocity, lastMetrics.prevVelocity || velocity);
+    document.getElementById('velocity-trend').className = 'metric-trend trend-' + (velocity > (lastMetrics.prevVelocity || 0) ? 'up' : 'neutral');
+    
+    document.getElementById('price-momentum').textContent = momentum + '%';
+    document.getElementById('momentum-trend').textContent = getTrendLabel(momentumTrend);
+    document.getElementById('momentum-trend').className = 'metric-trend trend-' + momentumTrend;
+    
+    document.getElementById('vol-index').textContent = vol + '%';
+    document.getElementById('vol-trend').textContent = getTrendLabel(volTrend);
+    document.getElementById('vol-trend').className = 'metric-trend trend-' + volTrend;
+    
+    document.getElementById('trend-strength').textContent = strength + '%';
+    document.getElementById('strength-trend').textContent = getTrendLabel(strengthTrend);
+    document.getElementById('strength-trend').className = 'metric-trend trend-' + strengthTrend;
+    
+    document.getElementById('market-phase').textContent = phase;
+    document.getElementById('phase-indicator').textContent = getPhaseEmoji(phase);
+    document.getElementById('phase-indicator').className = 'metric-trend trend-' + phaseColor;
+    
+    document.getElementById('signal-quality').textContent = quality + '%';
+    document.getElementById('quality-trend').textContent = quality > 70 ? '✓ Strong' : quality > 40 ? '→ Moderate' : '✗ Weak';
+    document.getElementById('quality-trend').className = 'metric-trend trend-' + (quality > 60 ? 'up' : quality > 30 ? 'neutral' : 'down');
+    
+    lastMetrics.prevVelocity = parseFloat(velocity);
+    
+    // Update timer
+    const now = new Date();
+    document.getElementById('dynamics-timer').textContent = now.toLocaleTimeString('en-US', { 
+        hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' 
+    });
+}
+
+function average(arr) {
+    return arr.reduce((a, b) => a + b, 0) / arr.length;
+}
+
+function getTrendArrow(current, previous) {
+    if (current > previous * 1.1) return '↑ Rising';
+    if (current < previous * 0.9) return '↓ Falling';
+    return '→ Stable';
+}
+
+function getTrendLabel(trend) {
+    const labels = { up: '↑ Rising', down: '↓ Falling', neutral: '→ Stable' };
+    return labels[trend] || '→ Stable';
+}
+
+function getPhaseEmoji(phase) {
+    const emojis = {
+        'ACCUMULATION': '⬇ Sideways',
+        'MARK UP': '🚀 Bullish',
+        'MARK DOWN': '🔻 Bearish',
+        'CONSOLIDATION': '➡ Range',
+        'DISTRIBUTION': '⚠ Choppy'
+    };
+    return emojis[phase] || '→ Analyzing';
+}
+
+// ==================== VOLATILITY SCANNER ====================
+
+function initScanner() {
+    // Initialize scanner data for all volatility indices
+    const volIndices = allSymbols.filter(s => 
+        s.market === 'synthetic_index' && 
+        !s.display_name.toLowerCase().includes('jump') && 
+        !s.display_name.toLowerCase().includes('step')
+    );
+    
+    volIndices.forEach(s => {
+        scannerData[s.symbol] = {
+            name: s.display_name,
+            symbol: s.symbol,
+            score: 0,
+            status: 'monitoring',
+            lastUpdate: 0,
+            ticks: [],
+            volatility: 0,
+            trend: 'neutral',
+            signalReady: false
+        };
+    });
+}
+
+function startScanner() {
+    if (scannerInterval) clearInterval(scannerInterval);
+    
+    // Subscribe to all volatility indices for scanning
+    const volIndices = allSymbols.filter(s => 
+        s.market === 'synthetic_index' && 
+        !s.display_name.toLowerCase().includes('jump') && 
+        !s.display_name.toLowerCase().includes('step')
+    );
+    
+    // Subscribe to ticks for scanner (throttled)
+    volIndices.forEach((s, index) => {
+        setTimeout(() => {
+            ws.send(JSON.stringify({ "ticks": s.symbol, "subscribe": 1 }));
+        }, index * 100);
+    });
+    
+    // Update display every 2 seconds
+    scannerInterval = setInterval(updateScannerDisplay, 2000);
+}
+
+function updateScannerDisplay() {
+    const panel = document.getElementById('scanner-panel');
+    if (!panel.classList.contains('active')) return;
+    
+    const grid = document.getElementById('scanner-grid');
+    grid.innerHTML = '';
+    
+    // Calculate scores for all markets
+    const scoredMarkets = Object.values(scannerData).map(market => {
+        let score = 0;
+        
+        if (market.ticks.length > 20) {
+            // Volatility score (0-40)
+            const vol = calculateVolatility(market.ticks.slice(-20));
+            const volScore = Math.min(40, (vol * 1000));
+            score += volScore;
+            
+            // Trend consistency (0-30)
+            const recent = market.ticks.slice(-20);
+            let consistentMoves = 0;
+            for (let i = 1; i < recent.length; i++) {
+                if (recent[i] !== recent[i-1]) consistentMoves++;
+            }
+            const trendScore = (consistentMoves / 19) * 30;
+            score += trendScore;
+            
+            // Activity level (0-30)
+            const activityScore = Math.min(30, market.ticks.length / 5);
+            score += activityScore;
+            
+            market.volatility = (vol * 100).toFixed(2);
+            market.score = Math.round(score);
+            market.signalReady = score > 60 && vol > 0.001 && vol < 0.05;
+        }
+        
+        return market;
+    });
+    
+    // Sort by score
+    scoredMarkets.sort((a, b) => b.score - a.score);
+    
+    // Display top markets
+    scoredMarkets.slice(0, 8).forEach((market, index) => {
+        const isBest = index === 0 && market.signalReady;
+        const card = document.createElement('div');
+        card.className = `market-card ${isBest ? 'best' : ''}`;
+        card.onclick = () => {
+            closeModal();
+            setTimeout(() => openAnalysis(market.name, market.symbol), 100);
+        };
+        
+        card.innerHTML = `
+            <div class="market-name">${market.name}</div>
+            <div class="market-score">${market.score}</div>
+            <span class="market-status ${market.signalReady ? 'status-ready' : 'status-wait'}">
+                ${market.signalReady ? '✓ READY' : '○ WAIT'}
+            </span>
+        `;
+        grid.appendChild(card);
+    });
+    
+    // Update status
+    const readyCount = scoredMarkets.filter(m => m.signalReady).length;
+    document.getElementById('scanner-status').textContent = `● ${readyCount} READY`;
 }
 
 // ==================== DISPLAY FUNCTIONS ====================
@@ -820,7 +1091,6 @@ function displaySignal(signal) {
     
     display.innerHTML = html;
     
-    // Build strength bars
     let strengthHtml = '';
     for (let i = 0; i < 5; i++) {
         strengthHtml += `<div class="strength-bar ${i < signal.strength ? 'active' : ''}"></div>`;
@@ -888,10 +1158,7 @@ function updateSignalTimer() {
     const timer = document.getElementById('signal-timer');
     const now = new Date();
     const timeStr = now.toLocaleTimeString('en-US', { 
-        hour12: false, 
-        hour: '2-digit', 
-        minute: '2-digit',
-        second: '2-digit'
+        hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' 
     });
     timer.textContent = timeStr;
 }
@@ -930,7 +1197,7 @@ function calculateEntropy(counts, total) {
 
 function calculateConfidenceInterval(successes, trials) {
     const p = successes / trials;
-    const z = 1.96; // 95% confidence
+    const z = 1.96;
     const margin = z * Math.sqrt((p * (1 - p)) / trials);
     return {
         lower: Math.max(0, p - margin),
@@ -941,4 +1208,5 @@ function calculateConfidenceInterval(successes, trials) {
 function closeModal() {
     document.getElementById('modal').style.display = 'none';
     if (activeSub) ws.send(JSON.stringify({ "forget": activeSub }));
+    if (scannerInterval) clearInterval(scannerInterval);
 }
