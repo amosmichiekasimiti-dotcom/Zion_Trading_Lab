@@ -1492,5 +1492,41 @@
     <button onclick="openHelp()" style="position:fixed; bottom:80px; right:20px; width:50px; height:50px; border-radius:50%; background:var(--gold); color:black; border:none; font-size:20px; cursor:pointer; z-index:999; box-shadow:0 4px 10px rgba(0,0,0,0.3);">
         <i class="fas fa-question"></i>
     </button>
+    <!-- Add these elements just before the closing </body> tag, before the script.js include -->
+
+<!-- Asset Type Badge (Add after <h4 id="mTitle"> in modal) -->
+<div id="asset-type-badge" class="asset-badge" style="display: none;">Unknown Asset</div>
+
+<!-- Pullback Status Display (Add inside ai-engine-panel, after conditions-container) -->
+<div id="pullback-status" class="pullback-indicator" style="text-align: center; padding: 10px; margin-top: 10px; background: rgba(0,0,0,0.3); border-radius: 8px; font-weight: bold; color: #888;">
+    Scanning for setup...
+</div>
+
+<!-- Dynamic Help Content Container (Add inside help-modal, after close button) -->
+<div id="dynamic-help-content" style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px; border-left: 4px solid var(--gold);">
+    <!-- Content injected by JavaScript -->
+</div>
+
+<!-- Add this CSS to the <style> section -->
+<style>
+    .asset-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: bold;
+        text-transform: uppercase;
+        margin-left: 10px;
+    }
+    .asset-badge.volatility { background: var(--purple); color: white; }
+    .asset-badge.forex { background: var(--blue); color: white; }
+    .asset-badge.crash_boom { background: var(--red); color: white; }
+    .asset-badge.jump { background: var(--orange); color: white; }
+    .asset-badge.range_step { background: var(--green); color: white; }
+    
+    .pullback-indicator {
+        transition: all 0.3s ease;
+    }
+</style>
 </body>
 </html>
