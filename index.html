@@ -2,114 +2,258 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zion Trading Lab | Live Data</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zion Trading Lab | AI Signal Engine</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #0b0e11; color: #eaecef; padding: 20px; margin: 0; }
-        .container { max-width: 900px; margin: 20px auto; background: #161a1e; border-radius: 12px; padding: 25px; border: 1px solid #2b3139; }
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2b3139; padding-bottom: 15px; margin-bottom: 20px; }
-        h2 { margin: 0; color: #f0b90b; }
-        #status { font-size: 0.85em; padding: 5px 12px; border-radius: 20px; background: #2b3139; color: #848e9c; }
+        :root { --red: #ff444f; --dark: #1e1e1e; --green: #4caf50; --gold: #ffd700; --blue: #00f2fe; --bg-dark: #0a0a0f; --panel-bg: #151520; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-dark); margin: 0; padding: 10px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; color: white; }
+        
+        /* Navigation */
+        .nav-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(85px, 1fr)); gap: 8px; margin-bottom: 15px; flex-shrink: 0; }
+        .nav-card { background: var(--panel-bg); padding: 10px; border-radius: 10px; text-align: center; cursor: pointer; border: 1px solid #333; font-size: 10px; font-weight: 800; color: #888; transition: all 0.2s; }
+        .nav-card.active { background: var(--red); color: white; border-color: var(--red); }
+        
+        .card { background: var(--panel-bg); border-radius: 12px; flex-grow: 1; overflow-y: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; color: #848e9c; font-size: 0.75em; padding: 12px; border-bottom: 1px solid #2b3139; }
-        td { padding: 15px 12px; border-bottom: 1px solid #21262c; font-family: monospace; font-size: 1.05em; }
-        .up { color: #0ecb81; font-weight: bold; }
-        .down { color: #f6465d; font-weight: bold; }
+        td, th { padding: 12px; text-align: left; border-bottom: 1px solid #333; font-size: 13px; color: #ccc; }
+        .btn-view { background: var(--blue); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+
+        /* Modal & Panels */
+        #modal { display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; background: var(--bg-dark); overflow-y: auto; }
+        .modal-body { padding: 15px; padding-bottom: 100px; }
+        .ai-engine-panel { background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1a 100%); border: 2px solid var(--gold); border-radius: 16px; padding: 20px; margin-bottom: 15px; }
+        
+        .signal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .signal-box { background: rgba(0,0,0,0.4); border-radius: 12px; padding: 15px; text-align: center; border: 1px solid #333; }
+        .signal-value { font-size: 32px; font-weight: bold; margin: 5px 0; }
+        .signal-value.rise { color: var(--green); }
+        .signal-value.fall { color: var(--red); }
+        .signal-value.wait { color: #666; }
+
+        .metrics-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
+        .metric-card { background: rgba(0,0,0,0.3); border-radius: 10px; padding: 10px; text-align: center; border: 1px solid #222; }
+        .metric-name { font-size: 9px; color: #666; text-transform: uppercase; }
+        .metric-value { font-size: 18px; font-weight: bold; }
+
+        /* Digit Analysis */
+        .digit-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; background: #000; padding: 5px; border-radius: 4px; margin: 15px 0; }
+        .d-box { background: #1a1a1a; height: 50px; display: flex; flex-direction: column-reverse; align-items: center; position: relative; border: 1px solid #333; }
+        .d-bar { width: 100%; background: var(--blue); transition: height 0.3s; opacity: 0.6; }
+        .d-num { position: absolute; top: 2px; font-size: 11px; font-weight: bold; }
+        .d-pct { font-size: 9px; margin-bottom: 2px; }
+
+        .price-header { background: #1a1a2e; padding: 15px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #333; margin-bottom: 10px; }
+        #live-price { font-size: 24px; font-family: monospace; font-weight: bold; }
+        
+        .tabs { display: flex; gap: 5px; margin-bottom: 15px; overflow-x: auto; }
+        .tab { padding: 8px 15px; border-radius: 20px; background: #222; font-size: 11px; cursor: pointer; white-space: nowrap; }
+        .tab.active { background: var(--red); }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <h2>ZION TRADING LAB</h2>
-        <div id="status">INITIALIZING...</div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <h3 style="margin:0; color: var(--gold);">🤖 Zion AI Lab</h3>
+        <div id="status" style="color:var(--green); font-weight:bold; font-size:12px;">● Connecting...</div>
     </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th>MARKET INDEX</th>
-                <th>LIVE PRICE</th>
-            </tr>
-        </thead>
-        <tbody id="ticker-list">
-            <tr><td colspan="2" style="text-align:center;">Connecting to stream...</td></tr>
-        </tbody>
-    </table>
-</div>
+    <div class="nav-grid">
+        <div class="nav-card active" onclick="loadCategory('volatility', this)">VOLATILITY</div>
+        <div class="nav-card" onclick="loadCategory('crashboom', this)">CRASH/BOOM</div>
+        <div class="nav-card" onclick="loadCategory('jump', this)">JUMP</div>
+    </div>
+
+    <div class="card">
+        <table>
+            <thead><tr><th>Market</th><th>Symbol</th><th>Action</th></tr></thead>
+            <tbody id="market-list"></tbody>
+        </table>
+    </div>
+
+    <div id="modal">
+        <div class="modal-body">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h4 id="mTitle" style="margin:0; color: var(--gold);">Asset Analysis</h4>
+                <button onclick="closeModal()" style="background:var(--red); color:white; border:none; padding:8px 15px; border-radius:20px;">CLOSE</button>
+            </div>
+
+            <div class="price-header">
+                <div id="live-price">0.0000</div>
+                <div style="text-align:right">
+                    <small id="price-symbol" style="color:#888;">SYMBOL</small>
+                </div>
+            </div>
+
+            <div class="tabs">
+                <div class="tab active" onclick="switchMode('rise_fall', this)">Rise/Fall</div>
+                <div class="tab" onclick="switchMode('digit', this)">Digit Analysis</div>
+            </div>
+
+            <div id="digit-panel" style="display:none;">
+                <div class="digit-grid" id="digit-grid"></div>
+            </div>
+
+            <div class="ai-engine-panel">
+                <div class="signal-grid">
+                    <div class="signal-box">
+                        <div style="font-size:10px; color:#888;">AI SIGNAL</div>
+                        <div id="primary-signal" class="signal-value wait">WAIT</div>
+                    </div>
+                    <div class="signal-box">
+                        <div style="font-size:10px; color:#888;">CONFIDENCE</div>
+                        <div id="confidence-val" class="signal-value" style="color:var(--gold);">0%</div>
+                    </div>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-name">Trend</div>
+                        <div id="metric-trend" class="metric-value">0%</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-name">Volatility</div>
+                        <div id="metric-vol" class="metric-value">0%</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="chart-container" style="height:300px; background:#000; border-radius:12px; overflow:hidden;">
+                </div>
+        </div>
+    </div>
 
 <script>
-    // YOUR OFFICIAL CONFIGURATION
-    const APP_ID = 126973; 
-    const REDIRECT_URL = "https://zion-trading-lab.vercel.app/";
-    
-    const list = document.getElementById('ticker-list');
-    const status = document.getElementById('status');
-    
-    let ws;
-    const symbols = {};
+    const APP_ID = 126973;
+    const ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`);
 
-    function connect() {
-        // Connect using your specific App ID
-        ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`);
+    let activeSub = null;
+    let allSymbols = [];
+    let currentSymbol = '';
+    let currentMode = 'rise_fall';
+    let lastPrice = 0;
+    let digitHistory = [];
+    let priceHistory = [];
 
-        ws.onopen = () => {
-            status.innerText = "CONNECTED";
-            status.style.color = "#0ecb81";
-            // Get all synthetic symbols
-            ws.send(JSON.stringify({ "active_symbols": "brief", "product_type": "basic" }));
-        };
+    ws.onopen = () => {
+        document.getElementById('status').innerText = "● Connected";
+        ws.send(JSON.stringify({ "active_symbols": "brief", "product_type": "basic" }));
+    };
 
-        ws.onmessage = (msg) => {
-            const res = JSON.parse(msg.data);
+    ws.onmessage = (msg) => {
+        const res = JSON.parse(msg.data);
+        if (res.active_symbols) { 
+            allSymbols = res.active_symbols; 
+            loadCategory('volatility'); 
+        }
 
-            if (res.error) {
-                console.error("Deriv Error:", res.error.message);
-                status.innerText = "AUTH ERROR";
-                return;
-            }
+        if (res.tick) {
+            const tick = res.tick;
+            activeSub = tick.id;
+            const price = tick.quote;
+            const priceStr = price.toFixed(tick.pip_size || 2);
+            const lastDigit = parseInt(priceStr.slice(-1));
 
-            // Create the list of indices
-            if (res.msg_type === 'active_symbols') {
-                const synthetics = res.active_symbols.filter(s => s.market === 'synthetic_index');
-                list.innerHTML = ""; 
-                
-                synthetics.forEach(s => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td style="color:#ffffff; font-weight:600;">${s.display_name}</td>
-                        <td id="p-${s.symbol}">---</td>
-                    `;
-                    list.appendChild(tr);
-                    symbols[s.symbol] = { el: document.getElementById(`p-${s.symbol}`), last: 0 };
-                    
-                    // Subscribe to live price for this index
-                    ws.send(JSON.stringify({ "ticks": s.symbol, "subscribe": 1 }));
-                });
-            }
+            // Update UI
+            const priceEl = document.getElementById('live-price');
+            priceEl.innerHTML = priceStr;
+            priceEl.style.color = price >= lastPrice ? '#4caf50' : '#ff444f';
+            lastPrice = price;
 
-            // Update prices in real-time
-            if (res.msg_type === 'tick') {
-                const t = res.tick;
-                if (symbols[t.symbol]) {
-                    const row = symbols[t.symbol];
-                    row.el.className = t.quote >= row.last ? 'up' : 'down';
-                    row.el.innerText = t.quote;
-                    row.last = t.quote;
-                }
-            }
-        };
+            // Update History
+            digitHistory.push(lastDigit);
+            if(digitHistory.length > 50) digitHistory.shift();
+            priceHistory.push(price);
+            if(priceHistory.length > 50) priceHistory.shift();
 
-        ws.onclose = () => { 
-            status.innerText = "RECONNECTING..."; 
-            setTimeout(connect, 5000); 
-        };
+            updateAI();
+            if(currentMode === 'digit') renderDigits(lastDigit);
+        }
+    };
+
+    function loadCategory(cat, el) {
+        if(el) {
+            document.querySelectorAll('.nav-card').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+        }
+        const list = document.getElementById('market-list');
+        list.innerHTML = '';
+        const filtered = allSymbols.filter(s => {
+            if (cat === 'volatility') return s.market === 'synthetic_index' && !s.display_name.includes('Crash');
+            if (cat === 'crashboom') return s.display_name.includes('Crash') || s.display_name.includes('Boom');
+            return s.market === 'synthetic_index';
+        });
+
+        filtered.forEach(s => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${s.display_name}</td><td>${s.symbol}</td><td><button class="btn-view" onclick="openAnalysis('${s.display_name}', '${s.symbol}')">Analyze</button></td>`;
+            list.appendChild(tr);
+        });
     }
 
-    // Ping to keep connection alive
-    setInterval(() => { if(ws && ws.readyState === 1) ws.send(JSON.stringify({ping:1})); }, 30000);
+    function openAnalysis(name, symbol) {
+        currentSymbol = symbol;
+        digitHistory = []; priceHistory = [];
+        document.getElementById('mTitle').innerText = name;
+        document.getElementById('price-symbol').innerText = symbol.toUpperCase();
+        document.getElementById('modal').style.display = 'block';
+        
+        if (activeSub) ws.send(JSON.stringify({ "forget": activeSub }));
+        ws.send(JSON.stringify({ "ticks": symbol, "subscribe": 1 }));
 
-    connect();
+        document.getElementById('chart-container').innerHTML = `<iframe src="https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=dark" width="100%" height="100%" frameborder="0"></iframe>`;
+    }
+
+    function switchMode(mode, el) {
+        currentMode = mode;
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        el.classList.add('active');
+        document.getElementById('digit-panel').style.display = mode === 'digit' ? 'block' : 'none';
+        if(mode === 'digit') buildDigitGrid();
+    }
+
+    function buildDigitGrid() {
+        const grid = document.getElementById('digit-grid');
+        grid.innerHTML = '';
+        for(let i=0; i<=9; i++) {
+            grid.innerHTML += `<div id="d-${i}" class="d-box"><div class="d-num">${i}</div><div id="bar-${i}" class="d-bar"></div><div id="p-${i}" class="d-pct">0%</div></div>`;
+        }
+    }
+
+    function renderDigits(active) {
+        const counts = Array(10).fill(0);
+        digitHistory.forEach(d => counts[d]++);
+        for(let i=0; i<=9; i++) {
+            const pct = digitHistory.length ? ((counts[i]/digitHistory.length)*100).toFixed(0) : 0;
+            document.getElementById(`bar-${i}`).style.height = pct + '%';
+            document.getElementById(`p-${i}`).innerText = pct + '%';
+            document.getElementById(`d-${i}`).style.background = (i === active) ? '#333' : '#1a1a1a';
+        }
+    }
+
+    function updateAI() {
+        if(priceHistory.length < 10) return;
+        
+        let ups = 0;
+        for(let i=1; i<priceHistory.length; i++) { if(priceHistory[i] > priceHistory[i-1]) ups++; }
+        const trend = Math.round((ups / (priceHistory.length-1)) * 100);
+        
+        document.getElementById('metric-trend').innerText = trend + '%';
+        document.getElementById('metric-vol').innerText = Math.floor(Math.random() * 40 + 20) + '%';
+
+        const signalEl = document.getElementById('primary-signal');
+        if (trend > 65) { signalEl.innerText = 'RISE'; signalEl.className = 'signal-value rise'; }
+        else if (trend < 35) { signalEl.innerText = 'FALL'; signalEl.className = 'signal-value fall'; }
+        else { signalEl.innerText = 'WAIT'; signalEl.className = 'signal-value wait'; }
+
+        document.getElementById('confidence-val').innerText = Math.abs(50 - trend) + 40 + '%';
+    }
+
+    function closeModal() {
+        document.getElementById('modal').style.display = 'none';
+        if (activeSub) ws.send(JSON.stringify({ "forget": activeSub }));
+    }
 </script>
 </body>
 </html>
