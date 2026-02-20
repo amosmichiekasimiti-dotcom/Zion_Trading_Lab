@@ -116,7 +116,7 @@
     let digitHistory = [];
     let priceHistory = [];
     let isHistoryReady = false; 
-    let currentPipSize = 2; // Fixed decimal capture
+    let currentPipSize = 2; // Fixed decimal capture based on asset
     const MAX_DIGITS = 1000;
 
     ws.onopen = () => ws.send(JSON.stringify({ active_symbols: "brief", product_type: "basic" }));
@@ -171,7 +171,7 @@
         document.getElementById('target-name').innerText = name;
         document.getElementById('target-symbol').innerText = symbol;
         document.getElementById('analysis-overlay').style.display = 'block';
-        document.getElementById('chart-container').innerHTML = `<iframe src="https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=dark" width="100%" height="100%" frameborder="0"></iframe>`;
+        document.getElementById('chart-container').innerHTML = \`<iframe src="https://tradingview.binary.com/v2/main.php?symbol=\${symbol}&theme=dark" width="100%" height="100%" frameborder="0"></iframe>\`;
         
         isHistoryReady = false;
         digitHistory = [];
@@ -179,6 +179,7 @@
         buildDigitUI();
         document.getElementById('tick-counter').innerText = "Syncing...";
 
+        // Requests exactly 1000 ticks for 100% sync
         ws.send(JSON.stringify({
             ticks_history: symbol,
             adjust_start_time: 1,
@@ -195,7 +196,7 @@
         const container = document.getElementById('digit-circles');
         container.innerHTML = '';
         for(let i=0; i<=9; i++) {
-            container.innerHTML += `<div id="circle-${i}" class="digit-circle"><div class="digit-num">${i}</div><div id="pct-${i}" class="digit-pct">0%</div></div>`;
+            container.innerHTML += \`<div id="circle-\${i}" class="digit-circle"><div class="digit-num">\${i}</div><div id="pct-\${i}" class="digit-pct">0%</div></div>\`;
         }
     }
 
@@ -210,6 +211,7 @@
         digitHistory.push(lastDigit);
         priceHistory.push(price);
         
+        // STRICTOR DENOMINATOR: Keep it at exactly 1000
         while(digitHistory.length > MAX_DIGITS) digitHistory.shift();
         while(priceHistory.length > MAX_DIGITS) priceHistory.shift();
 
@@ -221,16 +223,16 @@
         const counts = new Array(10).fill(0);
         digitHistory.forEach(d => counts[d]++);
         const total = digitHistory.length;
-        document.getElementById('tick-counter').innerText = `${total}/1000`;
+        document.getElementById('tick-counter').innerText = \`\${total}/1000\`;
 
         const sortedCounts = [...counts].sort((a,b) => b-a);
         const maxVal = sortedCounts[0];
-        const minVal = total === 1000 ? sortedCounts[9] : -1;
+        const minVal = total === MAX_DIGITS ? sortedCounts[9] : -1;
 
         counts.forEach((count, i) => {
             const pct = total > 0 ? ((count / total) * 100).toFixed(1) : "0.0";
-            const circle = document.getElementById(`circle-${i}`);
-            document.getElementById(`pct-${i}`).innerText = `${pct}%`;
+            const circle = document.getElementById(\`circle-\${i}\`);
+            document.getElementById(\`pct-\${i}\`).innerText = \`\${pct}%\`;
 
             circle.classList.remove('most-freq', 'least-freq', 'active');
             if (i === digitHistory[digitHistory.length - 1]) circle.classList.add('active');
@@ -262,7 +264,7 @@
         const counts = new Array(10).fill(0);
         digitHistory.forEach(d => counts[d]++);
         const hotDigit = counts.indexOf(Math.max(...counts));
-        document.getElementById('stat-match-diff').innerText = `HOT: ${hotDigit}`;
+        document.getElementById('stat-match-diff').innerText = \`HOT: \${hotDigit}\`;
     }
 
     function closeAnalysis() {
