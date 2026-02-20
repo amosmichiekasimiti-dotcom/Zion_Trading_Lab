@@ -1,127 +1,68 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zion Trading Lab - Live Data</title>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0e1117; color: #ffffff; padding: 20px; }
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #30363d; padding-bottom: 10px; }
-        #status { font-size: 0.9em; padding: 5px 10px; border-radius: 4px; background: #21262d; }
-        .error-log { color: #ff7b72; background: rgba(255, 123, 114, 0.1); border: 1px solid #ff7b72; padding: 10px; margin: 10px 0; display: none; }
-        
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #161b22; border-radius: 8px; overflow: hidden; }
-        th { text-align: left; padding: 15px; background: #21262d; color: #8b949e; text-transform: uppercase; font-size: 0.8em; }
-        td { padding: 12px 15px; border-bottom: 1px solid #30363d; font-family: monospace; font-size: 1.1em; }
-        
-        .price-up { color: #3fb950; font-weight: bold; }
-        .price-down { color: #f85149; font-weight: bold; }
-        .symbol-name { font-weight: bold; color: #58a6ff; font-family: sans-serif; }
-    </style>
-</head>
-<body>
+<script>
+    // Try 1089 first to test if the code works, then switch back to 125403
+    const APP_ID = 125403; 
+    const tickerBody = document.getElementById('ticker-body');
+    const statusDiv = document.getElementById('status');
+    const errorDisplay = document.getElementById('error-display');
+    
+    let ws;
+    const symbolRows = {};
 
-    <div class="header">
-        <h2>Zion Trading Lab</h2>
-        <div id="status">Connecting to Deriv...</div>
-    </div>
+    function connect() {
+        // Use wss:// for secure Vercel connections
+        ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`);
 
-    <div id="error-display" class="error-log"></div>
+        ws.onopen = () => {
+            statusDiv.innerText = "Connected! Fetching Indices...";
+            errorDisplay.style.display = 'none';
+            ws.send(JSON.stringify({ "active_symbols": "brief", "product_type": "basic" }));
+        };
 
-    <table>
-        <thead>
-            <tr>
-                <th>Index Name</th>
-                <th>Symbol</th>
-                <th>Live Quote</th>
-            </tr>
-        </thead>
-        <tbody id="ticker-body">
-            </tbody>
-    </table>
+        ws.onmessage = (msg) => {
+            const data = JSON.parse(msg.data);
 
-    <script>
-        const APP_ID = 125403;
-        const tickerBody = document.getElementById('ticker-body');
-        const statusDiv = document.getElementById('status');
-        const errorDisplay = document.getElementById('error-display');
-        
-        let ws;
-        const symbolRows = {};
-
-        function connect() {
-            ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`);
-
-            ws.onopen = () => {
-                statusDiv.innerText = "Connected! Fetching Indices...";
-                errorDisplay.style.display = 'none';
-                // Request list of active symbols
-                ws.send(JSON.stringify({ "active_symbols": "brief", "product_type": "basic" }));
-            };
-
-            ws.onmessage = (msg) => {
-                const data = JSON.parse(msg.data);
-
-                // Check for API errors (like unregistered domain)
-                if (data.error) {
-                    errorDisplay.innerText = "Deriv API Error: " + data.error.message;
-                    errorDisplay.style.display = 'block';
-                    statusDiv.innerText = "Connection Failed";
-                    return;
-                }
-
-                // 1. Get the list of synthetic indices
-                if (data.msg_type === 'active_symbols') {
-                    const synthetics = data.active_symbols.filter(s => s.market === 'synthetic_index');
-                    
-                    synthetics.forEach(s => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td class="symbol-name">${s.display_name}</td>
-                            <td>${s.symbol}</td>
-                            <td id="price-${s.symbol}">- - -</td>
-                        `;
-                        tickerBody.appendChild(row);
-                        symbolRows[s.symbol] = { element: document.getElementById(`price-${s.symbol}`), lastPrice: 0 };
-
-                        // Subscribe to live feed for this symbol
-                        ws.send(JSON.stringify({ "ticks": s.symbol, "subscribe": 1 }));
-                    });
-                    statusDiv.innerText = `Live: Streaming ${synthetics.length} Indices`;
-                }
-
-                // 2. Update prices in real-time
-                if (data.msg_type === 'tick') {
-                    const tick = data.tick;
-                    const info = symbolRows[tick.symbol];
-                    if (info) {
-                        const currentPrice = tick.quote;
-                        info.element.className = currentPrice >= info.lastPrice ? 'price-up' : 'price-down';
-                        info.element.innerText = currentPrice;
-                        info.lastPrice = currentPrice;
-                    }
-                }
-            };
-
-            ws.onclose = () => {
-                statusDiv.innerText = "Disconnected. Reconnecting...";
-                setTimeout(connect, 5000); // Auto-reconnect after 5 seconds
-            };
-
-            ws.onerror = (err) => {
-                console.error("WebSocket Error:", err);
-            };
-        }
-
-        // Keep connection alive with a ping every 30 seconds
-        setInterval(() => {
-            if (ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({ "ping": 1 }));
+            if (data.error) {
+                errorDisplay.innerText = "Deriv API Error: " + data.error.message;
+                errorDisplay.style.display = 'block';
+                return;
             }
-        }, 30000);
 
-        // Start connection
-        connect();
-    </script>
-</body>
-</html>
+            if (data.msg_type === 'active_symbols') {
+                const synthetics = data.active_symbols.filter(s => s.market === 'synthetic_index');
+                tickerBody.innerHTML = ''; // Clear "Loading"
+                
+                synthetics.forEach(s => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="symbol-name">${s.display_name}</td>
+                        <td>${s.symbol}</td>
+                        <td id="price-${s.symbol}">- - -</td>
+                    `;
+                    tickerBody.appendChild(row);
+                    symbolRows[s.symbol] = { element: document.getElementById(`price-${s.symbol}`), lastPrice: 0 };
+                    ws.send(JSON.stringify({ "ticks": s.symbol, "subscribe": 1 }));
+                });
+                statusDiv.innerText = `Live: ${synthetics.length} Indices`;
+            }
+
+            if (data.msg_type === 'tick') {
+                const tick = data.tick;
+                const info = symbolRows[tick.symbol];
+                if (info) {
+                    const currentPrice = tick.quote;
+                    info.element.className = currentPrice >= info.lastPrice ? 'price-up' : 'price-down';
+                    info.element.innerText = currentPrice;
+                    info.lastPrice = currentPrice;
+                }
+            }
+        };
+
+        ws.onclose = () => {
+            statusDiv.innerText = "Reconnecting...";
+            setTimeout(connect, 5000);
+        };
+    }
+
+    connect();
+    setInterval(() => { if(ws.readyState === 1) ws.send(JSON.stringify({"ping":1})); }, 30000);
+</script>
