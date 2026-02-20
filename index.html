@@ -3,21 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zion Trading Lab | Live Market Data</title>
+    <title>Zion Trading Lab | Live Data</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #0b0e11; color: #eaecef; padding: 20px; margin: 0; }
-        .container { max-width: 900px; margin: 20px auto; background: #161a1e; border-radius: 12px; padding: 25px; border: 1px solid #2b3139; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+        .container { max-width: 900px; margin: 20px auto; background: #161a1e; border-radius: 12px; padding: 25px; border: 1px solid #2b3139; }
         .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2b3139; padding-bottom: 15px; margin-bottom: 20px; }
-        h2 { margin: 0; color: #f0b90b; letter-spacing: 1px; }
+        h2 { margin: 0; color: #f0b90b; }
         #status { font-size: 0.85em; padding: 5px 12px; border-radius: 20px; background: #2b3139; color: #848e9c; }
-        .error-box { background: rgba(246, 70, 93, 0.15); border: 1px solid #f6465d; color: #f6465d; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none; font-size: 0.9em; line-height: 1.4; }
         table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; color: #848e9c; font-size: 0.75em; padding: 12px; text-transform: uppercase; border-bottom: 1px solid #2b3139; }
-        td { padding: 15px 12px; border-bottom: 1px solid #21262c; font-family: 'Roboto Mono', monospace; font-size: 1.05em; }
+        th { text-align: left; color: #848e9c; font-size: 0.75em; padding: 12px; border-bottom: 1px solid #2b3139; }
+        td { padding: 15px 12px; border-bottom: 1px solid #21262c; font-family: monospace; font-size: 1.05em; }
         .up { color: #0ecb81; font-weight: bold; }
         .down { color: #f6465d; font-weight: bold; }
-        .name { color: #ffffff; font-weight: 600; font-family: 'Segoe UI', sans-serif; }
-        .symbol-tag { font-size: 0.8em; color: #848e9c; margin-left: 8px; font-weight: normal; }
     </style>
 </head>
 <body>
@@ -28,101 +25,89 @@
         <div id="status">INITIALIZING...</div>
     </div>
 
-    <div id="error-msg" class="error-box"></div>
-
     <table>
         <thead>
             <tr>
-                <th>Market Index</th>
-                <th>Live Price</th>
+                <th>MARKET INDEX</th>
+                <th>LIVE PRICE</th>
             </tr>
         </thead>
-        <tbody id="list">
-            <tr><td colspan="2" style="text-align:center; color:#848e9c;">Waiting for connection...</td></tr>
+        <tbody id="ticker-list">
+            <tr><td colspan="2" style="text-align:center;">Connecting to stream...</td></tr>
         </tbody>
     </table>
 </div>
 
 <script>
-    const APP_ID = 125403; 
-    const list = document.getElementById('list');
+    // YOUR OFFICIAL CONFIGURATION
+    const APP_ID = 126973; 
+    const REDIRECT_URL = "https://zion-trading-lab.vercel.app/";
+    
+    const list = document.getElementById('ticker-list');
     const status = document.getElementById('status');
-    const errorBox = document.getElementById('error-msg');
     
     let ws;
     const symbols = {};
 
     function connect() {
-        // Create secure websocket connection
+        // Connect using your specific App ID
         ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`);
 
         ws.onopen = () => {
             status.innerText = "CONNECTED";
             status.style.color = "#0ecb81";
-            errorBox.style.display = 'none';
-            // Step 1: Request all active symbols
+            // Get all synthetic symbols
             ws.send(JSON.stringify({ "active_symbols": "brief", "product_type": "basic" }));
         };
 
         ws.onmessage = (msg) => {
             const res = JSON.parse(msg.data);
 
-            // Handle API Errors
             if (res.error) {
-                errorBox.style.display = 'block';
-                errorBox.innerHTML = `<strong>Configuration Required:</strong> ${res.error.message}<br>
-                <p>1. Go to <a href="https://api.deriv.com/" target="_blank" style="color:#f0b90b;">api.deriv.com</a><br>
-                2. Select App ID <strong>125403</strong><br>
-                3. Add <strong>https://zion-trading-lab.vercel.app/</strong> to your allowed domains list.</p>`;
+                console.error("Deriv Error:", res.error.message);
                 status.innerText = "AUTH ERROR";
-                status.style.color = "#f6465d";
                 return;
             }
 
-            // Step 2: Build the table from the Synthetic Index list
+            // Create the list of indices
             if (res.msg_type === 'active_symbols') {
-                const filtered = res.active_symbols.filter(s => s.market === 'synthetic_index');
-                list.innerHTML = ""; // Clear loader
+                const synthetics = res.active_symbols.filter(s => s.market === 'synthetic_index');
+                list.innerHTML = ""; 
                 
-                filtered.forEach(s => {
+                synthetics.forEach(s => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td><span class="name">${s.display_name}</span><span class="symbol-tag">${s.symbol}</span></td>
-                        <td id="p-${s.symbol}">Connecting...</td>
+                        <td style="color:#ffffff; font-weight:600;">${s.display_name}</td>
+                        <td id="p-${s.symbol}">---</td>
                     `;
                     list.appendChild(tr);
                     symbols[s.symbol] = { el: document.getElementById(`p-${s.symbol}`), last: 0 };
                     
-                    // Step 3: Subscribe to live ticks for this symbol
+                    // Subscribe to live price for this index
                     ws.send(JSON.stringify({ "ticks": s.symbol, "subscribe": 1 }));
                 });
             }
 
-            // Step 4: Update prices in real-time
+            // Update prices in real-time
             if (res.msg_type === 'tick') {
                 const t = res.tick;
                 if (symbols[t.symbol]) {
-                    const rowData = symbols[t.symbol];
-                    const currentPrice = t.quote;
-                    
-                    rowData.el.className = currentPrice >= rowData.last ? 'up' : 'down';
-                    rowData.el.innerText = currentPrice;
-                    rowData.last = currentPrice;
+                    const row = symbols[t.symbol];
+                    row.el.className = t.quote >= row.last ? 'up' : 'down';
+                    row.el.innerText = t.quote;
+                    row.last = t.quote;
                 }
             }
         };
 
         ws.onclose = () => { 
             status.innerText = "RECONNECTING..."; 
-            status.style.color = "#f0b90b";
             setTimeout(connect, 5000); 
         };
     }
 
-    // Keep connection alive
-    setInterval(() => { 
-        if(ws && ws.readyState === 1) ws.send(JSON.stringify({ping:1})); 
-    }, 30000);
+    // Ping to keep connection alive
+    setInterval(() => { if(ws && ws.readyState === 1) ws.send(JSON.stringify({ping:1})); }, 30000);
 
     connect();
 </script>
