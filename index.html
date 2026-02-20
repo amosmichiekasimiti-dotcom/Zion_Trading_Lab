@@ -8,7 +8,7 @@
         :root { --red: #ff444f; --dark: #0a0a0f; --green: #4caf50; --gold: #ffd700; --blue: #00f2fe; --panel: #151520; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--dark); color: white; margin: 0; padding: 10px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        /* Expanded Navigation */
+        /* Navigation */
         .nav-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
         .nav-scroll::-webkit-scrollbar { display: none; }
         .nav-btn { background: var(--panel); border: 1px solid #333; color: #888; padding: 10px 15px; border-radius: 8px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap; transition: 0.3s; }
@@ -19,20 +19,28 @@
         th { position: sticky; top: 0; background: #1c1c2b; padding: 12px; text-align: left; font-size: 11px; color: #aaa; z-index: 10; }
         td { padding: 12px; border-bottom: 1px solid #222; font-size: 13px; }
         
-        /* Analysis Overlay Styles */
+        /* Analysis Overlay */
         #analysis-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--dark); z-index: 1000; padding: 15px; box-sizing: border-box; overflow-y: auto; }
         .price-card { background: #151520; padding: 15px; border-radius: 12px; text-align: center; border: 1px solid var(--blue); margin-bottom: 10px; }
         #live-price { font-size: 32px; font-weight: bold; font-family: monospace; }
         
-        /* Digit Stats Bar Chart */
+        .strategy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+        .strat-card { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; border: 1px solid #333; }
+        .strat-label { font-size: 9px; color: #888; text-transform: uppercase; margin-bottom: 4px; }
+        .strat-value { font-weight: bold; font-size: 14px; }
+
+        /* Digit Stats */
         .digit-stat-container { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; height: 60px; margin: 15px 0; align-items: end; }
         .digit-bar-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; }
         .digit-bar { width: 100%; background: var(--blue); border-radius: 2px; transition: height 0.3s ease; min-height: 2px; opacity: 0.7; }
         .digit-label { font-size: 10px; color: #888; font-weight: bold; }
         .high-freq { background: var(--gold) !important; opacity: 1; }
 
+        /* Chart Container - Set to 700px */
+        #chart-container { height: 700px; background: #000; border-radius: 12px; margin-top: 15px; overflow: hidden; }
+
         .btn-analyze { background: var(--blue); color: #000; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; }
-        .close-btn { background: #333; color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: bold; margin-top: 15px; cursor: pointer; }
+        .close-btn { background: #333; color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: bold; margin: 20px 0; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -66,16 +74,34 @@
 
         <div class="price-card">
             <div id="live-price">0.0000</div>
-            <div id="ai-signal" style="font-weight:bold; margin-top:10px; font-size:18px;">WAITING FOR TICKS...</div>
+            <div id="ai-signal" style="font-weight:bold; margin-top:10px; font-size:18px;">ANALYZING...</div>
+        </div>
+
+        <div class="strategy-grid">
+            <div class="strat-card">
+                <div class="strat-label">Even / Odd</div>
+                <div id="stat-even-odd" class="strat-value">---</div>
+            </div>
+            <div class="strat-card">
+                <div class="strat-label">Over / Under (4.5)</div>
+                <div id="stat-over-under" class="strat-value">---</div>
+            </div>
+            <div class="strat-card">
+                <div class="strat-label">Matches / Differs</div>
+                <div id="stat-match-diff" class="strat-value">---</div>
+            </div>
+            <div class="strat-card">
+                <div class="strat-label">Rise / Fall</div>
+                <div id="stat-rise-fall" class="strat-value">---</div>
+            </div>
         </div>
 
         <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;">
-            <div style="font-size: 10px; color: #aaa; text-transform: uppercase;">Last Digit Frequency (50 Ticks)</div>
-            <div class="digit-stat-container" id="digit-stats">
-                </div>
+            <div style="font-size: 10px; color: #aaa; text-transform: uppercase;">Digit Frequency (Last 50)</div>
+            <div class="digit-stat-container" id="digit-stats"></div>
         </div>
 
-        <div id="chart-container" style="height: 300px; background: #000; border-radius: 12px; margin-top:15px;"></div>
+        <div id="chart-container"></div>
         <button class="close-btn" onclick="closeAnalysis()">CLOSE ENGINE</button>
     </div>
 
@@ -85,6 +111,7 @@
     let allSymbols = [];
     let activeTickStream = null;
     let digitHistory = [];
+    let priceHistory = [];
     const MAX_DIGITS = 50;
 
     ws.onopen = () => ws.send(JSON.stringify({ active_symbols: "brief", product_type: "basic" }));
@@ -127,9 +154,12 @@
         document.getElementById('target-name').innerText = name;
         document.getElementById('target-symbol').innerText = symbol;
         document.getElementById('analysis-overlay').style.display = 'block';
+        
+        // Iframe follows container height
         document.getElementById('chart-container').innerHTML = `<iframe src="https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=dark" width="100%" height="100%" frameborder="0"></iframe>`;
         
         digitHistory = [];
+        priceHistory = [];
         buildDigitUI();
         
         if (activeTickStream) ws.send(JSON.stringify({ forget: activeTickStream }));
@@ -144,27 +174,48 @@
 
         document.getElementById('live-price').innerText = priceStr;
         
-        // Update Digit Analysis
         digitHistory.push(lastDigit);
+        priceHistory.push(price);
         if(digitHistory.length > MAX_DIGITS) digitHistory.shift();
-        updateDigitBars();
+        if(priceHistory.length > MAX_DIGITS) priceHistory.shift();
 
-        // AI Signal Logic (Simplified Trend)
+        updateDigitBars();
+        updateStrategyPanel(lastDigit, price);
+    }
+
+    function updateStrategyPanel(digit, price) {
+        const evOdEl = document.getElementById('stat-even-odd');
+        const ovUnEl = document.getElementById('stat-over-under');
+        const rfEl = document.getElementById('stat-rise-fall');
+        
+        const isEven = digit % 2 === 0;
+        evOdEl.innerText = isEven ? "EVEN" : "ODD";
+        evOdEl.style.color = isEven ? "var(--blue)" : "var(--gold)";
+
+        const isOver = digit > 4;
+        ovUnEl.innerText = isOver ? "OVER" : "UNDER";
+        ovUnEl.style.color = isOver ? "var(--green)" : "var(--red)";
+
+        const lastPrice = priceHistory[priceHistory.length - 2] || price;
+        rfEl.innerText = price >= lastPrice ? "RISE" : "FALL";
+        rfEl.style.color = price >= lastPrice ? "var(--green)" : "var(--red)";
+
+        const counts = new Array(10).fill(0);
+        digitHistory.forEach(d => counts[d]++);
+        const hotDigit = counts.indexOf(Math.max(...counts));
+        document.getElementById('stat-match-diff').innerText = `MATCH ${hotDigit}`;
+
         const sig = document.getElementById('ai-signal');
-        const diff = price - (digitHistory[digitHistory.length - 2] || price);
-        if (diff > 0) { sig.innerText = "BULLISH MOMENTUM"; sig.style.color = "var(--green)"; }
-        else { sig.innerText = "BEARISH MOMENTUM"; sig.style.color = "var(--red)"; }
+        if (price > lastPrice && isEven) { sig.innerText = "STRONG BUY (EVEN)"; sig.style.color = "var(--green)"; }
+        else if (price < lastPrice && !isEven) { sig.innerText = "STRONG SELL (ODD)"; sig.style.color = "var(--red)"; }
+        else { sig.innerText = "MARKET NEUTRAL"; sig.style.color = "white"; }
     }
 
     function buildDigitUI() {
         const container = document.getElementById('digit-stats');
         container.innerHTML = '';
         for(let i=0; i<=9; i++) {
-            container.innerHTML += `
-                <div class="digit-bar-wrap">
-                    <div id="bar-${i}" class="digit-bar" style="height: 0px;"></div>
-                    <div class="digit-label">${i}</div>
-                </div>`;
+            container.innerHTML += `<div class="digit-bar-wrap"><div id="bar-${i}" class="digit-bar" style="height: 0px;"></div><div class="digit-label">${i}</div></div>`;
         }
     }
 
@@ -172,11 +223,10 @@
         const counts = new Array(10).fill(0);
         digitHistory.forEach(d => counts[d]++);
         const max = Math.max(...counts);
-
         counts.forEach((count, i) => {
             const height = digitHistory.length ? (count / digitHistory.length) * 100 : 0;
             const bar = document.getElementById(`bar-${i}`);
-            bar.style.height = (height * 2) + "px"; // Scale for visibility
+            bar.style.height = (height * 2.5) + "px";
             bar.className = (count === max && max > 0) ? "digit-bar high-freq" : "digit-bar";
         });
     }
