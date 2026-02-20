@@ -1,89 +1,22 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <title>Live Deriv Synthetic Indices</title>
-    <style>
-        body { font-family: sans-serif; background: #121212; color: white; padding: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #333; }
-        th { background: #1e1e1e; color: #ff4444; }
-        .price-up { color: #00ff88; transition: 0.3s; }
-        .price-down { color: #ff4444; transition: 0.3s; }
-    </style>
-</head>
-<body>
+ws.onopen = () => {
+    statusDiv.innerText = "Connected! Fetching symbols...";
+    ws.send(JSON.stringify({ "active_symbols": "brief", "product_type": "basic" }));
+};
 
-    <h2>Live Synthetic Indices (App ID: 125403)</h2>
-    <div id="status">Connecting...</div>
+// ADD THIS TO DEBUG
+ws.onerror = (error) => {
+    console.error("WebSocket Error:", error);
+    statusDiv.innerText = "Connection Error. Check Console.";
+};
 
-    <table>
-        <thead>
-            <tr>
-                <th>Symbol Name</th>
-                <th>Symbol Code</th>
-                <th>Live Price</th>
-            </tr>
-        </thead>
-        <tbody id="ticker-body">
-            </tbody>
-    </table>
+ws.onmessage = (msg) => {
+    const data = JSON.parse(msg.data);
 
-    <script>
-        const APP_ID = 125403;
-        const ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`);
-        const tickerBody = document.getElementById('ticker-body');
-        const statusDiv = document.getElementById('status');
-        
-        // Dictionary to keep track of rows and previous prices for styling
-        const symbolRows = {};
-
-        ws.onopen = () => {
-            statusDiv.innerText = "Connected! Fetching all symbols...";
-            // 1. Ask for all active symbols
-            ws.send(JSON.stringify({ "active_symbols": "brief", "product_type": "basic" }));
-        };
-
-        ws.onmessage = (msg) => {
-            const data = JSON.parse(msg.data);
-
-            // 2. Process the list and subscribe to EVERYTHING in Synthetics
-            if (data.msg_type === 'active_symbols') {
-                const synthetics = data.active_symbols.filter(s => s.market === 'synthetic_index');
-                
-                synthetics.forEach(s => {
-                    // Create a row for each symbol
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${s.display_name}</td>
-                        <td>${s.symbol}</td>
-                        <td id="price-${s.symbol}">Loading...</td>
-                    `;
-                    tickerBody.appendChild(row);
-                    symbolRows[s.symbol] = { element: document.getElementById(`price-${s.symbol}`), lastPrice: 0 };
-
-                    // Subscribe to this specific symbol
-                    ws.send(JSON.stringify({ "ticks": s.symbol, "subscribe": 1 }));
-                });
-                statusDiv.innerText = `Streaming ${synthetics.length} Indices Live`;
-            }
-
-            // 3. Update the prices in real-time
-            if (data.msg_type === 'tick') {
-                const tick = data.tick;
-                const info = symbolRows[tick.symbol];
-                
-                if (info) {
-                    const newPrice = tick.quote;
-                    // Visual feedback: Green for up, Red for down
-                    info.element.className = newPrice >= info.lastPrice ? 'price-up' : 'price-down';
-                    info.element.innerText = newPrice;
-                    info.lastPrice = newPrice;
-                }
-            }
-        };
-
-        // Keep connection alive
-        setInterval(() => ws.send(JSON.stringify({ "ping": 1 })), 30000);
-    </script>
-</body>
-</html>
+    // If there is an error from Deriv's server
+    if (data.error) {
+        console.error("API Error:", data.error.message);
+        statusDiv.innerText = "API Error: " + data.error.message;
+        return;
+    }
+    
+    // ... rest of your code
