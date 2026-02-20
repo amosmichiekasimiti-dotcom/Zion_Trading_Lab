@@ -14,54 +14,39 @@
             --panel: #151520; 
         }
         body { font-family: 'Segoe UI', sans-serif; background: var(--dark); color: white; margin: 0; padding: 10px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        
         .nav-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
         .nav-btn { background: var(--panel); border: 1px solid #333; color: #888; padding: 10px 15px; border-radius: 8px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap; transition: 0.3s; }
         .nav-btn.active { background: var(--red); color: white; border-color: var(--red); }
-
         .table-container { background: var(--panel); border-radius: 12px; flex-grow: 1; overflow-y: auto; border: 1px solid #222; margin-top: 5px; }
         table { width: 100%; border-collapse: collapse; }
         th { position: sticky; top: 0; background: #1c1c2b; padding: 12px; text-align: left; font-size: 11px; color: #aaa; z-index: 10; }
         td { padding: 12px; border-bottom: 1px solid #222; font-size: 13px; }
-        
         #analysis-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--dark); z-index: 1000; padding: 15px; box-sizing: border-box; overflow-y: auto; }
         .price-card { background: #151520; padding: 15px; border-radius: 12px; text-align: center; border: 1px solid var(--blue); margin-bottom: 10px; box-shadow: 0 0 15px rgba(0, 242, 254, 0.2); }
         #live-price { font-size: 32px; font-weight: bold; font-family: monospace; }
-        
         .strategy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
         .strat-card { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; border: 1px solid #333; }
         .strat-label { font-size: 9px; color: #888; text-transform: uppercase; margin-bottom: 4px; }
         .strat-value { font-weight: bold; font-size: 14px; }
-
         .digit-circle-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin: 15px 0; }
-        .digit-circle { 
-            aspect-ratio: 1/1; border-radius: 50%; 
-            background: #1a1a24; border: 2px solid #333; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            transition: all 0.3s ease; position: relative;
-        }
+        .digit-circle { aspect-ratio: 1/1; border-radius: 50%; background: #1a1a24; border: 2px solid #333; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.3s ease; position: relative; }
         .digit-num { font-size: 16px; font-weight: bold; }
         .digit-pct { font-size: 9px; color: #888; margin-top: 2px; }
-        
         .digit-circle.active { border-color: var(--blue); box-shadow: 0 0 15px var(--blue); transform: scale(1.05); }
         .digit-circle.most-freq { background: linear-gradient(145deg, #00ff88, #008844) !important; border-color: #fff; box-shadow: 0 0 20px rgba(0, 255, 136, 0.6); }
         .digit-circle.most-freq .digit-num, .digit-circle.most-freq .digit-pct { color: #000; font-weight: 900; }
-        
         .digit-circle.least-freq { background: linear-gradient(145deg, #ff444f, #882222) !important; border-color: #fff; box-shadow: 0 0 20px rgba(255, 68, 79, 0.6); }
         .digit-circle.least-freq .digit-num, .digit-circle.least-freq .digit-pct { color: #fff; }
-
         #chart-container { height: 400px; background: #000; border-radius: 12px; margin-top: 15px; overflow: hidden; border: 1px solid #222; }
         .close-btn { background: #333; color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: bold; margin: 20px 0; cursor: pointer; }
         .btn-analyze { background: var(--blue); color: #000; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
-
     <div style="display:flex; justify-content:space-between; align-items:center; padding: 5px 10px;">
         <h2 style="margin:0; color: var(--gold); font-size: 18px;">🤖 ZION PRO LAB</h2>
         <small id="status-text" style="color:var(--green)">● System Ready</small>
     </div>
-
     <div class="nav-scroll">
         <button class="nav-btn active" onclick="filterMarkets('synthetic', this)">VOLATILITY</button>
         <button class="nav-btn" onclick="filterMarkets('crashboom', this)">CRASH/BOOM</button>
@@ -70,32 +55,27 @@
         <button class="nav-btn" onclick="filterMarkets('forex', this)">FOREX</button>
         <button class="nav-btn" onclick="filterMarkets('cryptocurrency', this)">CRYPTO</button>
     </div>
-
     <div class="table-container">
         <table>
             <thead><tr><th>Asset Name</th><th>Type</th><th>Action</th></tr></thead>
             <tbody id="market-list"></tbody>
         </table>
     </div>
-
     <div id="analysis-overlay">
         <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
             <h3 id="target-name" style="margin:0; color:var(--gold);">Asset Analysis</h3>
             <span id="target-symbol" style="color:#666; font-family: monospace;">---</span>
         </div>
-
         <div class="price-card">
-            <div id="live-price">0.0000</div>
+            <div id="live-price">0.000</div>
             <div id="ai-signal" style="font-weight:bold; margin-top:10px; font-size:18px;">SYNCING...</div>
         </div>
-
         <div class="strategy-grid">
             <div class="strat-card"><div class="strat-label">Even / Odd</div><div id="stat-even-odd" class="strat-value">---</div></div>
             <div class="strat-card"><div class="strat-label">Over / Under</div><div id="stat-over-under" class="strat-value">---</div></div>
             <div class="strat-card"><div class="strat-label">Match Signal</div><div id="stat-match-diff" class="strat-value">---</div></div>
             <div class="strat-card"><div class="strat-label">Tick Trend</div><div id="stat-rise-fall" class="strat-value">---</div></div>
         </div>
-
         <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                 <div style="font-size: 10px; color: #aaa; text-transform: uppercase; letter-spacing: 1px;">Live Digit Analytics</div>
@@ -103,7 +83,6 @@
             </div>
             <div class="digit-circle-grid" id="digit-circles"></div>
         </div>
-
         <div id="chart-container"></div>
         <button class="close-btn" onclick="closeAnalysis()">EXIT ENGINE</button>
     </div>
@@ -111,46 +90,32 @@
 <script>
     const APP_ID = 126973;
     const ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`);
-    let allSymbols = [];
-    let activeTickStream = null;
-    let digitHistory = [];
-    let priceHistory = [];
-    let isHistoryReady = false; 
-    let currentPipSize = 2; // Fixed decimal capture based on asset
+    let allSymbols = [], activeTickStream = null, digitHistory = [], priceHistory = [];
+    let isHistoryReady = false, currentPipSize = 2;
     const MAX_DIGITS = 1000;
 
     ws.onopen = () => ws.send(JSON.stringify({ active_symbols: "brief", product_type: "basic" }));
 
     ws.onmessage = (msg) => {
         const data = JSON.parse(msg.data);
-        
         if (data.history) {
             priceHistory = [...data.history.prices];
-            // Uses the actual pip_size of the asset to get the last digit correctly
+            // Fix 1: Use specific pipSize for digit extraction
             digitHistory = priceHistory.map(p => parseInt(p.toFixed(currentPipSize).slice(-1)));
             isHistoryReady = true; 
             updateDigitCircles();
             document.getElementById('ai-signal').innerText = "LIVE ANALYZING";
         }
-
-        if (data.active_symbols) {
-            allSymbols = data.active_symbols;
-            filterMarkets('synthetic'); 
-        }
-
+        if (data.active_symbols) { allSymbols = data.active_symbols; filterMarkets('synthetic'); }
         if (data.tick && isHistoryReady) {
-            // DUPLICATE FILTER: Prevents double-counting the handshake tick
+            // Fix 2: Prevent duplicate "handshake" tick
             if (data.tick.quote === priceHistory[priceHistory.length - 1]) return;
-            
             handleTick(data.tick);
         }
     };
 
     function filterMarkets(type, btn) {
-        if(btn) {
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-        }
+        if(btn) { document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
         const tbody = document.getElementById('market-list');
         tbody.innerHTML = '';
         const filtered = allSymbols.filter(s => {
@@ -161,33 +126,20 @@
             return s.market === type;
         });
         filtered.forEach(s => {
-            // Correctly passing pip_size into the analysis engine
             tbody.innerHTML += `<tr><td>${s.display_name}</td><td style="color:#666; font-size:10px;">${s.symbol.toUpperCase()}</td><td><button class="btn-analyze" onclick="openAnalysis('${s.symbol}', '${s.display_name}', ${s.pip_size})">Analyze</button></td></tr>`;
         });
     }
 
     function openAnalysis(symbol, name, pipSize) {
-        currentPipSize = pipSize; // Set pip size for this specific asset
+        currentPipSize = pipSize; 
         document.getElementById('target-name').innerText = name;
         document.getElementById('target-symbol').innerText = symbol;
         document.getElementById('analysis-overlay').style.display = 'block';
-        document.getElementById('chart-container').innerHTML = \`<iframe src="https://tradingview.binary.com/v2/main.php?symbol=\${symbol}&theme=dark" width="100%" height="100%" frameborder="0"></iframe>\`;
-        
-        isHistoryReady = false;
-        digitHistory = [];
-        priceHistory = [];
+        document.getElementById('chart-container').innerHTML = `<iframe src="https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=dark" width="100%" height="100%" frameborder="0"></iframe>`;
+        isHistoryReady = false; digitHistory = []; priceHistory = [];
         buildDigitUI();
         document.getElementById('tick-counter').innerText = "Syncing...";
-
-        // Requests exactly 1000 ticks for 100% sync
-        ws.send(JSON.stringify({
-            ticks_history: symbol,
-            adjust_start_time: 1,
-            count: MAX_DIGITS,
-            end: "latest",
-            style: "ticks"
-        }));
-
+        ws.send(JSON.stringify({ ticks_history: symbol, adjust_start_time: 1, count: MAX_DIGITS, end: "latest", style: "ticks" }));
         if (activeTickStream) ws.send(JSON.stringify({ forget: activeTickStream }));
         ws.send(JSON.stringify({ ticks: symbol, subscribe: 1 }));
     }
@@ -196,75 +148,55 @@
         const container = document.getElementById('digit-circles');
         container.innerHTML = '';
         for(let i=0; i<=9; i++) {
-            container.innerHTML += \`<div id="circle-\${i}" class="digit-circle"><div class="digit-num">\${i}</div><div id="pct-\${i}" class="digit-pct">0%</div></div>\`;
+            container.innerHTML += `<div id="circle-${i}" class="digit-circle"><div class="digit-num">${i}</div><div id="pct-${i}" class="digit-pct">0%</div></div>`;
         }
     }
 
     function handleTick(tick) {
         activeTickStream = tick.id;
-        const price = tick.quote;
-        const priceStr = price.toFixed(currentPipSize);
+        const priceStr = tick.quote.toFixed(currentPipSize);
         const lastDigit = parseInt(priceStr.slice(-1));
-
         document.getElementById('live-price').innerText = priceStr;
-        
         digitHistory.push(lastDigit);
-        priceHistory.push(price);
-        
-        // STRICTOR DENOMINATOR: Keep it at exactly 1000
+        priceHistory.push(tick.quote);
+        // Fix 3: Strict 1000 tick window for matching platform math
         while(digitHistory.length > MAX_DIGITS) digitHistory.shift();
         while(priceHistory.length > MAX_DIGITS) priceHistory.shift();
-
         updateDigitCircles();
-        updateStrategyPanel(lastDigit, price);
+        updateStrategyPanel(lastDigit, tick.quote);
     }
 
     function updateDigitCircles() {
         const counts = new Array(10).fill(0);
         digitHistory.forEach(d => counts[d]++);
         const total = digitHistory.length;
-        document.getElementById('tick-counter').innerText = \`\${total}/1000\`;
-
-        const sortedCounts = [...counts].sort((a,b) => b-a);
-        const maxVal = sortedCounts[0];
-        const minVal = total === MAX_DIGITS ? sortedCounts[9] : -1;
-
+        document.getElementById('tick-counter').innerText = `${total}/1000`;
+        const sorted = [...counts].sort((a,b) => b-a);
         counts.forEach((count, i) => {
             const pct = total > 0 ? ((count / total) * 100).toFixed(1) : "0.0";
-            const circle = document.getElementById(\`circle-\${i}\`);
-            document.getElementById(\`pct-\${i}\`).innerText = \`\${pct}%\`;
-
+            const circle = document.getElementById(`circle-${i}`);
+            document.getElementById(`pct-${i}`).innerText = `${pct}%`;
             circle.classList.remove('most-freq', 'least-freq', 'active');
             if (i === digitHistory[digitHistory.length - 1]) circle.classList.add('active');
-            
-            if (total >= 100) {
-                if (count === maxVal && count > 0) circle.classList.add('most-freq');
-                else if (count === minVal && count > 0) circle.classList.add('least-freq');
+            if (total >= MAX_DIGITS) {
+                if (count === sorted[0]) circle.classList.add('most-freq');
+                else if (count === sorted[9]) circle.classList.add('least-freq');
             }
         });
     }
 
     function updateStrategyPanel(digit, price) {
-        const evOdEl = document.getElementById('stat-even-odd');
-        const ovUnEl = document.getElementById('stat-over-under');
-        const rfEl = document.getElementById('stat-rise-fall');
-        
-        const isEven = digit % 2 === 0;
-        evOdEl.innerText = isEven ? "EVEN" : "ODD";
-        evOdEl.style.color = isEven ? "var(--blue)" : "var(--gold)";
-
-        const isOver = digit > 4.5;
-        ovUnEl.innerText = isOver ? "OVER" : "UNDER";
-        ovUnEl.style.color = isOver ? "var(--green)" : "var(--red)";
-
+        const evOd = document.getElementById('stat-even-odd'), ovUn = document.getElementById('stat-over-under'), rf = document.getElementById('stat-rise-fall');
+        evOd.innerText = digit % 2 === 0 ? "EVEN" : "ODD";
+        evOd.style.color = digit % 2 === 0 ? "var(--blue)" : "var(--gold)";
+        ovUn.innerText = digit > 4.5 ? "OVER" : "UNDER";
+        ovUn.style.color = digit > 4.5 ? "var(--green)" : "var(--red)";
         const lastPrice = priceHistory[priceHistory.length - 2] || price;
-        rfEl.innerText = price >= lastPrice ? "RISE" : "FALL";
-        rfEl.style.color = price >= lastPrice ? "var(--green)" : "var(--red)";
-
+        rf.innerText = price >= lastPrice ? "RISE" : "FALL";
+        rf.style.color = price >= lastPrice ? "var(--green)" : "var(--red)";
         const counts = new Array(10).fill(0);
         digitHistory.forEach(d => counts[d]++);
-        const hotDigit = counts.indexOf(Math.max(...counts));
-        document.getElementById('stat-match-diff').innerText = \`HOT: \${hotDigit}\`;
+        document.getElementById('stat-match-diff').innerText = `HOT: ${counts.indexOf(Math.max(...counts))}`;
     }
 
     function closeAnalysis() {
