@@ -15,6 +15,7 @@
         }
         body { font-family: 'Segoe UI', sans-serif; background: var(--dark); color: white; margin: 0; padding: 10px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
+        /* Navigation */
         .nav-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
         .nav-btn { background: var(--panel); border: 1px solid #333; color: #888; padding: 10px 15px; border-radius: 8px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap; transition: 0.3s; }
         .nav-btn.active { background: var(--red); color: white; border-color: var(--red); }
@@ -24,6 +25,7 @@
         th { position: sticky; top: 0; background: #1c1c2b; padding: 12px; text-align: left; font-size: 11px; color: #aaa; z-index: 10; }
         td { padding: 12px; border-bottom: 1px solid #222; font-size: 13px; }
         
+        /* Analysis Overlay */
         #analysis-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--dark); z-index: 1000; padding: 15px; box-sizing: border-box; overflow-y: auto; }
         .price-card { background: #151520; padding: 15px; border-radius: 12px; text-align: center; border: 1px solid var(--blue); margin-bottom: 10px; box-shadow: 0 0 15px rgba(0, 242, 254, 0.2); }
         #live-price { font-size: 32px; font-weight: bold; font-family: monospace; }
@@ -33,7 +35,7 @@
         .strat-label { font-size: 9px; color: #888; text-transform: uppercase; margin-bottom: 4px; }
         .strat-value { font-weight: bold; font-size: 14px; }
 
-        /* AMAZING NEON CIRCLES */
+        /* NEON DIGIT UI */
         .digit-circle-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin: 15px 0; }
         .digit-circle { 
             aspect-ratio: 1/1; border-radius: 50%; 
@@ -44,7 +46,6 @@
         .digit-num { font-size: 16px; font-weight: bold; }
         .digit-pct { font-size: 9px; color: #888; margin-top: 2px; }
         
-        /* State Glows */
         .digit-circle.active { border-color: var(--blue); box-shadow: 0 0 15px var(--blue); transform: scale(1.05); }
         .digit-circle.most-freq { background: linear-gradient(145deg, #00ff88, #008844) !important; border-color: #fff; box-shadow: 0 0 20px rgba(0, 255, 136, 0.6); }
         .digit-circle.most-freq .digit-num, .digit-circle.most-freq .digit-pct { color: #000; font-weight: 900; }
@@ -52,7 +53,7 @@
         .digit-circle.least-freq { background: linear-gradient(145deg, #ff444f, #882222) !important; border-color: #fff; box-shadow: 0 0 20px rgba(255, 68, 79, 0.6); }
         .digit-circle.least-freq .digit-num, .digit-circle.least-freq .digit-pct { color: #fff; }
 
-        #chart-container { height: 700px; background: #000; border-radius: 12px; margin-top: 15px; overflow: hidden; border: 1px solid #222; }
+        #chart-container { height: 400px; background: #000; border-radius: 12px; margin-top: 15px; overflow: hidden; border: 1px solid #222; }
         .close-btn { background: #333; color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: bold; margin: 20px 0; cursor: pointer; }
         .btn-analyze { background: var(--blue); color: #000; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; }
     </style>
@@ -88,7 +89,7 @@
 
         <div class="price-card">
             <div id="live-price">0.0000</div>
-            <div id="ai-signal" style="font-weight:bold; margin-top:10px; font-size:18px;">CALIBRATING...</div>
+            <div id="ai-signal" style="font-weight:bold; margin-top:10px; font-size:18px;">SYNCING...</div>
         </div>
 
         <div class="strategy-grid">
@@ -101,7 +102,7 @@
         <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                 <div style="font-size: 10px; color: #aaa; text-transform: uppercase; letter-spacing: 1px;">Live Digit Analytics</div>
-                <div id="tick-counter" style="background: var(--blue); color: #000; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: bold;">Syncing...</div>
+                <div id="tick-counter" style="background: var(--blue); color: #000; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: bold;">0/1000</div>
             </div>
             <div class="digit-circle-grid" id="digit-circles"></div>
         </div>
@@ -117,6 +118,7 @@
     let activeTickStream = null;
     let digitHistory = [];
     let priceHistory = [];
+    let isHistoryReady = false; 
     const MAX_DIGITS = 1000;
 
     ws.onopen = () => ws.send(JSON.stringify({ active_symbols: "brief", product_type: "basic" }));
@@ -124,25 +126,32 @@
     ws.onmessage = (msg) => {
         const data = JSON.parse(msg.data);
         
-        // Handle Historical Data Sync
+        // 1. Precise History Loading
         if (data.history) {
-            const symbol = data.echo_req.ticks_history;
-            const asset = allSymbols.find(s => s.symbol === symbol);
+            const asset = allSymbols.find(s => s.symbol === data.echo_req.ticks_history);
             const pipSize = asset ? asset.pip_size : 2;
             
-            digitHistory = data.history.prices.map(p => {
-                const pStr = p.toFixed(pipSize);
-                return parseInt(pStr.slice(-1));
-            });
             priceHistory = [...data.history.prices];
+            digitHistory = priceHistory.map(p => parseInt(p.toFixed(pipSize).slice(-1)));
+            
+            isHistoryReady = true; 
             updateDigitCircles();
+            document.getElementById('ai-signal').innerText = "LIVE ANALYZING";
         }
 
         if (data.active_symbols) {
             allSymbols = data.active_symbols;
             filterMarkets('synthetic'); 
         }
-        if (data.tick) handleTick(data.tick);
+
+        // 2. Synchronized Live Ticks
+        if (data.tick && isHistoryReady) {
+            // DUPLICATE CHECK: Deriv often sends the last historical tick as the first live tick.
+            // If we don't filter it, we get 1001 ticks, causing the percentage mismatch.
+            if (data.tick.quote === priceHistory[priceHistory.length - 1]) return;
+            
+            handleTick(data.tick);
+        }
     };
 
     function filterMarkets(type, btn) {
@@ -170,15 +179,18 @@
         document.getElementById('analysis-overlay').style.display = 'block';
         document.getElementById('chart-container').innerHTML = `<iframe src="https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=dark" width="100%" height="100%" frameborder="0"></iframe>`;
         
+        // Reset State
+        isHistoryReady = false;
         digitHistory = [];
         priceHistory = [];
         buildDigitUI();
+        document.getElementById('tick-counter').innerText = "Syncing...";
 
-        // FIX: Request last 1000 ticks from server history
+        // Request exactly 1000 historical ticks
         ws.send(JSON.stringify({
             ticks_history: symbol,
             adjust_start_time: 1,
-            count: 1000,
+            count: MAX_DIGITS,
             end: "latest",
             style: "ticks"
         }));
@@ -202,11 +214,13 @@
         const lastDigit = parseInt(priceStr.slice(-1));
 
         document.getElementById('live-price').innerText = priceStr;
+        
         digitHistory.push(lastDigit);
         priceHistory.push(price);
         
-        if(digitHistory.length > MAX_DIGITS) digitHistory.shift();
-        if(priceHistory.length > MAX_DIGITS) priceHistory.shift();
+        // Strictly maintain the 1000-tick denominator
+        while(digitHistory.length > MAX_DIGITS) digitHistory.shift();
+        while(priceHistory.length > MAX_DIGITS) priceHistory.shift();
 
         updateDigitCircles();
         updateStrategyPanel(lastDigit, price);
@@ -223,16 +237,14 @@
         const minVal = total > 100 ? sortedCounts[9] : -1;
 
         counts.forEach((count, i) => {
+            // The platform uses standard rounding for UI percentages
             const pct = total > 0 ? ((count / total) * 100).toFixed(1) : "0.0";
             const circle = document.getElementById(`circle-${i}`);
             document.getElementById(`pct-${i}`).innerText = `${pct}%`;
 
             circle.classList.remove('most-freq', 'least-freq', 'active');
-            
-            // Pulse current digit
             if (i === digitHistory[digitHistory.length - 1]) circle.classList.add('active');
             
-            // Neon Highlighting
             if (total > 50) {
                 if (count === maxVal && count > 0) circle.classList.add('most-freq');
                 else if (count === minVal && count > 0) circle.classList.add('least-freq');
@@ -260,7 +272,7 @@
         const counts = new Array(10).fill(0);
         digitHistory.forEach(d => counts[d]++);
         const hotDigit = counts.indexOf(Math.max(...counts));
-        document.getElementById('stat-match-diff').innerText = `HOT: ${hotDigit}`;
+        document.getElementById('stat-match-diff').innerText = `PROBABLE: ${hotDigit}`;
     }
 
     function closeAnalysis() {
