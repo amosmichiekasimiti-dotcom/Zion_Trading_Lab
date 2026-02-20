@@ -1,9 +1,13 @@
 /**
- * Zion AI Trading Lab - FIXED Implementation
- * Addresses: Contract switching, Panel navigation, Metrics updates
+ * ZION AI TRADING LAB - COMPLETE UNIFIED VERSION
+ * Supports: All Deriv Synthetic Indices + Forex
+ * Contracts: Rise/Fall, Even/Odd, Matches/Differs, Over/Under
+ * Features: 9 Trading Panels + AI Signal Engine + XML Bot Bridge
  */
 
 const ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
+
+// Global State
 let activeSub = null;
 let allSymbols = [];
 let currentSymbol = '';
@@ -15,6 +19,8 @@ let tickHistory = [];
 let botRunning = false;
 let botStartTime = null;
 let botDuration = 30;
+let currentAnalyzer = null;
+let currentAssetType = 'UNKNOWN';
 
 // ==========================================
 // ASSET DETECTION SYSTEM
@@ -43,7 +49,7 @@ function getAssetDisplayName(type) {
 }
 
 // ==========================================
-// FIXED: CONTRACT-SPECIFIC CONDITIONS SYSTEM
+// BASE ANALYZER CLASS
 // ==========================================
 
 class BaseAnalyzer {
@@ -59,7 +65,6 @@ class BaseAnalyzer {
             reversion: '0%',
             momentum: '0%'
         };
-        this.pullbackState = { status: 'SCANNING', counter: 0, triggerPrice: null, direction: null };
     }
     
     calculateEMA(prices, period) {
@@ -95,14 +100,10 @@ class BaseAnalyzer {
         const variance = returns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / returns.length;
         return Math.sqrt(variance) * 100;
     }
-    
-    getTrendDirection() {
-        return 'UP';
-    }
 }
 
 // ==========================================
-// FIXED: VOLATILITY ANALYZER WITH CONTRACT-SPECIFIC LOGIC
+// VOLATILITY ANALYZER (R_10, R_25, R_50, R_75, R_100, V10, V25, V50, V75, V100)
 // ==========================================
 
 class VolatilityAnalyzer extends BaseAnalyzer {
@@ -111,21 +112,15 @@ class VolatilityAnalyzer extends BaseAnalyzer {
         this.digitHistory = [];
         this.streakCount = 0;
         this.streakParity = null;
-        this.streakType = null; // For Over/Under streaks
-        this.digitCounts = Array(10).fill(0);
+        this.streakType = null;
     }
     
     analyze(currentPrice, currentDigit) {
         this.digitHistory.push(currentDigit);
         if (this.digitHistory.length > 100) this.digitHistory.shift();
         
-        // Update digit counts
-        this.digitCounts[currentDigit]++;
-        
-        // Update metrics based on contract type
         this.updateMetrics(currentPrice, currentDigit);
         
-        // Generate conditions based on contract type
         switch(this.contractType) {
             case 'rise_fall':
                 return this.analyzeRiseFall(currentPrice);
@@ -141,30 +136,24 @@ class VolatilityAnalyzer extends BaseAnalyzer {
     }
     
     updateMetrics(currentPrice, currentDigit) {
-        // Calculate volatility
         const vol = this.calculateVolatility();
         this.metrics.volatility = vol.toFixed(1) + '%';
         
-        // Calculate momentum (rate of change)
         if (priceHistory.length > 10) {
             const roc = ((currentPrice - priceHistory[priceHistory.length - 10]) / priceHistory[priceHistory.length - 10]) * 100;
             this.metrics.momentum = Math.abs(roc).toFixed(1) + '%';
         }
         
-        // Calculate reversion probability
         if (this.contractType === 'even_odd' || this.contractType === 'over_under') {
-            // For digit-based contracts, reversion is based on streak length
-            const maxStreak = 5; // Consider reversion after 5 streaks
+            const maxStreak = 5;
             const reversionProb = Math.min((this.streakCount / maxStreak) * 100, 95);
             this.metrics.reversion = reversionProb.toFixed(1) + '%';
         } else {
-            // For price-based contracts, use RSI mean reversion
             const rsi = this.calculateRSI(priceHistory);
             const distFromMid = Math.abs(rsi - 50);
             this.metrics.reversion = (distFromMid * 1.5).toFixed(1) + '%';
         }
         
-        // Trend strength based on contract type
         if (this.contractType === 'rise_fall') {
             if (priceHistory.length > 20) {
                 const ema10 = this.calculateEMA(priceHistory, 10);
@@ -174,15 +163,11 @@ class VolatilityAnalyzer extends BaseAnalyzer {
                 this.metrics.trendStrength = strength.toFixed(0) + '%';
             }
         } else {
-            // For digit contracts, show streak info
             const streakLabel = this.contractType === 'even_odd' ? this.streakParity : this.streakType;
             this.metrics.trendStrength = this.streakCount > 0 ? `${this.streakCount} ${streakLabel || ''}` : '1 EVEN';
         }
     }
     
-    // ==========================================
-    // RISE/FALL: Price-based trend conditions
-    // ==========================================
     analyzeRiseFall(currentPrice) {
         this.conditions = [
             this.checkTrendStrength(currentPrice),
@@ -196,7 +181,7 @@ class VolatilityAnalyzer extends BaseAnalyzer {
         this.confidence = (passCount / 5) * 100;
         
         if (passCount >= 4) {
-            const trend = this.conditions[0]; // Trend Strength condition
+            const trend = this.conditions[0];
             this.signal = trend.direction === 'UP' ? 'RISE' : 'FALL';
         } else {
             this.signal = 'WAIT';
@@ -244,11 +229,9 @@ class VolatilityAnalyzer extends BaseAnalyzer {
     }
     
     checkADX() {
-        // Simplified ADX check
         if (priceHistory.length < 28) {
             return { name: 'ADX Trend Strength (>25)', pass: false, value: 'Analyzing...' };
         }
-        // Calculate simple trend strength
         const recentPrices = priceHistory.slice(-20);
         const range = Math.max(...recentPrices) - Math.min(...recentPrices);
         const adx = Math.min((range / recentPrices[0]) * 100, 100);
@@ -278,7 +261,6 @@ class VolatilityAnalyzer extends BaseAnalyzer {
     }
     
     checkVolumeConfirmation() {
-        // For tick data, we use tick velocity
         return {
             name: 'Volume Confirmation',
             pass: true,
@@ -286,11 +268,7 @@ class VolatilityAnalyzer extends BaseAnalyzer {
         };
     }
     
-    // ==========================================
-    // EVEN/ODD: Parity-based conditions
-    // ==========================================
     analyzeEvenOdd(currentPrice, currentDigit) {
-        // Update streak
         const currentParity = currentDigit % 2 === 0 ? 'EVEN' : 'ODD';
         if (currentParity === this.streakParity) {
             this.streakCount++;
@@ -310,7 +288,6 @@ class VolatilityAnalyzer extends BaseAnalyzer {
         const passCount = this.conditions.filter(c => c.pass).length;
         this.confidence = (passCount / 5) * 100;
         
-        // Signal logic: After 3+ streak, signal opposite
         if (this.streakCount >= 3 && passCount >= 3) {
             this.signal = this.streakParity === 'EVEN' ? 'ODD' : 'EVEN';
         } else if (passCount >= 4) {
@@ -400,9 +377,6 @@ class VolatilityAnalyzer extends BaseAnalyzer {
         };
     }
     
-    // ==========================================
-    // MATCHES/DIFFERS: Digit clustering conditions
-    // ==========================================
     analyzeMatchesDiffers(currentPrice, currentDigit) {
         this.conditions = [
             this.checkDigitClustering(),
@@ -416,7 +390,6 @@ class VolatilityAnalyzer extends BaseAnalyzer {
         this.confidence = (passCount / 5) * 100;
         
         if (passCount >= 4) {
-            // Find most frequent digit
             const counts = Array(10).fill(0);
             this.digitHistory.forEach(d => counts[d]++);
             const maxDigit = counts.indexOf(Math.max(...counts));
@@ -508,11 +481,7 @@ class VolatilityAnalyzer extends BaseAnalyzer {
         };
     }
     
-    // ==========================================
-    // OVER/UNDER: Range dominance conditions
-    // ==========================================
     analyzeOverUnder(currentPrice, currentDigit) {
-        // Update streak for Over/Under
         const currentRange = currentDigit > 4 ? 'OVER' : 'UNDER';
         if (currentRange === this.streakType) {
             this.streakCount++;
@@ -533,7 +502,6 @@ class VolatilityAnalyzer extends BaseAnalyzer {
         this.confidence = (passCount / 5) * 100;
         
         if (passCount >= 4) {
-            // Signal opposite of streak after 3+
             this.signal = this.streakType === 'OVER' ? 'UNDER' : 'OVER';
         } else {
             this.signal = 'WAIT';
@@ -566,12 +534,11 @@ class VolatilityAnalyzer extends BaseAnalyzer {
     }
     
     checkPivotAnalysis() {
-        // Check if digit is near pivot (4 or 5)
         const lastDigit = this.digitHistory[this.digitHistory.length - 1];
         const nearPivot = lastDigit === 4 || lastDigit === 5;
         return {
             name: 'Pivot Analysis (4/5 threshold)',
-            pass: !nearPivot, // Better signal when not at pivot
+            pass: !nearPivot,
             value: nearPivot ? 'At pivot' : 'Clear zone'
         };
     }
@@ -588,12 +555,11 @@ class VolatilityAnalyzer extends BaseAnalyzer {
         if (this.digitHistory.length < 50) {
             return { name: 'Distribution Test', pass: false, value: 'Collecting...' };
         }
-        // Chi-square like test for imbalance
         const recent = this.digitHistory.slice(-50);
         const overCount = recent.filter(d => d > 4).length;
-        const expected = 25; // 50/50
+        const expected = 25;
         const chiSquare = Math.pow(overCount - expected, 2) / expected;
-        const significant = chiSquare > 3.84; // 95% confidence
+        const significant = chiSquare > 3.84;
         return {
             name: 'Distribution Test',
             pass: significant,
@@ -612,7 +578,7 @@ class VolatilityAnalyzer extends BaseAnalyzer {
 }
 
 // ==========================================
-// FOREX ANALYZER - Only Rise/Fall
+// FOREX ANALYZER (Only Rise/Fall)
 // ==========================================
 
 class ForexAnalyzer extends BaseAnalyzer {
@@ -705,7 +671,7 @@ class ForexAnalyzer extends BaseAnalyzer {
 }
 
 // ==========================================
-// OTHER ANALYZERS (Crash/Boom, Jump, Range/Step)
+// CRASH/BOOM ANALYZER
 // ==========================================
 
 class CrashBoomAnalyzer extends BaseAnalyzer {
@@ -733,6 +699,10 @@ class CrashBoomAnalyzer extends BaseAnalyzer {
     }
 }
 
+// ==========================================
+// JUMP INDEX ANALYZER
+// ==========================================
+
 class JumpAnalyzer extends BaseAnalyzer {
     analyze(currentPrice) {
         this.conditions = [
@@ -755,6 +725,10 @@ class JumpAnalyzer extends BaseAnalyzer {
         };
     }
 }
+
+// ==========================================
+// RANGE/STEP INDEX ANALYZER
+// ==========================================
 
 class RangeStepAnalyzer extends BaseAnalyzer {
     analyze(currentPrice) {
@@ -858,11 +832,8 @@ ws.onmessage = (msg) => {
 };
 
 // ==========================================
-// FIXED UI UPDATE FUNCTIONS
+// UI UPDATE FUNCTIONS
 // ==========================================
-
-let currentAnalyzer = null;
-let currentAssetType = 'UNKNOWN';
 
 function initializeAnalyzer() {
     const assetType = detectAssetType(currentSymbol);
@@ -904,7 +875,6 @@ function updateUI(result) {
     const signalEl = document.getElementById('primary-signal');
     if (signalEl) {
         signalEl.textContent = result.signal;
-        // Handle "MATCH X" format
         const signalClass = result.signal.toLowerCase().split(' ')[0];
         signalEl.className = `signal-value ${signalClass}`;
     }
@@ -937,7 +907,7 @@ function updateUI(result) {
         strBadge.className = `confidence-badge ${result.confidence > 60 ? 'good' : result.confidence > 30 ? 'medium' : ''}`;
     }
     
-    // FIXED: Update Metrics based on contract type
+    // Metrics
     updateMetrics(result);
     
     // Conditions
@@ -945,10 +915,8 @@ function updateUI(result) {
 }
 
 function updateMetrics(result) {
-    // Update the 4 metric boxes based on result.metrics or result properties
     const metrics = result.metrics || {};
     
-    // Trend Strength - ID is metric-trend
     const trendEl = document.getElementById('metric-trend');
     if (trendEl) {
         if (result.streak !== undefined) {
@@ -961,19 +929,16 @@ function updateMetrics(result) {
         }
     }
     
-    // Volatility - ID is metric-vol (not metric-volatility)
     const volEl = document.getElementById('metric-vol');
     if (volEl && metrics.volatility) {
         volEl.textContent = metrics.volatility;
     }
     
-    // Reversion - ID is metric-reversion
     const revEl = document.getElementById('metric-reversion');
     if (revEl && metrics.reversion) {
         revEl.textContent = metrics.reversion;
     }
     
-    // Momentum - ID is metric-momentum
     const momEl = document.getElementById('metric-momentum');
     if (momEl && metrics.momentum) {
         momEl.textContent = metrics.momentum;
@@ -1041,29 +1006,17 @@ function renderDigitStatistics(activeDigit) {
 }
 
 // ==========================================
-// FIXED: PANEL SWITCHING - SUPPORTS ALL PANELS
+// PANEL NAVIGATION
 // ==========================================
 
 function switchPanel(panelName, el) {
-    // Update active button
     document.querySelectorAll('.panel-nav-btn').forEach(b => b.classList.remove('active'));
     if(el) el.classList.add('active');
     
-    // Hide ALL panels first - using the IDs from your HTML
     const panelIds = [
-        'signal-panel',      // AI Signal Engine
-        'risk-panel',        // Risk Management
-        'session-panel',     // Session Analytics
-        'correlation-panel', // Correlation
-        'backtest-panel',    // Backtest
-        'sentiment-panel',   // Sentiment
-        'ml-panel',          // ML
-        'multitf-panel',     // Multi-Timeframe
-        'execution-panel',   // Execution
-        'dynamics-panel',
-        'scanner-panel',
-        'bridge-panel',
-        'history-panel'
+        'signal-panel', 'risk-panel', 'session-panel', 'correlation-panel',
+        'backtest-panel', 'sentiment-panel', 'ml-panel', 'multitf-panel',
+        'execution-panel', 'dynamics-panel', 'scanner-panel', 'bridge-panel', 'history-panel'
     ];
     
     panelIds.forEach(id => {
@@ -1073,22 +1026,15 @@ function switchPanel(panelName, el) {
         }
     });
     
-    // Also hide info section when switching away from signal
     const infoSection = document.getElementById('info-section');
-    
-    // Show selected panel
     let targetPanel = document.getElementById(panelName + '-panel');
     
     if (targetPanel) {
         targetPanel.style.display = 'block';
-        
-        // Show info section only for signal panel
         if (infoSection) {
             infoSection.style.display = (panelName === 'signal') ? 'block' : 'none';
         }
     } else {
-        console.warn(`Panel ${panelName} not found`);
-        // Fallback to signal panel
         const signalPanel = document.getElementById('signal-panel');
         if (signalPanel) signalPanel.style.display = 'block';
         if (infoSection) infoSection.style.display = 'block';
@@ -1096,20 +1042,18 @@ function switchPanel(panelName, el) {
 }
 
 // ==========================================
-// FIXED: CONTRACT TAB SWITCHING WITH RE-INITIALIZATION
+// CONTRACT SWITCHING
 // ==========================================
 
 function switchContract(mode, el) {
     currentMode = mode;
     
-    // Update active tab
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     if (el) el.classList.add('active');
 
     const digitPanel = document.getElementById('digit-analysis-panel');
     const chartView = document.getElementById('chart-container');
 
-    // Show/hide digit panel based on contract
     if (mode === 'rise_fall') {
         if (digitPanel) digitPanel.style.display = 'none';
         if (chartView) chartView.style.height = '750px';
@@ -1119,31 +1063,23 @@ function switchContract(mode, el) {
         buildDigitGrid();
     }
     
-    // Update chart
     if (chartView) {
         chartView.innerHTML = `<iframe src="https://tradingview.binary.com/v2/main.php?symbol=${currentSymbol}&theme=dark" width="100%" height="100%" frameborder="0"></iframe>`;
     }
     
-    // CRITICAL FIX: Re-initialize analyzer with new contract type
-    // Store current data before re-initializing
     const oldDigitHistory = currentAnalyzer ? (currentAnalyzer.digitHistory || []) : [];
-    const oldPriceHistory = priceHistory;
     
-    // Create new analyzer with new contract type
     initializeAnalyzer();
     
-    // Restore data to new analyzer
     if (currentAnalyzer && currentAnalyzer.digitHistory && oldDigitHistory.length > 0) {
         currentAnalyzer.digitHistory = oldDigitHistory.slice(-100);
     }
     if (currentAnalyzer) {
-        currentAnalyzer.contractType = mode; // Ensure contract type is set
+        currentAnalyzer.contractType = mode;
     }
     
-    // Update features list
     updateFeaturesList(mode);
     
-    // Force immediate analysis update
     if (priceHistory.length > 0 && currentAnalyzer) {
         const lastPrice = priceHistory[priceHistory.length - 1];
         const lastDigit = derivDigitWindow[derivDigitWindow.length - 1] || 0;
@@ -1191,7 +1127,7 @@ function updateFeaturesList(mode) {
 }
 
 // ==========================================
-// ORIGINAL NAVIGATION FUNCTIONS (PRESERVED)
+// NAVIGATION FUNCTIONS
 // ==========================================
 
 function loadCategory(cat, el) {
@@ -1233,10 +1169,8 @@ function openAnalysis(name, symbol) {
     
     initializeAnalyzer();
     
-    // Default to signal panel
     switchPanel('signal', document.querySelector('.panel-nav-btn'));
     
-    // Load history
     ws.send(JSON.stringify({
         "ticks_history": symbol,
         "adjust_start_time": 1,
@@ -1264,7 +1198,7 @@ function buildDigitGrid() {
 }
 
 // ==========================================
-// BOT CONTROL FUNCTIONS (PRESERVED)
+// BOT CONTROL FUNCTIONS
 // ==========================================
 
 function updateRuntime(value) {
@@ -1345,7 +1279,7 @@ function updateExecutionPanel() {
     <contract>${currentMode}</contract>
   </metadata>
   <conditions>
-${conditions.map(c => `    <condition name="${c.name}" pass="${c.pass}" value="${c.value}"/>`).join('\\n')}
+${conditions.map(c => `    <condition name="${c.name}" pass="${c.pass}" value="${c.value}"/>`).join('\n')}
   </conditions>
   <signal>
     <type>${signal}</type>
@@ -1358,7 +1292,7 @@ ${conditions.map(c => `    <condition name="${c.name}" pass="${c.pass}" value="$
 }
 
 // ==========================================
-// UTILITY FUNCTIONS (PRESERVED)
+// UTILITY FUNCTIONS
 // ==========================================
 
 function exportData() {
@@ -1388,8 +1322,8 @@ function closeModal() {
 
 function showAllConditions() {
     if (!currentAnalyzer || !currentAnalyzer.conditions) return;
-    const list = currentAnalyzer.conditions.map(c => `${c.pass ? '✅' : '❌'} ${c.name}: ${c.value}`).join('\\n');
-    alert(`5 Conditions:\\n\\n${list}\\n\\nPass Rate: ${Math.round(currentAnalyzer.confidence)}%`);
+    const list = currentAnalyzer.conditions.map(c => `${c.pass ? '✅' : '❌'} ${c.name}: ${c.value}`).join('\n');
+    alert(`5 Conditions:\n\n${list}\n\nPass Rate: ${Math.round(currentAnalyzer.confidence)}%`);
 }
 
 function openHelp() {
@@ -1417,7 +1351,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // Initialize other panels if needed
     initializeSessionHeatmap();
     initializeCorrelationMatrix();
 });
@@ -1444,7 +1377,6 @@ function initializeCorrelationMatrix() {
     const indices = ['', 'V10', 'V25', 'V50', 'V75', 'V100'];
     matrix.innerHTML = '';
     
-    // Header row
     indices.forEach((idx, i) => {
         const cell = document.createElement('div');
         cell.className = 'corr-cell header';
@@ -1452,15 +1384,12 @@ function initializeCorrelationMatrix() {
         matrix.appendChild(cell);
     });
     
-    // Data rows
     for (let i = 1; i < indices.length; i++) {
-        // Row header
         const header = document.createElement('div');
         header.className = 'corr-cell header';
         header.textContent = indices[i];
         matrix.appendChild(header);
         
-        // Data cells
         for (let j = 1; j < indices.length; j++) {
             const cell = document.createElement('div');
             cell.className = 'corr-cell';
