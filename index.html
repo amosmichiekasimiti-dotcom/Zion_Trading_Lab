@@ -24,23 +24,26 @@
         .price-card { background: #151520; padding: 15px; border-radius: 12px; text-align: center; border: 1px solid var(--blue); margin-bottom: 10px; }
         #live-price { font-size: 32px; font-weight: bold; font-family: monospace; }
         
+        /* Strategy Grid */
         .strategy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
         .strat-card { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; border: 1px solid #333; }
         .strat-label { font-size: 9px; color: #888; text-transform: uppercase; margin-bottom: 4px; }
         .strat-value { font-weight: bold; font-size: 14px; }
 
-        /* Digit Stats */
-        .digit-stat-container { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; height: 60px; margin: 15px 0; align-items: end; }
-        .digit-bar-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-        .digit-bar { width: 100%; background: var(--blue); border-radius: 2px; transition: height 0.3s ease; min-height: 2px; opacity: 0.7; }
-        .digit-label { font-size: 10px; color: #888; font-weight: bold; }
-        .high-freq { background: var(--gold) !important; opacity: 1; }
+        /* CIRCULAR DIGIT UI */
+        .digit-circle-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 15px 0; }
+        .digit-circle { aspect-ratio: 1/1; border-radius: 50%; background: #1a1a24; border: 2px solid #333; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: 0.3s; position: relative; }
+        .digit-num { font-size: 16px; font-weight: bold; }
+        .digit-pct { font-size: 9px; color: #888; margin-top: 2px; }
+        
+        /* Frequency Highlights */
+        .digit-circle.active { border-color: var(--blue); box-shadow: 0 0 10px var(--blue); }
+        .digit-circle.most-freq { background: var(--green) !important; border-color: var(--green); color: white; }
+        .digit-circle.least-freq { background: var(--red) !important; border-color: var(--red); color: white; }
 
-        /* Chart Container - Set to 700px */
         #chart-container { height: 700px; background: #000; border-radius: 12px; margin-top: 15px; overflow: hidden; }
-
-        .btn-analyze { background: var(--blue); color: #000; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; }
         .close-btn { background: #333; color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: bold; margin: 20px 0; cursor: pointer; }
+        .btn-analyze { background: var(--blue); color: #000; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -78,27 +81,18 @@
         </div>
 
         <div class="strategy-grid">
-            <div class="strat-card">
-                <div class="strat-label">Even / Odd</div>
-                <div id="stat-even-odd" class="strat-value">---</div>
-            </div>
-            <div class="strat-card">
-                <div class="strat-label">Over / Under (4.5)</div>
-                <div id="stat-over-under" class="strat-value">---</div>
-            </div>
-            <div class="strat-card">
-                <div class="strat-label">Matches / Differs</div>
-                <div id="stat-match-diff" class="strat-value">---</div>
-            </div>
-            <div class="strat-card">
-                <div class="strat-label">Rise / Fall</div>
-                <div id="stat-rise-fall" class="strat-value">---</div>
-            </div>
+            <div class="strat-card"><div class="strat-label">Even / Odd</div><div id="stat-even-odd" class="strat-value">---</div></div>
+            <div class="strat-card"><div class="strat-label">Over / Under (4.5)</div><div id="stat-over-under" class="strat-value">---</div></div>
+            <div class="strat-card"><div class="strat-label">Matches / Differs</div><div id="stat-match-diff" class="strat-value">---</div></div>
+            <div class="strat-card"><div class="strat-label">Rise / Fall</div><div id="stat-rise-fall" class="strat-value">---</div></div>
         </div>
 
-        <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;">
-            <div style="font-size: 10px; color: #aaa; text-transform: uppercase;">Digit Frequency (Last 50)</div>
-            <div class="digit-stat-container" id="digit-stats"></div>
+        <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; margin-bottom: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div style="font-size: 10px; color: #aaa; text-transform: uppercase;">Digit Distribution (1000 Ticks)</div>
+                <div id="tick-counter" style="background: var(--blue); color: #000; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold;">0/1000</div>
+            </div>
+            <div class="digit-circle-grid" id="digit-circles"></div>
         </div>
 
         <div id="chart-container"></div>
@@ -112,7 +106,7 @@
     let activeTickStream = null;
     let digitHistory = [];
     let priceHistory = [];
-    const MAX_DIGITS = 50;
+    const MAX_DIGITS = 1000; // Increased to match your reference
 
     ws.onopen = () => ws.send(JSON.stringify({ active_symbols: "brief", product_type: "basic" }));
 
@@ -132,7 +126,6 @@
         }
         const tbody = document.getElementById('market-list');
         tbody.innerHTML = '';
-
         const filtered = allSymbols.filter(s => {
             if (type === 'synthetic') return s.market === 'synthetic_index' && !s.display_name.includes('Crash') && !s.display_name.includes('Boom') && !s.display_name.includes('Step') && !s.display_name.includes('Range');
             if (type === 'crashboom') return s.display_name.includes('Crash') || s.display_name.includes('Boom');
@@ -140,13 +133,8 @@
             if (type === 'dex') return s.display_name.includes('DEX') || s.display_name.includes('Drift');
             return s.market === type;
         });
-
         filtered.forEach(s => {
-            tbody.innerHTML += `<tr>
-                <td>${s.display_name}</td>
-                <td style="color:#666; font-size:10px;">${s.symbol.toUpperCase()}</td>
-                <td><button class="btn-analyze" onclick="openAnalysis('${s.symbol}', '${s.display_name}')">Analyze</button></td>
-            </tr>`;
+            tbody.innerHTML += `<tr><td>${s.display_name}</td><td style="color:#666; font-size:10px;">${s.symbol.toUpperCase()}</td><td><button class="btn-analyze" onclick="openAnalysis('${s.symbol}', '${s.display_name}')">Analyze</button></td></tr>`;
         });
     }
 
@@ -154,16 +142,20 @@
         document.getElementById('target-name').innerText = name;
         document.getElementById('target-symbol').innerText = symbol;
         document.getElementById('analysis-overlay').style.display = 'block';
-        
-        // Iframe follows container height
         document.getElementById('chart-container').innerHTML = `<iframe src="https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=dark" width="100%" height="100%" frameborder="0"></iframe>`;
-        
         digitHistory = [];
         priceHistory = [];
         buildDigitUI();
-        
         if (activeTickStream) ws.send(JSON.stringify({ forget: activeTickStream }));
         ws.send(JSON.stringify({ ticks: symbol, subscribe: 1 }));
+    }
+
+    function buildDigitUI() {
+        const container = document.getElementById('digit-circles');
+        container.innerHTML = '';
+        for(let i=0; i<=9; i++) {
+            container.innerHTML += `<div id="circle-${i}" class="digit-circle"><div class="digit-num">${i}</div><div id="pct-${i}" class="digit-pct">0%</div></div>`;
+        }
     }
 
     function handleTick(tick) {
@@ -173,14 +165,36 @@
         const lastDigit = parseInt(priceStr.slice(-1));
 
         document.getElementById('live-price').innerText = priceStr;
-        
         digitHistory.push(lastDigit);
         priceHistory.push(price);
         if(digitHistory.length > MAX_DIGITS) digitHistory.shift();
         if(priceHistory.length > MAX_DIGITS) priceHistory.shift();
 
-        updateDigitBars();
+        updateDigitCircles();
         updateStrategyPanel(lastDigit, price);
+    }
+
+    function updateDigitCircles() {
+        const counts = new Array(10).fill(0);
+        digitHistory.forEach(d => counts[d]++);
+        const total = digitHistory.length;
+        document.getElementById('tick-counter').innerText = `${total}/1000`;
+
+        const maxVal = Math.max(...counts);
+        const minVal = total >= 100 ? Math.min(...counts) : -1;
+
+        counts.forEach((count, i) => {
+            const pct = total > 0 ? ((count / total) * 100).toFixed(1) : "0";
+            const circle = document.getElementById(`circle-${i}`);
+            document.getElementById(`pct-${i}`).innerText = `${pct}%`;
+
+            circle.classList.remove('most-freq', 'least-freq', 'active');
+            if (i === digitHistory[digitHistory.length - 1]) circle.classList.add('active');
+            if (total > 50) {
+                if (count === maxVal) circle.classList.add('most-freq');
+                else if (count === minVal) circle.classList.add('least-freq');
+            }
+        });
     }
 
     function updateStrategyPanel(digit, price) {
@@ -204,31 +218,6 @@
         digitHistory.forEach(d => counts[d]++);
         const hotDigit = counts.indexOf(Math.max(...counts));
         document.getElementById('stat-match-diff').innerText = `MATCH ${hotDigit}`;
-
-        const sig = document.getElementById('ai-signal');
-        if (price > lastPrice && isEven) { sig.innerText = "STRONG BUY (EVEN)"; sig.style.color = "var(--green)"; }
-        else if (price < lastPrice && !isEven) { sig.innerText = "STRONG SELL (ODD)"; sig.style.color = "var(--red)"; }
-        else { sig.innerText = "MARKET NEUTRAL"; sig.style.color = "white"; }
-    }
-
-    function buildDigitUI() {
-        const container = document.getElementById('digit-stats');
-        container.innerHTML = '';
-        for(let i=0; i<=9; i++) {
-            container.innerHTML += `<div class="digit-bar-wrap"><div id="bar-${i}" class="digit-bar" style="height: 0px;"></div><div class="digit-label">${i}</div></div>`;
-        }
-    }
-
-    function updateDigitBars() {
-        const counts = new Array(10).fill(0);
-        digitHistory.forEach(d => counts[d]++);
-        const max = Math.max(...counts);
-        counts.forEach((count, i) => {
-            const height = digitHistory.length ? (count / digitHistory.length) * 100 : 0;
-            const bar = document.getElementById(`bar-${i}`);
-            bar.style.height = (height * 2.5) + "px";
-            bar.className = (count === max && max > 0) ? "digit-bar high-freq" : "digit-bar";
-        });
     }
 
     function closeAnalysis() {
