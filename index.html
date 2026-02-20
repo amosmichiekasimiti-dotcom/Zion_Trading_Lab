@@ -3,131 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Zion Trading Lab | AI Engine</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>Zion AI Lab | Pro Edition</title>
     <style>
-        :root { --red: #ff444f; --dark: #0e0e13; --green: #4caf50; --gold: #ffd700; --blue: #00f2fe; --panel: #1a1a24; }
-        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--dark); color: white; margin: 0; padding: 10px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        :root { --red: #ff444f; --dark: #0a0a0f; --green: #4caf50; --gold: #ffd700; --blue: #00f2fe; --panel: #151520; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--dark); color: white; margin: 0; padding: 10px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        /* Header & Status */
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 5px 10px; margin-bottom: 10px; }
-        .status-dot { height: 8px; width: 8px; background-color: #bbb; border-radius: 50%; display: inline-block; margin-right: 5px; }
-        .connected .status-dot { background-color: var(--green); box-shadow: 0 0 8px var(--green); }
-        
-        /* Navigation */
-        .nav-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 15px; }
-        .nav-btn { background: var(--panel); border: 1px solid #333; color: #888; padding: 12px 5px; border-radius: 8px; font-size: 11px; font-weight: bold; cursor: pointer; text-align: center; transition: 0.3s; }
+        /* Expanded Navigation */
+        .nav-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
+        .nav-scroll::-webkit-scrollbar { display: none; }
+        .nav-btn { background: var(--panel); border: 1px solid #333; color: #888; padding: 10px 15px; border-radius: 8px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap; transition: 0.3s; }
         .nav-btn.active { background: var(--red); color: white; border-color: var(--red); }
 
-        /* Market Table */
-        .table-container { background: var(--panel); border-radius: 12px; flex-grow: 1; overflow-y: auto; border: 1px solid #222; }
+        .table-container { background: var(--panel); border-radius: 12px; flex-grow: 1; overflow-y: auto; border: 1px solid #222; margin-top: 5px; }
         table { width: 100%; border-collapse: collapse; }
-        th { position: sticky; top: 0; background: #252533; padding: 12px; text-align: left; font-size: 12px; color: #aaa; }
-        td { padding: 15px 12px; border-bottom: 1px solid #222; font-size: 14px; }
-        .btn-analyze { background: var(--blue); color: #000; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; }
-
-        /* Analysis Overlay */
+        th { position: sticky; top: 0; background: #1c1c2b; padding: 12px; text-align: left; font-size: 11px; color: #aaa; z-index: 10; }
+        td { padding: 12px; border-bottom: 1px solid #222; font-size: 13px; }
+        
+        /* Analysis Overlay Styles */
         #analysis-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--dark); z-index: 1000; padding: 15px; box-sizing: border-box; overflow-y: auto; }
-        .price-card { background: #151520; padding: 20px; border-radius: 15px; text-align: center; border: 1px solid var(--blue); margin-bottom: 15px; }
-        #live-price { font-size: 36px; font-weight: bold; font-family: monospace; }
+        .price-card { background: #151520; padding: 15px; border-radius: 12px; text-align: center; border: 1px solid var(--blue); margin-bottom: 10px; }
+        #live-price { font-size: 32px; font-weight: bold; font-family: monospace; }
         
-        .ai-card { background: linear-gradient(145deg, #1a1a2e, #16213e); border: 1px solid var(--gold); border-radius: 15px; padding: 20px; margin-bottom: 15px; }
-        .signal-text { font-size: 28px; font-weight: 900; letter-spacing: 2px; }
-        .rise { color: var(--green); }
-        .fall { color: var(--red); }
-        
-        .close-btn { background: #333; color: white; border: none; padding: 10px 20px; border-radius: 20px; width: 100%; font-weight: bold; margin-top: 20px; }
+        /* Digit Stats Bar Chart */
+        .digit-stat-container { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; height: 60px; margin: 15px 0; align-items: end; }
+        .digit-bar-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .digit-bar { width: 100%; background: var(--blue); border-radius: 2px; transition: height 0.3s ease; min-height: 2px; opacity: 0.7; }
+        .digit-label { font-size: 10px; color: #888; font-weight: bold; }
+        .high-freq { background: var(--gold) !important; opacity: 1; }
+
+        .btn-analyze { background: var(--blue); color: #000; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        .close-btn { background: #333; color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: bold; margin-top: 15px; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h2 style="margin:0; color: var(--gold); font-size: 18px;">🤖 Zion AI Lab</h2>
-        <div id="connection-status" class="status-container"><span class="status-dot"></span><small id="status-text">Connecting...</small></div>
+    <div style="display:flex; justify-content:space-between; align-items:center; padding: 5px 10px;">
+        <h2 style="margin:0; color: var(--gold); font-size: 18px;">🤖 ZION PRO LAB</h2>
+        <small id="status-text" style="color:var(--green)">● System Ready</small>
     </div>
 
-    <div class="nav-grid">
-        <button class="nav-btn active" onclick="filterMarkets('volatility', this)">VOLATILITY</button>
+    <div class="nav-scroll">
+        <button class="nav-btn active" onclick="filterMarkets('synthetic', this)">VOLATILITY</button>
         <button class="nav-btn" onclick="filterMarkets('crashboom', this)">CRASH/BOOM</button>
-        <button class="nav-btn" onclick="filterMarkets('jump', this)">JUMP</button>
+        <button class="nav-btn" onclick="filterMarkets('step', this)">STEP/RANGE</button>
+        <button class="nav-btn" onclick="filterMarkets('dex', this)">DEX/DRIFT</button>
+        <button class="nav-btn" onclick="filterMarkets('forex', this)">FOREX</button>
+        <button class="nav-btn" onclick="filterMarkets('cryptocurrency', this)">CRYPTO</button>
     </div>
 
     <div class="table-container">
         <table>
-            <thead>
-                <tr>
-                    <th>Market</th>
-                    <th>Price</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody id="market-list">
-                <tr><td colspan="3" style="text-align:center; padding:40px; color:#666;">Waiting for data...</td></tr>
-            </tbody>
+            <thead><tr><th>Asset Name</th><th>Type</th><th>Action</th></tr></thead>
+            <tbody id="market-list"></tbody>
         </table>
     </div>
 
     <div id="analysis-overlay">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h3 id="target-name" style="margin:0;">Asset Name</h3>
-            <span id="target-symbol" style="color:var(--blue); font-family:monospace;">SYMBOL</span>
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+            <h3 id="target-name" style="margin:0; color:var(--gold);">Asset Analysis</h3>
+            <span id="target-symbol" style="color:#666;">---</span>
         </div>
 
         <div class="price-card">
             <div id="live-price">0.0000</div>
-            <small style="color:#888;">LIVE MARKET FEED</small>
+            <div id="ai-signal" style="font-weight:bold; margin-top:10px; font-size:18px;">WAITING FOR TICKS...</div>
         </div>
 
-        <div class="ai-card">
-            <div style="color:#aaa; font-size:12px; margin-bottom:10px;">AI PREDICTION ENGINE</div>
-            <div id="ai-signal" class="signal-text">ANALYZING...</div>
-            <div style="margin-top:10px; display:flex; justify-content:space-between;">
-                <span>Confidence: <b id="ai-conf" style="color:var(--gold);">0%</b></span>
-                <span>Trend: <b id="ai-trend">Neutral</b></span>
-            </div>
+        <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;">
+            <div style="font-size: 10px; color: #aaa; text-transform: uppercase;">Last Digit Frequency (50 Ticks)</div>
+            <div class="digit-stat-container" id="digit-stats">
+                </div>
         </div>
 
-        <div style="height: 300px; border-radius: 12px; overflow: hidden; background: #000;">
-            <iframe id="tradingview-widget" width="100%" height="100%" frameborder="0"></iframe>
-        </div>
-
-        <button class="close-btn" onclick="closeAnalysis()">BACK TO LIST</button>
+        <div id="chart-container" style="height: 300px; background: #000; border-radius: 12px; margin-top:15px;"></div>
+        <button class="close-btn" onclick="closeAnalysis()">CLOSE ENGINE</button>
     </div>
 
 <script>
-    // Critical Configuration from your screenshots
-    const APP_ID = 126973; 
+    const APP_ID = 126973;
     const ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`);
-    
     let allSymbols = [];
     let activeTickStream = null;
-    let priceHistory = [];
+    let digitHistory = [];
+    const MAX_DIGITS = 50;
 
-    ws.onopen = () => {
-        document.getElementById('connection-status').classList.add('connected');
-        document.getElementById('status-text').innerText = "Live";
-        // Fetch symbols
-        ws.send(JSON.stringify({ active_symbols: "brief", product_type: "basic" }));
-    };
+    ws.onopen = () => ws.send(JSON.stringify({ active_symbols: "brief", product_type: "basic" }));
 
     ws.onmessage = (msg) => {
         const data = JSON.parse(msg.data);
-
         if (data.active_symbols) {
             allSymbols = data.active_symbols;
-            filterMarkets('volatility');
+            filterMarkets('synthetic'); 
         }
-
-        if (data.tick) {
-            updateLiveAnalysis(data.tick);
-        }
-
-        if (data.error) {
-            console.error("Deriv API Error:", data.error.message);
-            if(data.error.code === 'InvalidAppID') {
-                alert("App ID Error: Ensure 'https://zion-trading-lab-ddmu.vercel.app/' is added to your Deriv Dashboard Redirect URLs.");
-            }
-        }
+        if (data.tick) handleTick(data.tick);
     };
 
     function filterMarkets(type, btn) {
@@ -135,24 +103,23 @@
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
         }
-
         const tbody = document.getElementById('market-list');
         tbody.innerHTML = '';
 
         const filtered = allSymbols.filter(s => {
-            if (type === 'volatility') return s.market === 'synthetic_index' && !s.display_name.includes('Crash') && !s.display_name.includes('Boom');
+            if (type === 'synthetic') return s.market === 'synthetic_index' && !s.display_name.includes('Crash') && !s.display_name.includes('Boom') && !s.display_name.includes('Step') && !s.display_name.includes('Range');
             if (type === 'crashboom') return s.display_name.includes('Crash') || s.display_name.includes('Boom');
-            if (type === 'jump') return s.display_name.includes('Jump');
-            return false;
+            if (type === 'step') return s.display_name.includes('Step') || s.display_name.includes('Range');
+            if (type === 'dex') return s.display_name.includes('DEX') || s.display_name.includes('Drift');
+            return s.market === type;
         });
 
         filtered.forEach(s => {
-            const row = `<tr>
+            tbody.innerHTML += `<tr>
                 <td>${s.display_name}</td>
-                <td style="color:var(--blue)">Live</td>
+                <td style="color:#666; font-size:10px;">${s.symbol.toUpperCase()}</td>
                 <td><button class="btn-analyze" onclick="openAnalysis('${s.symbol}', '${s.display_name}')">Analyze</button></td>
             </tr>`;
-            tbody.innerHTML += row;
         });
     }
 
@@ -160,61 +127,58 @@
         document.getElementById('target-name').innerText = name;
         document.getElementById('target-symbol').innerText = symbol;
         document.getElementById('analysis-overlay').style.display = 'block';
+        document.getElementById('chart-container').innerHTML = `<iframe src="https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=dark" width="100%" height="100%" frameborder="0"></iframe>`;
         
-        // Reset analysis
-        priceHistory = [];
-        document.getElementById('ai-signal').innerText = "CALCULATING...";
+        digitHistory = [];
+        buildDigitUI();
         
-        // Load Chart
-        document.getElementById('tradingview-widget').src = `https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=dark`;
-
-        // Subscribe to ticks
         if (activeTickStream) ws.send(JSON.stringify({ forget: activeTickStream }));
         ws.send(JSON.stringify({ ticks: symbol, subscribe: 1 }));
     }
 
-    function updateLiveAnalysis(tick) {
+    function handleTick(tick) {
         activeTickStream = tick.id;
         const price = tick.quote;
-        const priceEl = document.getElementById('live-price');
+        const priceStr = price.toFixed(tick.pip_size || 2);
+        const lastDigit = parseInt(priceStr.slice(-1));
+
+        document.getElementById('live-price').innerText = priceStr;
         
-        // Price animation
-        const oldPrice = parseFloat(priceEl.innerText);
-        priceEl.innerText = price.toFixed(tick.pip_size || 2);
-        priceEl.style.color = price >= oldPrice ? 'var(--green)' : 'var(--red)';
+        // Update Digit Analysis
+        digitHistory.push(lastDigit);
+        if(digitHistory.length > MAX_DIGITS) digitHistory.shift();
+        updateDigitBars();
 
-        // Simple AI Logic
-        priceHistory.push(price);
-        if (priceHistory.length > 20) priceHistory.shift();
+        // AI Signal Logic (Simplified Trend)
+        const sig = document.getElementById('ai-signal');
+        const diff = price - (digitHistory[digitHistory.length - 2] || price);
+        if (diff > 0) { sig.innerText = "BULLISH MOMENTUM"; sig.style.color = "var(--green)"; }
+        else { sig.innerText = "BEARISH MOMENTUM"; sig.style.color = "var(--red)"; }
+    }
 
-        if (priceHistory.length >= 10) {
-            let rises = 0;
-            for(let i=1; i < priceHistory.length; i++) {
-                if(priceHistory[i] > priceHistory[i-1]) rises++;
-            }
-            
-            const ratio = rises / (priceHistory.length - 1);
-            const signalEl = document.getElementById('ai-signal');
-            const trendEl = document.getElementById('ai-trend');
-            
-            if (ratio > 0.6) {
-                signalEl.innerText = "STRONG BUY";
-                signalEl.className = "signal-text rise";
-                trendEl.innerText = "Bullish";
-                trendEl.style.color = "var(--green)";
-            } else if (ratio < 0.4) {
-                signalEl.innerText = "STRONG SELL";
-                signalEl.className = "signal-text fall";
-                trendEl.innerText = "Bearish";
-                trendEl.style.color = "var(--red)";
-            } else {
-                signalEl.innerText = "NEUTRAL";
-                signalEl.className = "signal-text";
-                trendEl.innerText = "Sideways";
-                trendEl.style.color = "#aaa";
-            }
-            document.getElementById('ai-conf').innerText = Math.floor(Math.abs(0.5 - ratio) * 200) + "%";
+    function buildDigitUI() {
+        const container = document.getElementById('digit-stats');
+        container.innerHTML = '';
+        for(let i=0; i<=9; i++) {
+            container.innerHTML += `
+                <div class="digit-bar-wrap">
+                    <div id="bar-${i}" class="digit-bar" style="height: 0px;"></div>
+                    <div class="digit-label">${i}</div>
+                </div>`;
         }
+    }
+
+    function updateDigitBars() {
+        const counts = new Array(10).fill(0);
+        digitHistory.forEach(d => counts[d]++);
+        const max = Math.max(...counts);
+
+        counts.forEach((count, i) => {
+            const height = digitHistory.length ? (count / digitHistory.length) * 100 : 0;
+            const bar = document.getElementById(`bar-${i}`);
+            bar.style.height = (height * 2) + "px"; // Scale for visibility
+            bar.className = (count === max && max > 0) ? "digit-bar high-freq" : "digit-bar";
+        });
     }
 
     function closeAnalysis() {
