@@ -3,226 +3,214 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Zion AI | Final Sniper Terminal</title>
+    <title>Zion Ultimate | Radar & Sniper</title>
     <style>
         :root { --red: #ff444f; --dark: #050508; --green: #00ff88; --gold: #ffd700; --blue: #00f2fe; --panel: #111118; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--dark); color: white; margin: 0; padding: 10px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--dark); color: white; margin: 0; padding: 10px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        /* Dashboard Stats */
+        /* Stats & Navigation */
         .dash-header { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
-        .box { background: var(--panel); padding: 10px; border-radius: 10px; border: 1px solid #222; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .lbl { font-size: 8px; color: #888; text-transform: uppercase; margin-bottom: 3px; letter-spacing: 1px; }
-        .val { font-size: 16px; font-weight: bold; font-family: monospace; color: var(--blue); }
+        .box { background: var(--panel); padding: 10px; border-radius: 10px; border: 1px solid #222; text-align: center; }
+        .lbl { font-size: 8px; color: #888; text-transform: uppercase; }
+        .val { font-size: 16px; font-weight: bold; color: var(--blue); font-family: monospace; }
 
-        /* API & Control Panel */
-        .control-panel { background: var(--panel); padding: 12px; border-radius: 12px; border: 1px solid #333; margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; }
-        .row { display: flex; gap: 10px; }
-        input { background: #000; border: 1px solid #444; color: var(--gold); padding: 10px; border-radius: 6px; flex-grow: 1; outline: none; font-size: 13px; font-family: monospace; }
-        .btn-start { background: var(--green); border: none; padding: 0 20px; border-radius: 6px; font-weight: bold; cursor: pointer; color: #000; transition: 0.3s; }
-        .btn-start:hover { background: #00cc6e; transform: scale(1.02); }
+        .nav-tabs { display: flex; gap: 5px; margin-bottom: 10px; background: #1a1a24; padding: 5px; border-radius: 8px; }
+        .tab-btn { flex: 1; padding: 10px; border: none; background: none; color: #888; border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: bold; }
+        .tab-btn.active { background: var(--red); color: white; }
 
-        /* The Global Radar Matrix */
-        .matrix-container { flex-grow: 1; background: var(--panel); border-radius: 12px; border: 1px solid #222; overflow-y: auto; padding: 5px; }
+        /* Market Browser */
+        .market-browser { flex-grow: 1; overflow-y: auto; background: var(--panel); border-radius: 12px; border: 1px solid #222; }
         table { width: 100%; border-collapse: collapse; }
-        th { font-size: 10px; color: #555; text-align: left; padding: 8px; border-bottom: 1px solid #222; }
-        td { padding: 12px 8px; border-bottom: 1px solid #1a1a24; font-size: 12px; }
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
-        .pulse-green { background: var(--green); animation: pulse 1s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+        td { padding: 12px; border-bottom: 1px solid #1a1a24; font-size: 13px; }
+        .btn-action { background: var(--blue); color: #000; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; font-size: 10px; cursor: pointer; }
 
-        /* Pop-up Notification */
-        #snipe-alert { position: fixed; top: -100px; left: 10px; right: 10px; background: var(--gold); color: #000; padding: 15px; border-radius: 10px; font-weight: bold; text-align: center; z-index: 1000; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .alert-show { top: 20px !important; }
+        /* Sniper Overlay */
+        #sniper-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--dark); z-index: 1000; display: none; flex-direction: column; padding: 15px; box-sizing: border-box; }
+        .overlay-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .price-big { font-size: 40px; text-align: center; font-family: monospace; color: var(--blue); margin: 15px 0; font-weight: bold; }
 
-        /* Terminal Logs */
-        .terminal { height: 70px; background: #000; border-top: 2px solid #222; color: var(--green); font-family: monospace; font-size: 10px; padding: 8px; overflow-y: auto; }
+        /* Logic Display */
+        .logic-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .logic-card { background: #1a1a24; padding: 10px; border-radius: 8px; border: 1px solid #333; }
+        .cond { display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 4px; font-family: monospace; }
+        .pass { color: var(--green); } .fail { color: #444; }
+
+        .buy-btn { width: 100%; padding: 18px; border-radius: 10px; border: none; font-size: 16px; font-weight: 900; cursor: pointer; text-transform: uppercase; background: #222; color: #444; }
+        .buy-btn.active { background: var(--gold); color: #000; box-shadow: 0 0 20px var(--gold); }
+
+        /* Footer Log */
+        .terminal { height: 60px; background: #000; color: var(--green); font-family: monospace; font-size: 10px; padding: 8px; overflow-y: auto; border-top: 2px solid #222; }
     </style>
 </head>
 <body>
 
-<div id="snipe-alert">🚀 LEGIT SIGNAL DETECTED! EXECUTING...</div>
-
 <div class="dash-header">
-    <div class="box"><div class="lbl">Account Balance</div><div id="ui-bal" class="val">$0.00</div></div>
-    <div class="box"><div class="lbl">Session P/L</div><div id="ui-pl" class="val">$0.00</div></div>
-    <div class="box"><div class="lbl">Next Stake</div><div id="ui-stake" class="val">$1.60</div></div>
+    <div class="box"><div class="lbl">Balance</div><div id="acc-bal" class="val">$0.00</div></div>
+    <div class="box"><div class="lbl">Session P/L</div><div id="acc-pl" class="val">$0.00</div></div>
+    <div class="box"><div class="lbl">Next Stake</div><div id="acc-stake" class="val">$1.60</div></div>
 </div>
 
-<div class="control-panel">
-    <div class="row">
-        <input type="password" id="api-token" placeholder="Enter Deriv API Token (Trade/Read)">
-        <button class="btn-start" onclick="igniteSystem()">IGNITE RADAR</button>
+<div style="background:var(--panel); padding:10px; border-radius:10px; margin-bottom:10px; border:1px solid #333;">
+    <input type="password" id="api-token" placeholder="Paste API Token" style="width:70%; background:#000; border:1px solid #444; color:var(--gold); padding:8px; border-radius:5px;">
+    <button onclick="initAccount()" style="width:25%; background:var(--green); border:none; padding:8px; border-radius:5px; font-weight:bold; cursor:pointer;">CONNECT</button>
+</div>
+
+<div class="nav-tabs">
+    <button class="tab-btn active" onclick="showView('radar', this)">GLOBAL RADAR</button>
+    <button class="tab-btn" onclick="showView('manual', this)">MARKET LIST</button>
+</div>
+
+<div id="view-radar" class="market-browser">
+    <table style="width:100%"><tbody id="radar-body"></tbody></table>
+</div>
+
+<div id="view-manual" class="market-browser" style="display:none;">
+    <table style="width:100%"><tbody id="manual-body"></tbody></table>
+</div>
+
+<div id="sniper-overlay">
+    <div class="overlay-header">
+        <h3 id="target-title" style="margin:0; color:var(--gold);">Market Sniper</h3>
+        <button onclick="closeSniper()" style="background:#333; color:white; border:none; padding:5px 12px; border-radius:4px;">BACK</button>
     </div>
-    <div class="row" style="justify-content: space-between; font-size: 10px; color: #888; padding: 0 5px;">
-        <span>Target: <input type="number" id="target-profit" value="10.00" style="width:40px; border:none; background:none; color:var(--green); font-weight:bold;"></span>
-        <span>Stop: <input type="number" id="stop-loss" value="20.00" style="width:40px; border:none; background:none; color:var(--red); font-weight:bold;"></span>
-        <span id="sys-status" style="color:var(--red)">System: Standby</span>
+    <div class="price-big" id="live-tick">0.0000</div>
+    <div class="logic-grid">
+        <div class="logic-card">
+            <div style="font-size:10px; color:var(--gold); margin-bottom:5px;">ZONE LOCK (O4)</div>
+            <div id="logic-list"></div>
+        </div>
+        <div class="logic-card" style="display:flex; align-items:center; justify-content:center; font-size:10px; color:#555;">
+            STRATEGY: BANDWAGON v2
+        </div>
     </div>
+    <div style="background:var(--panel); padding:15px; border-radius:10px; border:1px solid #333;">
+        <button id="exec-btn" class="buy-btn" disabled>Scanning Market...</button>
+    </div>
+    <div id="tv-chart" style="flex-grow:1; margin-top:10px; border-radius:8px; overflow:hidden;"></div>
 </div>
 
-<div class="matrix-container">
-    <table>
-        <thead>
-            <tr><th>MARKET ASSET</th><th>SIGNAL SCORE</th><th>TREND STATUS</th></tr>
-        </thead>
-        <tbody id="radar-rows">
-            </tbody>
-    </table>
-</div>
-
-<div class="terminal" id="term-log">>> Zion Master AI v3.0 initialized. Awaiting ignition...</div>
+<div class="terminal" id="sys-log">>> Zion System Loaded. Please connect API...</div>
 
 <script>
-    let wsMkt, wsTrade;
-    let marketStorage = {};
-    let isLocked = false;
-    let baseStake = 1.60;
-    let currentStake = 1.60;
-    let sessionPL = 0;
+    let wsMkt, wsAcc, activeSym = '', allAssets = [], marketData = {};
+    let sessionPL = 0, currentStake = 1.60, isTrading = false;
 
-    function log(m) {
-        const t = document.getElementById('term-log');
-        t.innerHTML += `<br>> ${m}`;
-        t.scrollTop = t.scrollHeight;
-    }
+    function log(m) { const l = document.getElementById('sys-log'); l.innerHTML += `<br>> ${m}`; l.scrollTop = l.scrollHeight; }
 
-    function igniteSystem() {
+    function initAccount() {
         const token = document.getElementById('api-token').value;
-        if(!token) return alert("Please enter your API Token first.");
-        
-        log("Connecting to Deriv Secure Gateway...");
-        wsTrade = new WebSocket('wss://ws.derivws.com/websockets/v3?app_id=126973');
-        
-        wsTrade.onopen = () => wsTrade.send(JSON.stringify({ authorize: token }));
-        
-        wsTrade.onmessage = (e) => {
+        wsAcc = new WebSocket('wss://ws.derivws.com/websockets/v3?app_id=126973');
+        wsAcc.onopen = () => wsAcc.send(JSON.stringify({ authorize: token }));
+        wsAcc.onmessage = (e) => {
             const d = JSON.parse(e.data);
             if(d.authorize) {
-                document.getElementById('ui-bal').innerText = "$" + d.authorize.balance;
-                document.getElementById('sys-status').innerText = "System: Active Scan";
-                document.getElementById('sys-status').style.color = "var(--green)";
-                wsTrade.send(JSON.stringify({ balance: 1, subscribe: 1 }));
-                wsTrade.send(JSON.stringify({ proposal_open_contract: 1, subscribe: 1 }));
-                startGlobalRadar();
+                document.getElementById('acc-bal').innerText = "$" + d.authorize.balance;
+                wsAcc.send(JSON.stringify({ balance: 1, subscribe: 1 }));
+                wsAcc.send(JSON.stringify({ proposal_open_contract: 1, subscribe: 1 }));
+                fetchMarkets();
             }
-            if(d.balance) document.getElementById('ui-bal').innerText = "$" + d.balance.balance;
-            if(d.proposal_open_contract) handleTradeResolution(d.proposal_open_contract);
+            if(d.balance) document.getElementById('acc-bal').innerText = "$" + d.balance.balance;
+            if(d.proposal_open_contract) handleContract(d.proposal_open_contract);
         };
     }
 
-    function startGlobalRadar() {
+    function fetchMarkets() {
         wsMkt = new WebSocket('wss://ws.derivws.com/websockets/v3?app_id=126973');
         wsMkt.onopen = () => wsMkt.send(JSON.stringify({ active_symbols: "brief", product_type: "basic" }));
-        
         wsMkt.onmessage = (e) => {
             const d = JSON.parse(e.data);
             if(d.active_symbols) {
-                const synthetics = d.active_symbols.filter(s => s.market === 'synthetic_index').slice(0, 12);
-                synthetics.forEach(s => {
-                    marketStorage[s.symbol] = { digits: [], prices: [], name: s.display_name };
+                allAssets = d.active_symbols.filter(s => s.market === 'synthetic_index');
+                renderLists();
+                allAssets.forEach(s => {
+                    marketData[s.symbol] = { digits: [], name: s.display_name, prices: [] };
                     wsMkt.send(JSON.stringify({ ticks: s.symbol, subscribe: 1 }));
                 });
-                log(`Radar tracking ${synthetics.length} assets in parallel.`);
             }
             if(d.tick) processTick(d.tick);
         };
     }
 
-    function processTick(t) {
-        const s = t.symbol;
-        const p = t.quote;
-        const d = parseInt(p.toString().slice(-1));
-        const data = marketStorage[s];
-
-        data.digits.push(d);
-        data.prices.push(p);
-        if(data.digits.length > 20) { data.digits.shift(); data.prices.shift(); }
-
-        renderRadar();
-
-        // THE SNIPER LOGIC (HARD-CODED FILTERS)
-        const last10 = data.digits.slice(-10);
-        const vacuum = !last10.includes(0) && !last10.includes(1);
-        const density = last10.filter(v => v > 4).length >= 8;
-        const trigger = d >= 8;
-
-        if(vacuum && density && trigger && !isLocked) {
-            triggerSnipe(s, data.name);
-        }
+    function renderLists() {
+        const manual = document.getElementById('manual-body');
+        manual.innerHTML = allAssets.map(s => `<tr><td>${s.display_name}</td><td style="text-align:right;"><button class="btn-action" onclick="openSniper('${s.symbol}','${s.display_name}')">SNIPE</button></td></tr>`).join('');
     }
 
-    function renderRadar() {
-        const tbody = document.getElementById('radar-rows');
-        tbody.innerHTML = Object.keys(marketStorage).map(key => {
-            const m = marketStorage[key];
-            const score = m.digits.slice(-10).filter(x => x > 4).length;
-            const trend = m.prices[m.prices.length-1] > m.prices[0] ? 'BULLISH' : 'BEARISH';
-            return `<tr>
-                <td><div class="status-dot ${score >= 8 ? 'pulse-green' : ''}"></div> ${m.name}</td>
-                <td style="color:${score >= 8 ? 'var(--gold)' : '#555'}">${score}/10 GINO</td>
-                <td style="color:${trend === 'BULLISH' ? 'var(--green)' : 'var(--red)'}; font-size:10px;">${trend}</td>
-            </tr>`;
+    function processTick(t) {
+        const data = marketData[t.symbol];
+        if(!data) return;
+        const digit = parseInt(t.quote.toString().slice(-1));
+        data.digits.push(digit); data.prices.push(t.quote);
+        if(data.digits.length > 20) { data.digits.shift(); data.prices.shift(); }
+
+        if(t.symbol === activeSym) {
+            document.getElementById('live-tick').innerText = t.quote;
+            updateSniperLogic(data);
+        }
+        updateRadarUI();
+    }
+
+    function updateRadarUI() {
+        const radar = document.getElementById('radar-body');
+        radar.innerHTML = Object.keys(marketData).map(k => {
+            const d = marketData[k];
+            const score = d.digits.slice(-10).filter(x => x > 4).length;
+            return `<tr><td>${d.name}</td><td style="color:${score >= 8 ? 'var(--green)' : '#555'}">${score}/10 GINO</td><td style="text-align:right;"><button class="btn-action" onclick="openSniper('${k}','${d.name}')">VIEW</button></td></tr>`;
         }).join('');
     }
 
-    function triggerSnipe(sym, name) {
-        isLocked = true;
-        const alert = document.getElementById('snipe-alert');
-        alert.innerText = `🚀 AUTO-SNIPE: ${name.toUpperCase()} ($${currentStake})`;
-        alert.classList.add('alert-show');
+    function openSniper(sym, name) {
+        activeSym = sym;
+        document.getElementById('target-title').innerText = name;
+        document.getElementById('sniper-overlay').style.display = 'flex';
+        document.getElementById('tv-chart').innerHTML = `<iframe src="https://tradingview.binary.com/v2/main.php?symbol=${sym}&theme=dark" width="100%" height="100%" frameborder="0"></iframe>`;
+    }
 
-        wsTrade.send(JSON.stringify({
-            buy: "1",
-            price: currentStake,
-            parameters: {
-                amount: currentStake,
-                basis: "stake",
-                contract_type: "CALL",
-                currency: "USD",
-                duration: 1,
-                duration_unit: "t",
-                symbol: sym
-            }
+    function updateSniperLogic(data) {
+        const last10 = data.digits.slice(-10);
+        const conds = [
+            { n: "VACUUM (0,1 COLD)", v: !last10.includes(0) && !last10.includes(1) },
+            { n: "ZONE 80% (O4)", v: last10.filter(x => x > 4).length >= 8 },
+            { n: "TICK VELOCITY", v: Math.abs(data.prices[data.prices.length-1] - data.prices[data.prices.length-2]) > 0.0001 },
+            { n: "SNIPER DIGIT", v: data.digits[data.digits.length-1] >= 8 }
+        ];
+        const list = document.getElementById('logic-list');
+        list.innerHTML = conds.map(c => `<div class="cond"><span>${c.n}</span><span class="${c.v?'pass':'fail'}">${c.v?'PASS':'FAIL'}</span></div>`).join('');
+        const btn = document.getElementById('exec-btn');
+        if(conds.every(c => c.v) && !isTrading) {
+            btn.disabled = false; btn.className = "buy-btn active"; btn.innerText = "GINO READY: SNIPE";
+        } else {
+            btn.disabled = true; btn.className = "buy-btn"; btn.innerText = "WAITING FOR SIGNAL...";
+        }
+    }
+
+    document.getElementById('exec-btn').onclick = () => {
+        isTrading = true;
+        wsAcc.send(JSON.stringify({
+            buy: "1", price: currentStake,
+            parameters: { amount: currentStake, basis: "stake", contract_type: "CALL", currency: "USD", duration: 1, duration_unit: "t", symbol: activeSym }
         }));
+    };
 
-        setTimeout(() => alert.classList.remove('alert-show'), 3500);
-    }
-
-    function handleTradeResolution(c) {
+    function handleContract(c) {
         if(c.is_sold) {
-            const profit = parseFloat(c.profit);
-            sessionPL += profit;
-            
-            document.getElementById('ui-pl').innerText = "$" + sessionPL.toFixed(2);
-            document.getElementById('ui-pl').style.color = sessionPL >= 0 ? 'var(--green)' : 'var(--red)';
-            
-            if(profit > 0) {
-                log(`WIN: +$${profit.toFixed(2)} | Resetting stake.`);
-                currentStake = baseStake;
-            } else {
-                currentStake = (currentStake * 2.1).toFixed(2);
-                log(`LOSS: -$${Math.abs(profit).toFixed(2)} | Martingale: $${currentStake}`);
-            }
-            
-            document.getElementById('ui-stake').innerText = "$" + currentStake;
-            checkGoals();
-            isLocked = false;
+            sessionPL += c.profit;
+            document.getElementById('acc-pl').innerText = "$" + sessionPL.toFixed(2);
+            if(c.profit > 0) { currentStake = 1.60; log("WIN! Resetting stake."); }
+            else { currentStake = (currentStake * 2.1).toFixed(2); log("LOSS. Martingale applied."); }
+            document.getElementById('acc-stake').innerText = "$" + currentStake;
+            isTrading = false;
         }
     }
 
-    function checkGoals() {
-        const tp = parseFloat(document.getElementById('target-profit').value);
-        const sl = parseFloat(document.getElementById('stop-loss').value);
-        
-        if(sessionPL >= tp) {
-            alert("TARGET PROFIT REACHED! Bot Stopping.");
-            location.reload();
-        }
-        if(sessionPL <= (sl * -1)) {
-            alert("STOP LOSS HIT. Protecting remaining balance.");
-            location.reload();
-        }
+    function showView(view, btn) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('view-radar').style.display = view === 'radar' ? 'block' : 'none';
+        document.getElementById('view-manual').style.display = view === 'manual' ? 'block' : 'none';
     }
+
+    function closeSniper() { document.getElementById('sniper-overlay').style.display = 'none'; activeSym = ''; }
 </script>
 </body>
 </html>
