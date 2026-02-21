@@ -12,12 +12,210 @@
     --gold: #ffd700; 
     --blue: #00f2fe; 
     --panel: #151520; 
+    --purple: #9c27b0;
 }
 body { font-family: 'Segoe UI', sans-serif; background: var(--dark); color: white; margin: 0; padding: 10px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
 .nav-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
 .nav-btn { background: var(--panel); border: 1px solid #333; color: #888; padding: 10px 15px; border-radius: 8px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap; transition: 0.3s; }
 .nav-btn.active { background: var(--red); color: white; border-color: var(--red); }
+
+/* XML Bots Section */
+.bots-section {
+    background: var(--panel);
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 10px;
+    border: 1px solid #333;
+}
+
+.bots-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.bots-header i {
+    color: var(--gold);
+    font-size: 18px;
+}
+
+.bots-header h3 {
+    margin: 0;
+    color: white;
+    font-size: 14px;
+    flex: 1;
+}
+
+.bots-toggle {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid #333;
+    color: #888;
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.bots-toggle:hover {
+    background: var(--blue);
+    color: #000;
+}
+
+.bots-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 5px;
+}
+
+.bot-card {
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    padding: 12px;
+    border: 1px solid #333;
+    cursor: pointer;
+    transition: 0.3s;
+    position: relative;
+}
+
+.bot-card:hover {
+    border-color: var(--gold);
+    transform: translateY(-2px);
+}
+
+.bot-card.selected {
+    border-color: var(--green);
+    background: rgba(0,255,136,0.1);
+}
+
+.bot-name {
+    font-weight: bold;
+    color: var(--gold);
+    margin-bottom: 5px;
+    font-size: 12px;
+}
+
+.bot-desc {
+    font-size: 9px;
+    color: #888;
+    margin-bottom: 5px;
+}
+
+.bot-type {
+    font-size: 8px;
+    color: var(--blue);
+    text-transform: uppercase;
+}
+
+.bot-badge {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: var(--purple);
+    color: white;
+    font-size: 8px;
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
+/* API Token Section */
+.api-section {
+    background: var(--panel);
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 10px;
+    border: 1px solid #333;
+}
+
+.api-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.api-header i {
+    color: var(--blue);
+    font-size: 16px;
+}
+
+.api-header span {
+    color: white;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.api-input-container {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.api-input {
+    flex: 1;
+    background: #1a1a24;
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 10px 12px;
+    color: white;
+    font-family: monospace;
+    font-size: 12px;
+}
+
+.api-input:focus {
+    outline: none;
+    border-color: var(--gold);
+}
+
+.api-save-btn {
+    background: var(--blue);
+    color: #000;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 11px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.api-save-btn:hover {
+    opacity: 0.9;
+    transform: scale(1.02);
+}
+
+.api-status {
+    font-size: 10px;
+    color: var(--green);
+    margin-top: 5px;
+    min-height: 15px;
+}
+
+/* XML Preview */
+.xml-preview {
+    background: #1a1a24;
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 15px;
+    font-family: monospace;
+    font-size: 10px;
+    color: #aaa;
+    border: 1px solid #333;
+    max-height: 150px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    display: none;
+}
+
+.xml-preview.show {
+    display: block;
+}
 
 .table-container { background: var(--panel); border-radius: 12px; flex-grow: 1; overflow-y: auto; border: 1px solid #222; margin-top: 5px; }
 table { width: 100%; border-collapse: collapse; }
@@ -125,6 +323,34 @@ td { padding: 12px; border-bottom: 1px solid #222; font-size: 13px; }
     <button class="nav-btn" onclick="filterMarkets('indices', this)">INDICES</button>
 </div>
 
+<!-- XML Bots Section - NEW -->
+<div class="bots-section">
+    <div class="bots-header">
+        <i class="fas fa-robot"></i>
+        <h3>XML Trading Bots</h3>
+        <button class="bots-toggle" onclick="toggleBots()">Hide</button>
+    </div>
+    <div id="bots-container">
+        <div class="bots-grid" id="bots-grid">
+            <!-- Bot cards will be populated by JavaScript -->
+        </div>
+        <div id="xml-preview" class="xml-preview"></div>
+    </div>
+</div>
+
+<!-- API Token Section - NEW -->
+<div class="api-section">
+    <div class="api-header">
+        <i class="fas fa-key"></i>
+        <span>API Token</span>
+    </div>
+    <div class="api-input-container">
+        <input type="password" id="api-token" class="api-input" placeholder="Enter your Deriv API token" value="">
+        <button class="api-save-btn" onclick="saveApiToken()">Save</button>
+    </div>
+    <div id="api-status" class="api-status"></div>
+</div>
+
 <div class="table-container">
     <table>
         <thead><tr><th>Asset Name</th><th>Symbol</th><th>Market</th><th>Action</th></tr></thead>
@@ -187,6 +413,136 @@ let digitHistory = [];
 let priceHistory = [];
 const MAX_DIGITS = 1000;
 const cursor = document.getElementById("digit-cursor");
+
+// XML Bots data from your files
+const xmlBots = [
+    {
+        name: "Dollar Printer Bot",
+        description: "Target profit: 607, Stake: 2, Loss limit: 1000",
+        type: "Over/Under",
+        xml: `<?xml version="1.0" encoding="UTF-8"?>
+<deriv-bot>
+  <strategy>
+    <name>Dollar Printer</name>
+    <market>R_100</market>
+    <trade_type>overunder</trade_type>
+    <duration>1</duration>
+    <stake>2</stake>
+    <target_profit>607</target_profit>
+    <stop_loss>1000</stop_loss>
+  </strategy>
+</deriv-bot>`
+    },
+    {
+        name: "Bandwagon Bot",
+        description: "Take profit: 10, Stop loss: 30, Martingale: 2x",
+        type: "Over/Under",
+        xml: `<?xml version="1.0" encoding="UTF-8"?>
+<deriv-bot>
+  <strategy>
+    <name>Bandwagon</name>
+    <market>1HZ10V</market>
+    <trade_type>overunder</trade_type>
+    <duration>1</duration>
+    <initial_stake>1</initial_stake>
+    <take_profit>10</take_profit>
+    <stop_loss>30</stop_loss>
+    <martingale>2</martingale>
+  </strategy>
+</deriv-bot>`
+    }
+];
+
+let selectedBot = null;
+
+// Initialize bots grid
+function initBots() {
+    const grid = document.getElementById('bots-grid');
+    if (!grid) return;
+    
+    grid.innerHTML = '';
+    xmlBots.forEach((bot, index) => {
+        const card = document.createElement('div');
+        card.className = 'bot-card';
+        card.onclick = () => selectBot(index);
+        card.innerHTML = `
+            <div class="bot-badge">XML</div>
+            <div class="bot-name">${bot.name}</div>
+            <div class="bot-desc">${bot.description}</div>
+            <div class="bot-type">${bot.type}</div>
+        `;
+        grid.appendChild(card);
+    });
+}
+
+function selectBot(index) {
+    // Remove selected class from all cards
+    document.querySelectorAll('.bot-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    // Add selected class to clicked card
+    const cards = document.querySelectorAll('.bot-card');
+    if (cards[index]) {
+        cards[index].classList.add('selected');
+    }
+    
+    selectedBot = xmlBots[index];
+    
+    // Show XML preview
+    const preview = document.getElementById('xml-preview');
+    preview.innerHTML = `<pre style="margin:0;">${escapeHtml(selectedBot.xml)}</pre>`;
+    preview.classList.add('show');
+}
+
+function escapeHtml(text) {
+    return text.replace(/&/g, "&amp;")
+              .replace(/</g, "&lt;")
+              .replace(/>/g, "&gt;")
+              .replace(/"/g, "&quot;")
+              .replace(/'/g, "&#039;");
+}
+
+function toggleBots() {
+    const container = document.getElementById('bots-container');
+    const btn = document.querySelector('.bots-toggle');
+    
+    if (container.style.display === 'none') {
+        container.style.display = 'block';
+        btn.textContent = 'Hide';
+    } else {
+        container.style.display = 'none';
+        btn.textContent = 'Show';
+    }
+}
+
+// API Token functions
+function saveApiToken() {
+    const token = document.getElementById('api-token').value;
+    const status = document.getElementById('api-status');
+    
+    if (token) {
+        // Save to localStorage
+        localStorage.setItem('deriv_api_token', token);
+        status.innerHTML = '✓ Token saved successfully';
+        status.style.color = 'var(--green)';
+        
+        // You can use this token for API calls if needed
+        console.log('API Token saved:', token.substring(0, 5) + '...');
+    } else {
+        status.innerHTML = '✗ Please enter a token';
+        status.style.color = 'var(--red)';
+    }
+}
+
+// Load saved token on page load
+function loadSavedToken() {
+    const savedToken = localStorage.getItem('deriv_api_token');
+    if (savedToken) {
+        document.getElementById('api-token').value = savedToken;
+        document.getElementById('api-status').innerHTML = '✓ Token loaded from storage';
+    }
+}
 
 ws.onopen = () => {
     console.log("WebSocket connected");
@@ -514,7 +870,11 @@ function closeAnalysis(){
 // Initialize on load
 window.addEventListener('load', () => {
     buildDigitUI();
+    initBots();
+    loadSavedToken();
 });
 </script>
+<!-- Add Font Awesome for icons -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
 </body>
-</html>
+    </html>
