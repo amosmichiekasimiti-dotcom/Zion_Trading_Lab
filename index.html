@@ -1,212 +1,170 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Zion AI Lab | Sniper Live</title>
-<style>
-:root { --red: #ff444f; --dark: #0a0a0f; --green: #00ff88; --gold: #ffd700; --blue: #00f2fe; --panel: #151520; }
-body { font-family: 'Segoe UI', sans-serif; background: var(--dark); color: white; margin: 0; padding: 10px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zion Sniper | XML Integrated Terminal</title>
+    <style>
+        :root { --red: #ff444f; --dark: #0a0a0f; --green: #00ff88; --gold: #ffd700; --blue: #00f2fe; --panel: #151520; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--dark); color: white; margin: 0; padding: 10px; overflow-x: hidden; }
+        
+        .account-panel { background: var(--panel); padding: 15px; border-radius: 12px; border: 1px solid #333; margin-bottom: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .balance-val { font-size: 28px; font-weight: bold; color: var(--green); font-family: monospace; }
+        .token-input { background: #000; border: 1px solid #444; color: var(--gold); padding: 10px; border-radius: 6px; width: 100%; box-sizing: border-box; margin-top: 10px; font-size: 12px; }
+        
+        .bot-settings { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 10px 0; }
+        .setting-card { background: #1a1a24; padding: 10px; border-radius: 8px; border: 1px solid #333; text-align: center; }
+        .set-label { font-size: 9px; color: #888; text-transform: uppercase; margin-bottom: 5px; }
+        .set-input { background: none; border: none; color: var(--blue); font-weight: bold; width: 100%; text-align: center; font-size: 16px; outline: none; }
 
-/* Dashboard UI */
-.strategy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
-.strat-card { background: var(--panel); padding: 12px; border-radius: 12px; border: 1px solid #333; transition: 0.3s; position: relative; }
-.strat-label { font-size: 10px; color: #888; text-transform: uppercase; margin-bottom: 5px; letter-spacing: 1px; }
-.strat-value { font-weight: bold; font-size: 15px; margin-bottom: 10px; border-bottom: 1px solid #222; padding-bottom: 5px; }
+        .sniper-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .strat-card { background: var(--panel); padding: 15px; border-radius: 12px; border: 1px solid #333; transition: 0.3s; }
+        .strat-title { font-size: 11px; color: var(--gold); font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #222; padding-bottom: 5px; }
+        .cond-row { display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 4px; font-family: monospace; }
+        .pass { color: var(--green); font-weight: bold; }
+        .fail { color: #555; }
 
-/* Real-Time Validator Styles */
-.validation-list { font-size: 9px; display: flex; flex-direction: column; gap: 4px; font-family: 'Courier New', monospace; }
-.condition-row { display: flex; justify-content: space-between; align-items: center; }
-.status-tag { padding: 1px 4px; border-radius: 3px; font-size: 8px; font-weight: bold; text-transform: uppercase; }
-.tag-pass { background: rgba(0, 255, 136, 0.1); color: var(--green); border: 1px solid var(--green); }
-.tag-fail { background: rgba(255, 68, 79, 0.1); color: var(--red); border: 1px solid var(--red); }
-
-/* GINO Animation */
-.gino-active { border-color: var(--gold); box-shadow: 0 0 20px rgba(255, 215, 0, 0.4); transform: translateY(-2px); }
-.gino-active .strat-value { color: var(--gold); }
-
-#live-price { font-size: 34px; font-weight: bold; text-align: center; margin: 10px 0; font-family: monospace; color: var(--blue); text-shadow: 0 0 10px rgba(0, 242, 254, 0.3); }
-.nav-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; }
-.nav-btn { background: #1a1a24; border: 1px solid #333; color: #888; padding: 8px 12px; border-radius: 6px; font-size: 10px; cursor: pointer; white-space: nowrap; }
-.nav-btn.active { background: var(--red); color: white; border-color: var(--red); }
-
-#analysis-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--dark); z-index: 1000; padding: 15px; box-sizing: border-box; display:none; overflow-y:auto; }
-.close-btn { background: #222; color: #888; border: 1px solid #333; padding: 12px; border-radius: 8px; width: 100%; margin-top: 20px; font-weight: bold; cursor: pointer; }
-</style>
+        .gino-active { border-color: var(--gold); box-shadow: 0 0 20px rgba(255, 215, 0, 0.3); }
+        
+        #price-display { font-size: 40px; text-align: center; font-family: monospace; color: var(--blue); margin: 15px 0; font-weight: bold; }
+        .execution-btn { width: 100%; padding: 20px; border-radius: 12px; border: none; font-size: 18px; font-weight: 900; cursor: pointer; transition: 0.3s; text-transform: uppercase; }
+        .btn-locked { background: #222; color: #444; cursor: not-allowed; }
+        .btn-ready { background: linear-gradient(to bottom, var(--gold), #ccac00); color: #000; box-shadow: 0 0 20px var(--gold); }
+    </style>
 </head>
 <body>
 
-<div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:10px;">
-    <h2 style="color: var(--gold); font-size: 18px; margin:0;">🤖 ZION SNIPER V2</h2>
-    <div id="status-text" style="color:var(--green); font-size:10px;">● SYSTEM LIVE</div>
-</div>
-
-<div class="nav-scroll">
-    <button class="nav-btn active" onclick="filterMarkets('synthetic', this)">VOLATILITY</button>
-    <button class="nav-btn" onclick="filterMarkets('crashboom', this)">CRASH/BOOM</button>
-    <button class="nav-btn" onclick="filterMarkets('step', this)">STEP/RANGE</button>
-</div>
-
-<div style="flex-grow:1; overflow-y:auto; background:var(--panel); border-radius:12px; border:1px solid #222; margin-top:5px;">
-    <table style="width:100%; border-collapse:collapse;" id="market-table">
-        <tbody id="market-list"></tbody>
-    </table>
-</div>
-
-<div id="analysis-overlay">
-    <div id="live-price">0.0000</div>
-    
-    <div class="strategy-grid">
-        <div class="strat-card" id="card-rf">
-            <div class="strat-label">Trend Momentum</div>
-            <div id="val-rf" class="strat-value">ANALYZING...</div>
-            <div class="validation-list" id="list-rf"></div>
-        </div>
-        <div class="strat-card" id="card-eo">
-            <div class="strat-label">Even/Odd Pile</div>
-            <div id="val-eo" class="strat-value">ANALYZING...</div>
-            <div class="validation-list" id="list-eo"></div>
-        </div>
-        <div class="strat-card" id="card-md">
-            <div class="strat-label">Match Pattern</div>
-            <div id="val-md" class="strat-value">ANALYZING...</div>
-            <div class="validation-list" id="list-md"></div>
-        </div>
-        <div class="strat-card" id="card-ou">
-            <div class="strat-label">Zone Sniper (O4)</div>
-            <div id="val-ou" class="strat-value">ANALYZING...</div>
-            <div class="validation-list" id="list-ou"></div>
-        </div>
+<div class="account-panel">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 11px; color: #aaa;">DERIV LIVE BALANCE</span>
+        <span id="conn-status" style="color: var(--red); font-size: 10px; font-weight: bold;">● OFFLINE</span>
     </div>
-
-    <div id="chart-container" style="height:350px; border-radius:12px; overflow:hidden; border:1px solid #333; margin-top:10px;"></div>
-    <button class="close-btn" onclick="closeAnalysis()">DISCONNECT SNIPER</button>
+    <div id="balance-amt" class="balance-val">$0.00</div>
+    <input type="password" id="api-token" class="token-input" placeholder="Enter API Token (Read/Trade scope)">
+    <button onclick="initAccount()" style="width:100%; margin-top:8px; padding:8px; background:var(--blue); border:none; border-radius:5px; font-weight:bold; cursor:pointer;">CONNECT ACCOUNT</button>
 </div>
+
+<div class="bot-settings">
+    <div class="setting-card"><div class="set-label">Initial Stake</div><input type="number" id="bot-stake" class="set-input" value="1.60"></div>
+    <div class="setting-card"><div class="set-label">Martingale</div><input type="number" id="bot-multi" class="set-input" value="2.1"></div>
+    <div class="setting-card"><div class="set-label">TP (Target)</div><input type="number" id="bot-tp" class="set-input" value="10.0"></div>
+</div>
+
+<div id="price-display">0.00</div>
+
+<div class="sniper-grid">
+    <div class="strat-card" id="card-ou">
+        <div class="strat-title">ZONE SNIPER (OVER 4)</div>
+        <div id="list-ou"></div>
+    </div>
+    <div class="strat-card" id="card-rf">
+        <div class="strat-title">MOMENTUM SNIPER (RISE)</div>
+        <div id="list-rf"></div>
+    </div>
+</div>
+
+<button id="exec-btn" class="execution-btn btn-locked" disabled>Waiting for Legit Signal...</button>
 
 <script>
-const APP_ID = 126973;
-const ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`);
-let digitHistory = [], priceHistory = [], activeSub = null;
-let ema10 = 0;
-
-ws.onopen = () => ws.send(JSON.stringify({ active_symbols: "brief", product_type: "basic" }));
-ws.onmessage = (msg) => {
-    const data = JSON.parse(msg.data);
-    if (data.active_symbols) populateMarkets(data.active_symbols);
-    if (data.tick) processLiveTick(data.tick);
-};
-
-function populateMarkets(syms) {
-    const list = document.getElementById('market-list');
-    list.innerHTML = "";
-    syms.filter(s => s.market === 'synthetic_index').forEach(s => {
-        list.innerHTML += `<tr style="border-bottom:1px solid #222;"><td style="padding:15px; font-size:13px;">${s.display_name}</td><td style="text-align:right; padding-right:15px;"><button style="background:var(--blue); border:none; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="openSniper('${s.symbol}')">SNIPE</button></td></tr>`;
-    });
-}
-
-function openSniper(symbol) {
-    document.getElementById('analysis-overlay').style.display = 'block';
-    document.getElementById('chart-container').innerHTML = `<iframe src="https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=dark" width="100%" height="100%" frameborder="0"></iframe>`;
-    if(activeSub) ws.send(JSON.stringify({forget: activeSub}));
-    ws.send(JSON.stringify({ticks: symbol, subscribe: 1}));
-    digitHistory = []; priceHistory = []; ema10 = 0;
-}
-
-function processLiveTick(tick) {
-    activeSub = tick.id;
-    const price = Number(tick.quote);
-    const priceStr = price.toFixed(tick.pip_size || 2);
-    const digit = parseInt(priceStr.slice(-1));
-
-    document.getElementById('live-price').innerText = priceStr;
-    priceHistory.push(price);
-    digitHistory.push(digit);
-    if(priceHistory.length > 50) { priceHistory.shift(); digitHistory.shift(); }
-
-    // EMA 10 Calculation
-    const k = 2 / (11);
-    ema10 = (ema10 === 0) ? price : (price * k) + (ema10 * (1 - k));
-
-    runLiveValidation(digit, price);
-}
-
-function runLiveValidation(digit, price) {
-    const last5Prices = priceHistory.slice(-5);
-    const last20Digits = digitHistory.slice(-20);
-    const last10Digits = digitHistory.slice(-10);
-
-    // 1. RISE/FALL Logic (5 Points)
-    const rfConds = [
-        { label: "VELOCITY CHECK", v: Math.abs(price - priceHistory[priceHistory.length-2]) > 0.0001 },
-        { label: "PULLBACK DETECT", v: last5Prices[3] > last5Prices[2] && price < last5Prices[3] },
-        { label: "EMA ALIGNMENT", v: price > ema10 },
-        { label: "TREND RESUMED", v: price > priceHistory[priceHistory.length-2] },
-        { label: "MOMENTUM FLOW", v: last5Prices.filter((p,i)=>i>0 && p > last5Prices[i-1]).length >= 3 }
-    ];
-
-    // 2. EVEN/ODD Logic (5 Points)
-    const eoConds = [
-        { label: "DENSITY > 70%", v: last20Digits.filter(d=>d%2===0).length >= 14 },
-        { label: "TRIPLE STREAK", v: digitHistory.slice(-3).every(d=>d%2===0) },
-        { label: "ZERO ANCHOR", v: last10Digits.includes(0) },
-        { label: "STABLE SEQUENCE", v: Math.abs(digitHistory[digitHistory.length-2] - digit) < 8 },
-        { label: "NOW EVEN", v: digit % 2 === 0 }
-    ];
-
-    // 3. MATCH/DIFF Logic (5 Points)
-    const counts = Array(10).fill(0); last10Digits.forEach(d => counts[d]++);
-    const hotDigit = counts.indexOf(Math.max(...counts));
-    const mdConds = [
-        { label: "CLUSTER HIT", v: counts[hotDigit] >= 3 },
-        { label: "GAP DYNAMICS", v: !digitHistory.slice(-15).includes(hotDigit === 9 ? 0 : hotDigit + 1) },
-        { label: "NEIGHBOR SYNC", v: counts[hotDigit-1] > 0 || counts[hotDigit+1] > 0 },
-        { label: "RECENCY BIAS", v: digitHistory.slice(-5).includes(hotDigit) },
-        { label: "SYNC WITH TREND", v: (price > ema10 && hotDigit > 4) || (price < ema10 && hotDigit < 5) }
-    ];
-
-    // 4. OVER 4 Logic (5 Points)
-    const ouConds = [
-        { label: "ZONE LOCK 80%", v: last10Digits.filter(d=>d>4).length >= 8 },
-        { label: "KILLER 0/1 COLD", v: !last20Digits.includes(0) && !last20Digits.includes(1) },
-        { label: "BOUNCE DETECT", v: last10Digits.includes(5) || last10Digits.includes(4) },
-        { label: "ZONE ALIGNMENT", v: price > last5Prices[0] },
-        { label: "GINO DIGIT (7+)", v: digit >= 7 }
-    ];
-
-    updateDashboard('rf', rfConds, "GINO RISE");
-    updateDashboard('eo', eoConds, "GINO EVEN");
-    updateDashboard('md', mdConds, "GINO MATCH " + hotDigit);
-    updateDashboard('ou', ouConds, "GINO OVER 4");
-}
-
-function updateDashboard(id, conds, ginoText) {
-    const card = document.getElementById(`card-${id}`);
-    const val = document.getElementById(`val-${id}`);
-    const list = document.getElementById(`list-${id}`);
-    const passCount = conds.filter(c => c.v).length;
-
-    // Update List
-    list.innerHTML = conds.map(c => `
-        <div class="condition-row">
-            <span>${c.label}</span>
-            <span class="status-tag ${c.v ? 'tag-pass' : 'tag-fail'}">${c.v ? 'PASS' : 'FAIL'}</span>
-        </div>
-    `).join('');
-
-    // Update Header
-    if (passCount === 5) {
-        card.classList.add('gino-active');
-        val.innerText = "🔥 " + ginoText;
-    } else {
-        card.classList.remove('gino-active');
-        val.innerText = `WAITING (${passCount}/5)`;
+    let apiWs, priceWs;
+    let digitHistory = [], priceHistory = [];
+    let currentStake = 1.60;
+    
+    // --- Account Integration ---
+    function initAccount() {
+        const token = document.getElementById('api-token').value;
+        if (!token) return alert("Please enter your API token.");
+        
+        apiWs = new WebSocket('wss://ws.derivws.com/websockets/v3?app_id=126973');
+        
+        apiWs.onopen = () => apiWs.send(JSON.stringify({ authorize: token }));
+        
+        apiWs.onmessage = (msg) => {
+            const data = JSON.parse(msg.data);
+            if (data.authorize) {
+                document.getElementById('conn-status').innerText = "● ONLINE";
+                document.getElementById('conn-status').style.color = "var(--green)";
+                document.getElementById('balance-amt').innerText = "$" + data.authorize.balance;
+                apiWs.send(JSON.stringify({ balance: 1, subscribe: 1 }));
+            }
+            if (data.balance) document.getElementById('balance-amt').innerText = "$" + data.balance.balance;
+            if (data.buy) alert("Legit Trade Executed Successfully!");
+        };
     }
-}
 
-function closeAnalysis() {
-    document.getElementById('analysis-overlay').style.display = 'none';
-    if(activeSub) ws.send(JSON.stringify({forget: activeSub}));
-}
+    // --- Price Sniper Engine ---
+    priceWs = new WebSocket('wss://ws.derivws.com/websockets/v3?app_id=126973');
+    priceWs.onopen = () => priceWs.send(JSON.stringify({ ticks: 'R_100', subscribe: 1 }));
+    
+    priceWs.onmessage = (msg) => {
+        const data = JSON.parse(msg.data);
+        if (data.tick) {
+            const price = data.tick.quote;
+            const digit = parseInt(price.toString().slice(-1));
+            priceHistory.push(price);
+            digitHistory.push(digit);
+            if (digitHistory.length > 20) { digitHistory.shift(); priceHistory.shift(); }
+            
+            document.getElementById('price-display').innerText = price;
+            validateLegitSignals(digit, price);
+        }
+    };
+
+    function validateLegitSignals(digit, price) {
+        const last10 = digitHistory.slice(-10);
+        
+        // legit conditions for Over 4
+        const ouConds = [
+            { n: "VACUUM (0,1 COLD)", v: !last10.includes(0) && !last10.includes(1) },
+            { n: "ZONE DENSITY 80%+", v: last10.filter(d => d > 4).length >= 8 },
+            { n: "REJECTION DETECTED", v: price > priceHistory[priceHistory.length-2] },
+            { n: "ALGO SUPPORT (4,5)", v: last10.includes(4) || last10.includes(5) },
+            { n: "GINO DIGIT (8,9)", v: digit >= 8 }
+        ];
+
+        updateUI('ou', ouConds, "LEGIT OVER 4");
+    }
+
+    function updateUI(id, conds, label) {
+        const list = document.getElementById(`list-${id}`);
+        const card = document.getElementById(`card-${id}`);
+        const btn = document.getElementById('exec-btn');
+        const passes = conds.filter(c => c.v).length;
+
+        list.innerHTML = conds.map(c => `<div class="cond-row"><span>${c.n}</span><span class="${c.v?'pass':'fail'}">${c.v?'PASS':'FAIL'}</span></div>`).join('');
+        
+        if (passes === 5) {
+            card.classList.add('gino-active');
+            btn.disabled = false;
+            btn.className = "execution-btn btn-ready";
+            btn.innerText = "SNIPE NOW: " + label;
+        } else {
+            card.classList.remove('gino-active');
+            btn.disabled = true;
+            btn.className = "execution-btn btn-locked";
+            btn.innerText = `Waiting for Legit Signal (${passes}/5)...`;
+        }
+    }
+
+    // --- Execution Logic ---
+    document.getElementById('exec-btn').onclick = () => {
+        const stake = document.getElementById('bot-stake').value;
+        if (!apiWs || apiWs.readyState !== 1) return alert("Please connect your account first!");
+        
+        apiWs.send(JSON.stringify({
+            buy: "1",
+            price: stake,
+            parameters: {
+                amount: stake,
+                basis: "stake",
+                contract_type: "CALL", // Adjust if your XML preferred PUT
+                currency: "USD",
+                duration: 1,
+                duration_unit: "t",
+                symbol: "R_100"
+            }
+        }));
+    };
 </script>
 </body>
 </html>
