@@ -165,6 +165,8 @@ body { font-family: 'Segoe UI', sans-serif; background: var(--dark); color: whit
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
 .signals-title {
@@ -178,6 +180,74 @@ body { font-family: 'Segoe UI', sans-serif; background: var(--dark); color: whit
 
 .signals-title i {
     font-size: 24px;
+}
+
+/* Asset Context Bar */
+.asset-context {
+    background: rgba(0,0,0,0.4);
+    border-radius: 30px;
+    padding: 8px 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    border: 1px solid #333;
+    flex-wrap: wrap;
+}
+
+.asset-badge {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.asset-icon {
+    width: 36px;
+    height: 36px;
+    background: var(--blue);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.asset-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.asset-name {
+    font-size: 14px;
+    font-weight: bold;
+    color: white;
+}
+
+.asset-type {
+    font-size: 10px;
+    color: #888;
+}
+
+.market-badge {
+    background: rgba(255,215,0,0.15);
+    border: 1px solid var(--gold);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    color: var(--gold);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.volatility-badge {
+    background: rgba(0,242,254,0.15);
+    border: 1px solid var(--blue);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    color: var(--blue);
 }
 
 .signals-confidence {
@@ -396,6 +466,7 @@ body { font-family: 'Segoe UI', sans-serif; background: var(--dark); color: whit
 .history-grid {
     display: flex;
     gap: 5px;
+    flex-wrap: wrap;
 }
 
 .history-dot {
@@ -408,6 +479,7 @@ body { font-family: 'Segoe UI', sans-serif; background: var(--dark); color: whit
     font-size: 10px;
     font-weight: bold;
     transition: 0.3s;
+    cursor: help;
 }
 
 .history-dot.buy {
@@ -567,13 +639,33 @@ td { padding: 12px; border-bottom: 1px solid #222; font-size: 13px; }
     </div>
 </div>
 
-<!-- SUPER SIGNALS PANEL - Non-flickering -->
+<!-- SUPER SIGNALS PANEL - With Universal Asset Context -->
 <div class="signals-panel" id="signals-panel">
     <div class="signals-header">
         <div class="signals-title">
             <i class="fas fa-bolt"></i>
             <span>SUPER SIGNALS</span>
         </div>
+        
+        <!-- Asset Context Display - Works for ALL assets -->
+        <div class="asset-context" id="asset-context">
+            <div class="asset-badge">
+                <div class="asset-icon" id="asset-icon">📊</div>
+                <div class="asset-info">
+                    <span class="asset-name" id="asset-name">Select Asset</span>
+                    <span class="asset-type" id="asset-type">Click Analyze on any market</span>
+                </div>
+            </div>
+            <div class="market-badge" id="market-badge">
+                <i class="fas fa-tag"></i>
+                <span id="market-category">---</span>
+            </div>
+            <div class="volatility-badge" id="volatility-display">
+                <i class="fas fa-chart-line"></i>
+                <span id="volatility-value">---</span>
+            </div>
+        </div>
+        
         <div class="signals-confidence" id="signal-confidence">85% ACCURACY</div>
     </div>
 
@@ -618,7 +710,7 @@ td { padding: 12px; border-bottom: 1px solid #222; font-size: 13px; }
                 <span class="signal-card-title">TREND</span>
             </div>
             <div class="signal-card-value" id="trend-value">NEUTRAL</div>
-            <div class="signal-card-desc" id="trend-desc">3/5 indicators</div>
+            <div class="signal-card-desc" id="trend-desc">Analyzing...</div>
         </div>
         <div class="signal-card">
             <div class="signal-card-header">
@@ -626,7 +718,7 @@ td { padding: 12px; border-bottom: 1px solid #222; font-size: 13px; }
                 <span class="signal-card-title">MOMENTUM</span>
             </div>
             <div class="signal-card-value" id="momentum-value">0.0</div>
-            <div class="signal-card-desc" id="momentum-desc">RSI: 50</div>
+            <div class="signal-card-desc" id="momentum-desc">RSI: --</div>
         </div>
         <div class="signal-card">
             <div class="signal-card-header">
@@ -634,7 +726,7 @@ td { padding: 12px; border-bottom: 1px solid #222; font-size: 13px; }
                 <span class="signal-card-title">AI CONFIDENCE</span>
             </div>
             <div class="signal-card-value" id="ai-confidence">0%</div>
-            <div class="signal-card-desc" id="ai-desc">Model: Ensemble</div>
+            <div class="signal-card-desc" id="ai-desc">Multi-market model</div>
         </div>
     </div>
 
@@ -716,12 +808,22 @@ let accountBalance = 0;
 let accountCurrency = 'USD';
 let accountLogin = '';
 
-// Super Signals State (non-flickering)
+// Current analysis context - works for ALL assets
+let currentAsset = {
+    symbol: '',
+    name: 'No Asset Selected',
+    market: 'unknown',
+    marketCategory: '---',
+    displayName: 'Click Analyze on any market',
+    volatility: 'Standard'
+};
+
+// Super Signals State
 let currentSignal = {
     primary: 'NEUTRAL',
     direction: 'NEUTRAL',
     trend: 'NEUTRAL',
-    momentum: 0,
+    momentum: 50,
     aiConfidence: 50,
     strength: 50,
     timestamp: Date.now()
@@ -730,25 +832,169 @@ let currentSignal = {
 let signalHistory = [];
 const MAX_HISTORY = 10;
 
-// Update Super Signals (non-flickering)
+// Get market category for any asset
+function getMarketCategory(symbol, market, displayName) {
+    const upperSymbol = (symbol || '').toUpperCase();
+    const upperName = (displayName || '').toUpperCase();
+    const marketLower = (market || '').toLowerCase();
+    
+    // Forex
+    if (marketLower === 'forex' || upperSymbol.includes('EUR') || upperSymbol.includes('USD') || 
+        upperSymbol.includes('GBP') || upperSymbol.includes('JPY') || upperSymbol.includes('AUD')) {
+        return 'forex';
+    }
+    
+    // Crypto
+    if (marketLower === 'cryptocurrency' || upperSymbol.includes('BTC') || upperSymbol.includes('ETH') || 
+        upperSymbol.includes('LTC') || upperSymbol.includes('XRP')) {
+        return 'crypto';
+    }
+    
+    // Commodities
+    if (marketLower === 'commodities' || upperName.includes('GOLD') || upperName.includes('SILVER') || 
+        upperName.includes('OIL') || upperName.includes('PALLADIUM')) {
+        return 'commodities';
+    }
+    
+    // Indices
+    if (marketLower === 'stock_index' || marketLower === 'indices' || upperName.includes('INDEX')) {
+        return 'indices';
+    }
+    
+    // Crash/Boom
+    if (upperName.includes('CRASH') || upperName.includes('BOOM')) {
+        return 'crash_boom';
+    }
+    
+    // Step/Range
+    if (upperName.includes('STEP') || upperName.includes('RANGE')) {
+        return 'step_range';
+    }
+    
+    // Volatility (R_ series)
+    if (upperSymbol.startsWith('R_') || marketLower === 'synthetic_index') {
+        return 'volatility';
+    }
+    
+    return 'other';
+}
+
+// Get volatility/risk level for any asset
+function getAssetVolatility(symbol, marketCategory) {
+    const upperSymbol = (symbol || '').toUpperCase();
+    
+    // Volatility indices
+    if (upperSymbol.startsWith('R_')) {
+        const num = parseInt(upperSymbol.replace('R_', ''));
+        if (!isNaN(num)) {
+            if (num <= 25) return 'Low';
+            if (num <= 75) return 'Medium';
+            if (num <= 150) return 'High';
+            return 'Very High';
+        }
+    }
+    
+    // Forex - generally lower volatility
+    if (marketCategory === 'forex') return 'Low-Medium';
+    
+    // Crypto - higher volatility
+    if (marketCategory === 'crypto') return 'High';
+    
+    // Commodities - medium volatility
+    if (marketCategory === 'commodities') return 'Medium';
+    
+    // Indices - medium volatility
+    if (marketCategory === 'indices') return 'Medium';
+    
+    // Crash/Boom - very high volatility
+    if (marketCategory === 'crash_boom') return 'Very High';
+    
+    // Default
+    return 'Standard';
+}
+
+// Get icon for asset type
+function getAssetIcon(marketCategory) {
+    switch(marketCategory) {
+        case 'forex': return '💱';
+        case 'crypto': return '₿';
+        case 'commodities': return '🛢️';
+        case 'indices': return '📈';
+        case 'volatility': return '⚡';
+        case 'crash_boom': return '💥';
+        case 'step_range': return '🪜';
+        default: return '📊';
+    }
+}
+
+// Update asset context for ANY asset
+function updateAssetContext(symbol, name, market) {
+    currentAsset.symbol = symbol || '---';
+    currentAsset.name = name || 'Unknown Asset';
+    currentAsset.market = market || 'unknown';
+    currentAsset.marketCategory = getMarketCategory(symbol, market, name);
+    currentAsset.volatility = getAssetVolatility(symbol, currentAsset.marketCategory);
+    
+    // Get first letter for icon, or use category icon
+    const icon = getAssetIcon(currentAsset.marketCategory);
+    
+    // Update UI
+    document.getElementById('asset-name').textContent = currentAsset.name.length > 25 ? 
+        currentAsset.name.substring(0, 22) + '...' : currentAsset.name;
+    document.getElementById('asset-type').textContent = currentAsset.symbol;
+    document.getElementById('asset-icon').textContent = icon;
+    document.getElementById('market-category').textContent = 
+        currentAsset.marketCategory.toUpperCase().replace('_', ' ');
+    document.getElementById('volatility-value').textContent = currentAsset.volatility;
+    
+    // Color code based on category
+    const marketBadge = document.getElementById('market-badge');
+    const volatilityBadge = document.getElementById('volatility-display');
+    
+    // Reset classes
+    marketBadge.style.borderColor = '';
+    volatilityBadge.style.borderColor = '';
+    
+    // Color code by category
+    switch(currentAsset.marketCategory) {
+        case 'forex':
+            marketBadge.style.borderColor = 'var(--blue)';
+            break;
+        case 'crypto':
+            marketBadge.style.borderColor = 'var(--gold)';
+            break;
+        case 'commodities':
+            marketBadge.style.borderColor = 'var(--orange)';
+            break;
+        case 'indices':
+            marketBadge.style.borderColor = 'var(--purple)';
+            break;
+        case 'volatility':
+            marketBadge.style.borderColor = 'var(--green)';
+            break;
+        case 'crash_boom':
+            marketBadge.style.borderColor = 'var(--red)';
+            break;
+    }
+}
+
+// Update Super Signals for ANY asset
 function updateSuperSignals() {
-    if (digitHistory.length < 50) {
-        // Not enough data, keep neutral
+    if (digitHistory.length < 20) {
         return;
     }
 
-    // Calculate multiple indicators for stable signals
     const recentDigits = digitHistory.slice(-100);
     const prices = priceHistory.slice(-100);
     
-    // 1. Trend Analysis (based on price movement)
+    // 1. Trend Analysis (universal)
     let trendScore = 0;
     if (prices.length > 20) {
         const priceChange = ((prices[prices.length-1] - prices[0]) / prices[0]) * 100;
         trendScore = Math.min(100, Math.max(-100, priceChange * 10));
     }
     
-    // 2. Momentum Analysis (RSI-like)
+    // 2. Momentum Analysis (universal RSI)
     let gains = 0, losses = 0;
     for (let i = 1; i < prices.length; i++) {
         const diff = prices[i] - prices[i-1];
@@ -758,38 +1004,49 @@ function updateSuperSignals() {
     const rs = gains / (losses || 1);
     const rsi = 100 - (100 / (1 + rs));
     
-    // 3. Digit Pattern Analysis
+    // 3. Digit Pattern Analysis (universal)
     const evenCount = recentDigits.filter(d => d % 2 === 0).length;
     const oddCount = recentDigits.length - evenCount;
     const digitImbalance = (evenCount - oddCount) / recentDigits.length * 100;
     
-    // 4. Volatility Analysis
+    // 4. Volatility Analysis (universal)
     const returns = [];
     for (let i = 1; i < prices.length; i++) {
         returns.push((prices[i] - prices[i-1]) / prices[i-1]);
     }
     const volatility = Math.sqrt(returns.reduce((sum, r) => sum + r*r, 0) / returns.length) * 100;
     
-    // Combine signals with hysteresis to prevent flickering
+    // Adjust thresholds based on asset type
+    let volatilityMultiplier = 1.0;
+    switch(currentAsset.marketCategory) {
+        case 'crypto':
+        case 'crash_boom':
+            volatilityMultiplier = 1.5; // Need stronger signals for volatile assets
+            break;
+        case 'forex':
+            volatilityMultiplier = 0.8; // Can act on smaller signals for forex
+            break;
+    }
+    
     const compositeScore = (
         trendScore * 0.3 +
         (rsi - 50) * 0.3 +
         digitImbalance * 0.2 +
         (volatility > 30 ? 20 : -20) * 0.2
-    );
+    ) * volatilityMultiplier;
     
-    // Apply hysteresis (dead zone) to prevent flickering
     const prevSignal = currentSignal.primary;
     let newSignal;
     let strength = Math.min(100, Math.abs(compositeScore));
     
+    // Universal thresholds
     if (compositeScore > 15) newSignal = 'STRONG BUY';
     else if (compositeScore > 5) newSignal = 'BUY';
     else if (compositeScore < -15) newSignal = 'STRONG SELL';
     else if (compositeScore < -5) newSignal = 'SELL';
     else newSignal = 'NEUTRAL';
     
-    // Only change signal if it's significantly different (hysteresis)
+    // Hysteresis to prevent flickering
     const signalOrder = {
         'STRONG SELL': -2,
         'SELL': -1,
@@ -801,7 +1058,6 @@ function updateSuperSignals() {
     const prevValue = signalOrder[prevSignal] || 0;
     const newValue = signalOrder[newSignal] || 0;
     
-    // Require at least 2 steps change to flip signal (prevents flickering)
     if (Math.abs(newValue - prevValue) < 2 && prevSignal !== newSignal) {
         newSignal = prevSignal;
     }
@@ -817,10 +1073,13 @@ function updateSuperSignals() {
         timestamp: Date.now()
     };
     
-    // Add to history (only when signal actually changes)
-    if (prevSignal !== currentSignal.primary) {
+    // Add to history only on change
+    if (prevSignal !== currentSignal.primary && currentAsset.symbol) {
         signalHistory.unshift({
             signal: currentSignal.primary,
+            asset: currentAsset.symbol,
+            assetName: currentAsset.name.substring(0, 10) + '...',
+            category: currentAsset.marketCategory,
             timestamp: Date.now()
         });
         if (signalHistory.length > MAX_HISTORY) {
@@ -828,7 +1087,6 @@ function updateSuperSignals() {
         }
     }
     
-    // Update UI
     renderSuperSignals();
 }
 
@@ -853,8 +1111,10 @@ function renderSuperSignals() {
     directionStrength.style.width = signal.aiConfidence + '%';
     directionStrength.className = `strength-fill ${getDirectionClass(signal.direction)}`;
     
-    document.getElementById('primary-strength').textContent = `Strength: ${signal.strength}%`;
-    document.getElementById('direction-strength').textContent = `Confidence: ${signal.aiConfidence}%`;
+    document.getElementById('primary-strength').textContent = 
+        `Strength: ${signal.strength}% on ${currentAsset.symbol || 'selected asset'}`;
+    document.getElementById('direction-strength').textContent = 
+        `Confidence: ${signal.aiConfidence}% (${currentAsset.marketCategory})`;
     
     // Signal Meter Needle
     const needle = document.getElementById('signal-needle');
@@ -867,24 +1127,27 @@ function renderSuperSignals() {
     };
     needle.style.left = positions[signal.primary] || '50%';
     
-    // Signal Grid
+    // Signal Grid with asset context
     document.getElementById('trend-value').textContent = signal.trend;
-    document.getElementById('trend-desc').textContent = `${signal.strength}% strength`;
+    document.getElementById('trend-desc').textContent = 
+        `${signal.strength}% strength in ${currentAsset.marketCategory} market`;
     
     document.getElementById('momentum-value').textContent = signal.momentum;
     const momentumDesc = signal.momentum > 70 ? 'Overbought' : (signal.momentum < 30 ? 'Oversold' : 'Neutral');
-    document.getElementById('momentum-desc').textContent = `RSI: ${signal.momentum} (${momentumDesc})`;
+    document.getElementById('momentum-desc').textContent = 
+        `RSI: ${signal.momentum} (${momentumDesc})`;
     
     document.getElementById('ai-confidence').textContent = signal.aiConfidence + '%';
-    document.getElementById('ai-desc').textContent = `Ensemble confidence`;
+    document.getElementById('ai-desc').textContent = 
+        `${currentAsset.volatility} volatility · Universal model`;
     
-    document.getElementById('signal-confidence').innerHTML = `${signal.aiConfidence}% ACCURACY`;
+    document.getElementById('signal-confidence').innerHTML = 
+        `${signal.aiConfidence}% ACCURACY on ${currentAsset.marketCategory}`;
     
     // Signal History
     const historyGrid = document.getElementById('signal-history');
     historyGrid.innerHTML = '';
     
-    // Fill with last 10 signals (or placeholders)
     for (let i = 0; i < MAX_HISTORY; i++) {
         const dot = document.createElement('div');
         dot.className = 'history-dot';
@@ -893,9 +1156,11 @@ function renderSuperSignals() {
             const histSignal = signalHistory[i];
             dot.classList.add(getSignalClass(histSignal.signal));
             dot.textContent = histSignal.signal.substring(0, 2);
+            dot.title = `${histSignal.signal} on ${histSignal.asset} (${histSignal.category})`;
         } else {
             dot.classList.add('neutral');
             dot.textContent = '--';
+            dot.title = 'No signal yet';
         }
         
         historyGrid.appendChild(dot);
@@ -914,7 +1179,7 @@ function getDirectionClass(direction) {
     return 'neutral';
 }
 
-// API Token validation and balance fetch
+// API Token validation
 function saveAndValidateToken() {
     const token = document.getElementById('api-token').value;
     const status = document.getElementById('api-status');
@@ -1007,17 +1272,17 @@ ws.onmessage = (msg) => {
         allSymbols = data.active_symbols; 
         console.log(`Loaded ${allSymbols.length} symbols`);
         document.getElementById('market-counter').innerHTML = `${allSymbols.length} markets`;
-        filterMarkets('synthetic'); 
+        filterMarkets('all'); 
     }
     
     if (data.history && data.history.prices) {
         digitHistory = data.history.prices.map(p => {
             const num = Number(p);
-            return parseInt(num.toFixed(2).slice(-1));
+            return parseInt(num.toFixed(data.pip_size || 2).slice(-1));
         });
         priceHistory = [...data.history.prices];
         updateDigitCircles();
-        updateSuperSignals(); // Update signals when history loads
+        updateSuperSignals();
         if (digitHistory.length > 0) {
             updateStrategyPanel(digitHistory[digitHistory.length-1], priceHistory[priceHistory.length-1]);
         }
@@ -1098,7 +1363,7 @@ function filterMarkets(type, btn) {
         
         tbody.innerHTML = '';
         
-        filtered.forEach(s => {
+        filtered.slice(0, 100).forEach(s => {
             const row = document.createElement('tr');
             const marketType = s.market || 'N/A';
             const symbol = s.symbol || '';
@@ -1109,17 +1374,26 @@ function filterMarkets(type, btn) {
                 <td>${displayName}</td>
                 <td style="color:#666; font-size:10px;">${symbol}</td>
                 <td style="color:#888; font-size:10px;">${marketType}</td>
-                <td><button class="btn-analyze" onclick="openAnalysis('${symbol}','${escapedName}')">Analyze</button></td>
+                <td><button class="btn-analyze" onclick="openAnalysis('${symbol}','${escapedName}', '${marketType}')">Analyze</button></td>
             `;
             tbody.appendChild(row);
         });
+        
+        if (filtered.length > 100) {
+            const row = document.createElement('tr');
+            row.innerHTML = `<td colspan="4" style="text-align:center; color:var(--gold);">+ ${filtered.length - 100} more markets</td>`;
+            tbody.appendChild(row);
+        }
     }, 100);
 }
 
-function openAnalysis(symbol, name){
+function openAnalysis(symbol, name, market){
     document.getElementById('target-name').innerText = name;
     document.getElementById('target-symbol').innerText = symbol;
     document.getElementById('analysis-overlay').style.display = 'block';
+    
+    // Update asset context for ANY asset
+    updateAssetContext(symbol, name, market);
     
     document.getElementById('chart-container').innerHTML = `
         <iframe src="https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=dark" 
@@ -1178,7 +1452,7 @@ function handleTick(tick){
 
     updateDigitCircles(); 
     updateStrategyPanel(lastDigit, Number(tick.quote));
-    updateSuperSignals(); // Update signals on each tick (but with hysteresis)
+    updateSuperSignals();
 }
 
 function updateDigitCircles(){
@@ -1290,11 +1564,11 @@ function closeAnalysis(){
 window.addEventListener('load', () => {
     buildDigitUI();
     loadSavedToken();
-    // Initialize signal history with placeholders
+    updateAssetContext('', 'Select an asset by clicking Analyze', '');
     renderSuperSignals();
 });
 </script>
 <!-- Font Awesome -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
 </body>
-    </html>
+            </html>
