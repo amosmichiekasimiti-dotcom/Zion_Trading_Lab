@@ -3,102 +3,126 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Zion AI Lab | Strong Signal Dashboard</title>
+<title>Zion AI Lab | Pro Edition with Strong Signals</title>
 <style>
 :root { 
-    --red: #ff444f; --dark: #0a0a0f; --green: #00ff88; --gold: #ffd700; 
-    --blue: #00f2fe; --panel: #151520; --signal: #ff9500;
+    --red: #ff444f; 
+    --dark: #0a0a0f; 
+    --green: #00ff88; 
+    --gold: #ffd700; 
+    --blue: #00f2fe; 
+    --panel: #151520; 
 }
-body { font-family:'Segoe UI',sans-serif; background:var(--dark); color:white; margin:0; padding:10px; height:100vh; display:flex; flex-direction:column; overflow:hidden;}
-.nav-scroll{display:flex; gap:8px; overflow-x:auto; padding-bottom:10px; scrollbar-width:none;}
-.nav-btn{background:var(--panel);border:1px solid #333;color:#888;padding:10px 15px;border-radius:8px;font-size:11px;font-weight:bold;cursor:pointer;white-space:nowrap;transition:0.3s;}
-.nav-btn.active{background:var(--red); color:white; border-color:var(--red);}
-.table-container{background:var(--panel); border-radius:12px; flex-grow:1; overflow-y:auto; border:1px solid #222; margin-top:5px;}
-table{width:100%; border-collapse:collapse;}
-th{position:sticky; top:0; background:#1c1c2b; padding:12px; text-align:left; font-size:11px; color:#aaa; z-index:10;}
-td{padding:12px; border-bottom:1px solid #222; font-size:13px;}
-#analysis-overlay{display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--dark); z-index:1000; padding:15px; box-sizing:border-box; overflow-y:auto;}
-.price-card{background:#151520; padding:15px; border-radius:12px; text-align:center; border:1px solid var(--blue); margin-bottom:10px; box-shadow:0 0 15px rgba(0,242,254,0.2);}
-#live-price{font-size:32px;font-weight:bold;font-family:monospace;}
-.strategy-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:10px 0;}
-.strat-card{background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; border:1px solid #333;}
-.strat-label{font-size:9px; color:#888; text-transform:uppercase; margin-bottom:4px;}
-.strat-value{font-weight:bold; font-size:14px;}
-.digit-circle-grid{display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin:15px 0;}
-.digit-circle{aspect-ratio:1/1; border-radius:50%; background:#1a1a24; border:2px solid #333; display:flex; flex-direction:column; align-items:center; justify-content:center; transition:all 0.3s ease; position:relative; font-size:12px; color:white; padding:5px;}
-.digit-num{font-size:16px; font-weight:bold; color:white;}
-.digit-pct{font-size:9px;color:#aaa;margin-top:2px;}
-.digit-stats{font-size:7px; line-height:1.2; color:#ccc; margin-top:3px; text-align:center;}
-.digit-circle.hot{background:linear-gradient(145deg,#00ff88,#008844)!important; border-color:#fff; color:#000; font-weight:900;}
-.digit-circle.cold{background:linear-gradient(145deg,#ff444f,#882222)!important; border-color:#fff; color:#fff;}
-.digit-circle.active{border-color:var(--blue); box-shadow:0 0 10px var(--blue); transform:scale(1.05);}
-.cursor{position:absolute; top:-10px; width:0; height:0; border-left:6px solid transparent; border-right:6px solid transparent; border-bottom:10px solid var(--red); transition:left 0.3s ease;}
-#chart-container{height:300px; background:#000; border-radius:12px; margin-top:15px; overflow:hidden; border:1px solid #222;}
-.close-btn{background:#333; color:white; border:none; padding:12px; border-radius:8px; width:100%; font-weight:bold; margin:20px 0; cursor:pointer;}
-.btn-analyze{background:var(--blue); color:#000; border:none; padding:6px 12px; border-radius:4px; font-weight:bold; cursor:pointer;}
-.signal-btn{background:var(--signal); color:#000; border:none; padding:10px 15px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; margin-top:10px;}
-.match-bar-container{width:100%; height:4px; background:#333; border-radius:2px; margin-top:3px; overflow:hidden;}
-.match-bar-fill{height:100%; width:0%; transition:width 0.3s ease;}
-.match-bar-hot{background:var(--green);}
-.match-bar-cold{background:var(--red);}
-.mini-stats{font-size:8px; display:flex; gap:4px; justify-content:center; margin-top:2px;}
+body { font-family: 'Segoe UI', sans-serif; background: var(--dark); color: white; margin: 0; padding: 10px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+.nav-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
+.nav-btn { background: var(--panel); border: 1px solid #333; color: #888; padding: 10px 15px; border-radius: 8px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap; transition: 0.3s; }
+.nav-btn.active { background: var(--red); color: white; border-color: var(--red); }
+
+.table-container { background: var(--panel); border-radius: 12px; flex-grow: 1; overflow-y: auto; border: 1px solid #222; margin-top: 5px; }
+table { width: 100%; border-collapse: collapse; }
+th { position: sticky; top: 0; background: #1c1c2b; padding: 12px; text-align: left; font-size: 11px; color: #aaa; z-index: 10; }
+td { padding: 12px; border-bottom: 1px solid #222; font-size: 13px; }
+
+#analysis-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--dark); z-index: 1000; padding: 15px; box-sizing: border-box; overflow-y: auto; }
+.price-card { background: #151520; padding: 15px; border-radius: 12px; text-align: center; border: 1px solid var(--blue); margin-bottom: 10px; box-shadow: 0 0 15px rgba(0, 242, 254, 0.2); }
+#live-price { font-size: 32px; font-weight: bold; font-family: monospace; }
+
+.strategy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+.strat-card { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; border: 1px solid #333; }
+.strat-label { font-size: 9px; color: #888; text-transform: uppercase; margin-bottom: 4px; }
+.strat-value { font-weight: bold; font-size: 14px; }
+
+.digit-circle-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 15px 0; }
+.digit-circle { 
+    aspect-ratio: 1/1; border-radius: 50%; 
+    background: #1a1a24; border: 2px solid #333; 
+    display: flex; flex-direction: column; align-items: center; justify-content: center; 
+    transition: all 0.3s ease; position: relative; font-size: 12px; color: white;
+    padding: 5px;
+}
+.digit-num { font-size: 16px; font-weight: bold; color: white; }
+.digit-pct { font-size: 9px; color: #aaa; margin-top: 2px; }
+.digit-stats { font-size: 7px; line-height: 1.2; color: #ccc; margin-top: 3px; text-align: center; }
+
+.digit-circle.hot { background: linear-gradient(145deg, #00ff88, #008844) !important; border-color: #fff; }
+.digit-circle.hot .digit-num, .digit-circle.hot .digit-pct, .digit-circle.hot .digit-stats { color: #000; font-weight: 900; }
+.digit-circle.cold { background: linear-gradient(145deg, #ff444f, #882222) !important; border-color: #fff; }
+.digit-circle.cold .digit-num, .digit-circle.cold .digit-pct, .digit-circle.cold .digit-stats { color: #fff; }
+.digit-circle.active { border-color: var(--blue); box-shadow: 0 0 10px var(--blue); transform: scale(1.05); }
+
+.cursor { position: absolute; top: -10px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 10px solid var(--red); transition: left 0.3s ease; }
+
+#chart-container { height: 300px; background: #000; border-radius: 12px; margin-top: 15px; overflow: hidden; border: 1px solid #222; }
+.close-btn { background: #333; color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: bold; margin: 20px 0; cursor: pointer; }
+.btn-analyze { background: var(--blue); color: #000; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; }
+
+.match-bar-container { width: 100%; height: 4px; background: #333; border-radius: 2px; margin-top: 3px; overflow: hidden; }
+.match-bar-fill { height: 100%; width: 0%; transition: width 0.3s ease; }
+.match-bar-hot { background: var(--green); }
+.match-bar-cold { background: var(--red); }
+
+.mini-stats { font-size: 8px; display: flex; gap: 4px; justify-content: center; margin-top: 2px; }
 </style>
 </head>
 <body>
-<div style="display:flex; justify-content:space-between; align-items:center; padding:5px 10px;">
-<h2 style="margin:0; color: var(--gold); font-size:18px;">🤖 ZION PRO LAB</h2>
-<small id="status-text" style="color:var(--green)">● System Ready</small>
+
+<div style="display:flex; justify-content:space-between; align-items:center; padding: 5px 10px;">
+    <h2 style="margin:0; color: var(--gold); font-size: 18px;">🤖 ZION PRO LAB</h2>
+    <small id="status-text" style="color:var(--green)">● System Ready</small>
 </div>
 
 <div class="nav-scroll">
-<button class="nav-btn active" onclick="filterMarkets('synthetic', this)">VOLATILITY</button>
-<button class="nav-btn" onclick="filterMarkets('crashboom', this)">CRASH/BOOM</button>
-<button class="nav-btn" onclick="filterMarkets('step', this)">STEP/RANGE</button>
-<button class="nav-btn" onclick="filterMarkets('dex', this)">DEX/DRIFT</button>
-<button class="nav-btn" onclick="filterMarkets('forex', this)">FOREX</button>
-<button class="nav-btn" onclick="filterMarkets('cryptocurrency', this)">CRYPTO</button>
+    <button class="nav-btn active" onclick="filterMarkets('synthetic', this)">VOLATILITY</button>
+    <button class="nav-btn" onclick="filterMarkets('crashboom', this)">CRASH/BOOM</button>
+    <button class="nav-btn" onclick="filterMarkets('step', this)">STEP/RANGE</button>
+    <button class="nav-btn" onclick="filterMarkets('dex', this)">DEX/DRIFT</button>
+    <button class="nav-btn" onclick="filterMarkets('forex', this)">FOREX</button>
+    <button class="nav-btn" onclick="filterMarkets('cryptocurrency', this)">CRYPTO</button>
 </div>
 
 <div class="table-container">
-<table>
-<thead><tr><th>Asset Name</th><th>Type</th><th>Action</th></tr></thead>
-<tbody id="market-list"></tbody>
-</table>
+    <table>
+        <thead><tr><th>Asset Name</th><th>Type</th><th>Action</th></tr></thead>
+        <tbody id="market-list"></tbody>
+    </table>
 </div>
 
 <div id="analysis-overlay">
-<div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-<h3 id="target-name" style="margin:0; color:var(--gold);">Asset Analysis</h3>
-<span id="target-symbol" style="color:#666; font-family: monospace;">---</span>
+    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+        <h3 id="target-name" style="margin:0; color:var(--gold);">Asset Analysis</h3>
+        <span id="target-symbol" style="color:#666; font-family: monospace;">---</span>
+    </div>
+
+    <div class="price-card">
+        <div id="live-price">00.00</div>
+    </div>
+
+    <div class="strategy-grid">
+        <div class="strat-card"><div class="strat-label">Even / Odd</div><div id="stat-even-odd" class="strat-value">---</div></div>
+        <div class="strat-card"><div class="strat-label">Over / Under</div><div id="stat-over-under" class="strat-value">---</div></div>
+        <div class="strat-card"><div class="strat-label">Match %</div><div id="stat-match-diff" class="strat-value">---</div></div>
+        <div class="strat-card"><div class="strat-label">Tick Trend</div><div id="stat-rise-fall" class="strat-value">---</div></div>
+    </div>
+
+    <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1); position:relative;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="font-size: 10px; color: #aaa; text-transform: uppercase; letter-spacing: 1px;">Digit Analytics (0-9)</div>
+            <div id="tick-counter" style="background: var(--blue); color: #000; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: bold;">0/1000</div>
+        </div>
+        <div class="digit-circle-grid" id="digit-circles"></div>
+        <div class="cursor" id="digit-cursor"></div>
+    </div>
+
+    <button id="signal-btn" class="btn-analyze" style="margin-top:10px;">📈 Confirm Trade</button>
+
+    <div id="chart-container"></div>
+    <button class="close-btn" onclick="closeAnalysis()">EXIT ENGINE</button>
 </div>
 
-<div class="price-card">
-<div id="live-price">00.00</div>
-</div>
-
-<div class="strategy-grid">
-<div class="strat-card"><div class="strat-label">Even / Odd</div><div id="stat-even-odd" class="strat-value">---</div></div>
-<div class="strat-card"><div class="strat-label">Over / Under</div><div id="stat-over-under" class="strat-value">---</div></div>
-<div class="strat-card"><div class="strat-label">Match %</div><div id="stat-match-diff" class="strat-value">---</div></div>
-<div class="strat-card"><div class="strat-label">Tick Trend</div><div id="stat-rise-fall" class="strat-value">---</div></div>
-</div>
-
-<div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; margin-bottom: 15px; border:1px solid rgba(255,255,255,0.1); position:relative;">
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-<div style="font-size:10px; color:#aaa; text-transform:uppercase; letter-spacing:1px;">Digit Analytics (0-9)</div>
-<div id="tick-counter" style="background: var(--blue); color:#000; padding:2px 8px; border-radius:10px; font-size:10px; font-weight:bold;">0/1000</div>
-</div>
-<div class="digit-circle-grid" id="digit-circles"></div>
-<div class="cursor" id="digit-cursor"></div>
-</div>
-
-<div id="chart-container"></div>
-<button class="signal-btn" id="signal-btn">📈 Confirm Trade</button>
-<button class="close-btn" onclick="closeAnalysis()">EXIT ENGINE</button>
 <script>
 const APP_ID = 126973;
 const ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`);
-
 let allSymbols = [];
 let activeTickSubscription = null;
 let digitHistory = [];
@@ -106,26 +130,21 @@ let priceHistory = [];
 const MAX_DIGITS = 1000;
 const cursor = document.getElementById("digit-cursor");
 
-let strongSignal = null; // current strong signal
-let lastSignalTime = 0; // timestamp of last strong signal
-const SIGNAL_INTERVAL = 5000; // strong signal minimum refresh in ms (5s)
+// Signal variables
+let strongSignal = null;
+const SIGNAL_INTERVAL = 5000; // minimal 5s between strong signals
+let lastSignalTime = 0;
 
 ws.onopen = () => ws.send(JSON.stringify({ active_symbols: "brief", product_type: "basic" }));
 
 ws.onmessage = (msg) => {
     const data = JSON.parse(msg.data);
-
-    if (data.active_symbols) {
-        allSymbols = data.active_symbols;
-        filterMarkets('synthetic');
-    }
-
+    if (data.active_symbols) { allSymbols = data.active_symbols; filterMarkets('synthetic'); }
     if (data.history && data.history.prices) {
         digitHistory = data.history.prices.map(p => parseInt(Number(p).toFixed(2).slice(-1)));
         priceHistory = [...data.history.prices];
         updateDigitCircles();
     }
-
     if (data.tick) handleTick(data.tick);
 };
 
@@ -145,9 +164,7 @@ function openAnalysis(symbol, name){
     document.getElementById('target-symbol').innerText=symbol;
     document.getElementById('analysis-overlay').style.display='block';
     document.getElementById('chart-container').innerHTML=`<iframe src="https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=dark" width="100%" height="100%" frameborder="0"></iframe>`;
-    
-    digitHistory=[]; priceHistory=[];
-    buildDigitUI();
+    digitHistory=[]; priceHistory=[]; buildDigitUI();
 
     ws.send(JSON.stringify({ticks_history:symbol,adjust_start_time:1,count:MAX_DIGITS,end:"latest",style:"ticks"}));
     if(activeTickSubscription) ws.send(JSON.stringify({forget:activeTickSubscription}));
@@ -189,42 +206,57 @@ function updateDigitCircles(){
     const recentDigits = digitHistory.slice(-MAX_DIGITS);
     const counts = Array(10).fill(0); 
     recentDigits.forEach(d=>counts[d]++);
+
     const total = recentDigits.length;
     document.getElementById('tick-counter').innerText=`${total}/${MAX_DIGITS}`;
 
     const matchCounts = Array(10).fill(0);
     for(let i=1; i<recentDigits.length; i++){
-        if(recentDigits[i] === recentDigits[i-1]) matchCounts[recentDigits[i]]++;
+        if(recentDigits[i] === recentDigits[i-1]){
+            matchCounts[recentDigits[i]]++;
+        }
     }
 
-    const pctArr = counts.map(c=>total>0?Math.round(c/total*1000)/10:0);
+    let pctArr = counts.map((count,i)=> total>0 ? Math.round(count/total*1000)/10 : 0);
+    let pctSum = pctArr.reduce((a,b)=>a+b,0);
+    if(Math.abs(pctSum-100) > 0.1 && total>0){
+        const diff = 100-pctSum;
+        let maxIndex = pctArr.indexOf(Math.max(...pctArr));
+        pctArr[maxIndex] = Math.round((pctArr[maxIndex]+diff)*10)/10;
+    }
 
-    const maxVal = counts.length ? Math.max(...counts) : 0;
-    const minVal = counts.length ? Math.min(...counts.filter(c=>c>0)) : 0;
+    const activeCounts = counts.filter(c => c>0);
+    const maxVal = activeCounts.length ? Math.max(...activeCounts) : 0;
+    const minVal = activeCounts.length ? Math.min(...activeCounts) : 0;
 
     counts.forEach((count,i)=>{
         const circle = document.getElementById(`circle-${i}`);
         if(!circle) return;
+        
         const pctEl = document.getElementById(`pct-${i}`);
         const statsEl = document.getElementById(`stats-${i}`);
         const fillEl = document.getElementById(`fill-${i}`);
+        
         if(pctEl) pctEl.innerText = `${pctArr[i].toFixed(1)}%`;
-        const evenOdd = i%2===0?"E":"O";
-        const overUnder = i>=5?"Ov":"Un";
-        const matchPct = count>0?(matchCounts[i]/count*100).toFixed(0):0;
+        
+        const evenOdd = i%2===0 ? "E" : "O";
+        const overUnder = i>=5 ? "Ov" : "Un";
+        const matchPct = count>0 ? (matchCounts[i]/count * 100).toFixed(0) : 0;
+        
         if(statsEl) statsEl.innerHTML = `${evenOdd}/${overUnder}<br>M:${matchPct}%`;
-        if(fillEl){
-            fillEl.style.width=`${matchPct}%`;
-            fillEl.className = `match-bar-fill ${matchPct>=50?'match-bar-hot':'match-bar-cold'}`;
+        if(fillEl) {
+            fillEl.style.width = `${matchPct}%`;
+            fillEl.className = `match-bar-fill ${matchPct >= 50 ? 'match-bar-hot' : 'match-bar-cold'}`;
         }
+
         circle.classList.remove('hot','cold','active');
         if(i===recentDigits[recentDigits.length-1]) circle.classList.add('active');
         if(count === maxVal && count>0) circle.classList.add('hot');
-        if(count === minVal && count>0 && minVal<maxVal) circle.classList.add('cold');
+        if(count === minVal && count>0 && minVal < maxVal) circle.classList.add('cold');
     });
 
     const lastDigit = recentDigits[recentDigits.length-1];
-    if(lastDigit!==undefined){
+    if(lastDigit !== undefined){
         const targetCircle = document.getElementById(`circle-${lastDigit}`);
         if(targetCircle){
             const rect = targetCircle.getBoundingClientRect();
@@ -250,42 +282,51 @@ function updateStrategyPanel(digit,price){
     rfEl.innerText=price>=lastPrice?"RISE":"FALL"; 
     rfEl.style.color=price>=lastPrice?"var(--green)":"var(--red)";
 
-    let matches=0;
-    for(let i=1;i<digitHistory.length;i++) if(digitHistory[i]===digitHistory[i-1]) matches++;
-    const matchPct = digitHistory.length>1?(matches/(digitHistory.length-1)*100).toFixed(1):0;
+    let matches = 0;
+    for(let i=1; i<digitHistory.length; i++){
+        if(digitHistory[i] === digitHistory[i-1]) matches++;
+    }
+    const matchPct = digitHistory.length>1 ? (matches/(digitHistory.length-1)*100).toFixed(1) : 0;
     mdEl.innerText=`${matchPct}% match`;
-    mdEl.style.color=matchPct>=50?"var(--green)":"var(--red)";
+    mdEl.style.color = matchPct >= 50 ? "var(--green)" : "var(--red)";
 }
 
-// === Strong Signal Generation ===
-function generateStrongSignal(lastDigit){
+// Strong signal generator
+function generateStrongSignal(digit){
     const now = Date.now();
-    if(now - lastSignalTime < SIGNAL_INTERVAL) return; // respect interval
+    if(now - lastSignalTime < SIGNAL_INTERVAL) return; // avoid frequent signals
 
-    const recentDigits = digitHistory.slice(-10);
-    const counts = Array(10).fill(0); recentDigits.forEach(d=>counts[d]++);
-    const maxCount = Math.max(...counts);
-    if(maxCount >= 4){ // strong signal: same digit appeared >=4 times in last 10 ticks
-        strongSignal = lastDigit;
-        document.getElementById('signal-btn').innerText = `📈 Strong Signal: ${strongSignal} ✅ Confirm Trade`;
+    // Strong signal condition: digit repeats 3+ times in last 5 ticks
+    const recent = digitHistory.slice(-5);
+    const count = recent.filter(d=>d===digit).length;
+
+    if(count >= 3){
+        strongSignal = digit >=5 ? "CALL" : "PUT"; // example direction
         lastSignalTime = now;
+        showSignal(strongSignal);
     }
 }
 
-// === Manual Trade Confirmation ===
-document.getElementById('signal-btn').addEventListener('click',()=>{
-    if(strongSignal!==null){
-        alert(`Trade confirmed on digit: ${strongSignal}\nYou can trigger bot execution here.`);
+// Show signal on button for manual confirmation
+function showSignal(direction){
+    const btn = document.getElementById('signal-btn');
+    btn.innerText = `📢 ${direction} - Confirm Trade`;
+    btn.style.background = direction==="CALL" ? "var(--green)" : "var(--red)";
+    btn.style.color = "#000";
+
+    btn.onclick = ()=>{
+        alert(`Trade confirmed: ${direction}`); // here you can link your bot trade execution
+        btn.innerText = "📈 Confirm Trade";
+        btn.style.background = "var(--blue)";
+        btn.style.color = "#000";
         strongSignal = null;
-        document.getElementById('signal-btn').innerText = "📈 Confirm Trade";
-    } else {
-        alert("No strong signal yet.");
     }
-});
+}
 
 function closeAnalysis(){
     document.getElementById('analysis-overlay').style.display='none';
     if(activeTickSubscription) ws.send(JSON.stringify({forget:activeTickSubscription}));
 }
 </script>
+</body>
 </html>
