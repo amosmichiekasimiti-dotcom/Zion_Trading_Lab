@@ -1,231 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Zion AI Lab | Pro Edition</title>
+<style>
+:root { 
+    --red: #ff444f; 
+    --dark: #0a0a0f; 
+    --green: #00ff88; 
+    --gold: #ffd700; 
+    --blue: #00f2fe; 
+    --panel: #151520; 
+}
+body { font-family: 'Segoe UI', sans-serif; background: var(--dark); color: white; margin: 0; padding: 10px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+.nav-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
+.nav-btn { background: var(--panel); border: 1px solid #333; color: #888; padding: 10px 15px; border-radius: 8px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap; transition: 0.3s; }
+.nav-btn.active { background: var(--red); color: white; border-color: var(--red); }
+
+.table-container { background: var(--panel); border-radius: 12px; flex-grow: 1; overflow-y: auto; border: 1px solid #222; margin-top: 5px; }
+table { width: 100%; border-collapse: collapse; }
+th { position: sticky; top: 0; background: #1c1c2b; padding: 12px; text-align: left; font-size: 11px; color: #aaa; z-index: 10; }
+td { padding: 12px; border-bottom: 1px solid #222; font-size: 13px; }
+
+#analysis-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--dark); z-index: 1000; padding: 15px; box-sizing: border-box; overflow-y: auto; }
+.price-card { background: #151520; padding: 15px; border-radius: 12px; text-align: center; border: 1px solid var(--blue); margin-bottom: 10px; box-shadow: 0 0 15px rgba(0, 242, 254, 0.2); }
+#live-price { font-size: 32px; font-weight: bold; font-family: monospace; }
+
+.strategy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+.strat-card { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; border: 1px solid #333; }
+.strat-label { font-size: 9px; color: #888; text-transform: uppercase; margin-bottom: 4px; }
+.strat-value { font-weight: bold; font-size: 14px; }
+
+.digit-circle-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin: 15px 0; }
+.digit-circle { aspect-ratio: 1/1; border-radius: 50%; background: #1a1a24; border: 2px solid #333; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.3s ease; position: relative; }
+.digit-num { font-size: 16px; font-weight: bold; }
+.digit-pct { font-size: 9px; color: #888; margin-top: 2px; }
+.digit-tooltip { position: absolute; bottom: -18px; font-size: 9px; color: #fff; background: #333; padding: 1px 4px; border-radius: 4px; display: none; }
+
+.digit-circle.active { border-color: var(--blue); box-shadow: 0 0 15px var(--blue); transform: scale(1.05); }
+.digit-circle.most-freq { background: linear-gradient(145deg, #00ff88, #008844) !important; border-color: #fff; box-shadow: 0 0 20px rgba(0, 255, 136, 0.6); }
+.digit-circle.most-freq .digit-num, .digit-circle.most-freq .digit-pct { color: #000; font-weight: 900; }
+.digit-circle.least-freq { background: linear-gradient(145deg, #ff444f, #882222) !important; border-color: #fff; box-shadow: 0 0 20px rgba(255, 68, 79, 0.6); }
+.digit-circle.least-freq .digit-num, .digit-circle.least-freq .digit-pct { color: #fff; }
+
+.digit-circle:hover .digit-tooltip { display: block; }
+
+#chart-container { height: 700px; background: #000; border-radius: 12px; margin-top: 15px; overflow: hidden; border: 1px solid #222; }
+.close-btn { background: #333; color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: bold; margin: 20px 0; cursor: pointer; }
+.btn-analyze { background: var(--blue); color: #000; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; }
+</style>
+</head>
+<body>
+<div style="display:flex; justify-content:space-between; align-items:center; padding: 5px 10px;">
+<h2 style="margin:0; color: var(--gold); font-size: 18px;">🤖 ZION PRO LAB</h2>
+<small id="status-text" style="color:var(--green)">● System Ready</small>
+</div>
+
+<div class="nav-scroll">
+<button class="nav-btn active" onclick="filterMarkets('synthetic', this)">VOLATILITY</button>
+<button class="nav-btn" onclick="filterMarkets('crashboom', this)">CRASH/BOOM</button>
+<button class="nav-btn" onclick="filterMarkets('step', this)">STEP/RANGE</button>
+<button class="nav-btn" onclick="filterMarkets('dex', this)">DEX/DRIFT</button>
+<button class="nav-btn" onclick="filterMarkets('forex', this)">FOREX</button>
+<button class="nav-btn" onclick="filterMarkets('cryptocurrency', this)">CRYPTO</button>
+</div>
+
+<div class="table-container">
+<table>
+<thead><tr><th>Asset Name</th><th>Type</th><th>Action</th></tr></thead>
+<tbody id="market-list"></tbody>
+</table>
+</div>
+
+<div id="analysis-overlay">
+<div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+<h3 id="target-name" style="margin:0; color:var(--gold);">Asset Analysis</h3>
+<span id="target-symbol" style="color:#666; font-family: monospace;">---</span>
+</div>
+
+<div class="price-card">
+<div id="live-price">0.0000</div>
+<div id="ai-signal" style="font-weight:bold; margin-top:10px; font-size:18px;">CALIBRATING...</div>
+</div>
+
+<div class="strategy-grid">
+<div class="strat-card"><div class="strat-label">Even / Odd</div><div id="stat-even-odd" class="strat-value">---</div></div>
+<div class="strat-card"><div class="strat-label">Over / Under</div><div id="stat-over-under" class="strat-value">---</div></div>
+<div class="strat-card"><div class="strat-label">HOT Digit</div><div id="stat-hot-digit" class="strat-value">---</div></div>
+<div class="strat-card"><div class="strat-label">Tick Trend</div><div id="stat-rise-fall" class="strat-value">---</div></div>
+</div>
+
+<div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1);">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+<div style="font-size: 10px; color: #aaa; text-transform: uppercase; letter-spacing: 1px;">Live Digit Analytics</div>
+<div id="tick-counter" style="background: var(--blue); color: #000; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: bold;">Syncing...</div>
+</div>
+<div class="digit-circle-grid" id="digit-circles"></div>
+</div>
+
+<div id="chart-container"></div>
+<button class="close-btn" onclick="closeAnalysis()">EXIT ENGINE</button>
+</div>
+
 <script>
-const APP_ID = 126973;
-const ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`);
+const APP_ID=126973;
+const ws=new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`);
+let allSymbols=[], activeSubscriptionId=null, digitHistory=[], priceHistory=[], currentSymbol=null;
+const MAX_DIGITS=1000;
 
-let allSymbols = [];
-let activeSubscriptionId = null;
-let digitHistory = [];
-let priceHistory = [];
-let currentSymbol = null;
-const MAX_DIGITS = 1000;
+ws.onopen=()=>{document.getElementById("status-text").innerText="● Connected";document.getElementById("status-text").style.color="var(--green)";ws.send(JSON.stringify({active_symbols:"brief",product_type:"basic"}));};
+ws.onerror=()=>{document.getElementById("status-text").innerText="● Connection Error";document.getElementById("status-text").style.color="red";};
+ws.onclose=()=>{document.getElementById("status-text").innerText="● Disconnected";document.getElementById("status-text").style.color="orange";};
 
-/* ---------------- CONNECTION STATUS ---------------- */
-
-ws.onopen = () => {
-    document.getElementById("status-text").innerText = "● Connected";
-    document.getElementById("status-text").style.color = "var(--green)";
-    ws.send(JSON.stringify({ active_symbols: "brief", product_type: "basic" }));
+ws.onmessage=(msg)=>{
+  const data=JSON.parse(msg.data);
+  if(data.active_symbols){allSymbols=data.active_symbols;filterMarkets('synthetic');}
+  if(data.history&&data.echo_req.ticks_history===currentSymbol){
+    const asset=allSymbols.find(s=>s.symbol===currentSymbol);
+    const pipSize=asset?asset.pip_size:2;
+    digitHistory=[];priceHistory=[];
+    data.history.prices.forEach(price=>{const f=Number(price).toFixed(pipSize);digitHistory.push(parseInt(f.slice(-1)));priceHistory.push(Number(price));});
+    updateDigitCircles();updateStrategyPanel();
+  }
+  if(data.tick&&data.tick.symbol===currentSymbol){handleTick(data.tick);}
 };
 
-ws.onerror = () => {
-    document.getElementById("status-text").innerText = "● Connection Error";
-    document.getElementById("status-text").style.color = "red";
-};
-
-ws.onclose = () => {
-    document.getElementById("status-text").innerText = "● Disconnected";
-    document.getElementById("status-text").style.color = "orange";
-};
-
-/* ---------------- MESSAGE HANDLER ---------------- */
-
-ws.onmessage = (msg) => {
-    const data = JSON.parse(msg.data);
-
-    // Active symbols
-    if (data.active_symbols) {
-        allSymbols = data.active_symbols;
-        filterMarkets('synthetic');
-    }
-
-    // History response (FULL REPLACEMENT)
-    if (data.history && data.echo_req.ticks_history === currentSymbol) {
-
-        const asset = allSymbols.find(s => s.symbol === currentSymbol);
-        const pipSize = asset ? asset.pip_size : 2;
-
-        digitHistory = [];
-        priceHistory = [];
-
-        data.history.prices.forEach(price => {
-            const formatted = Number(price).toFixed(pipSize);
-            const digit = parseInt(formatted.slice(-1));
-            digitHistory.push(digit);
-            priceHistory.push(Number(price));
-        });
-
-        updateDigitCircles();
-    }
-
-    // Live tick
-    if (data.tick && data.tick.symbol === currentSymbol) {
-        handleTick(data.tick);
-    }
-};
-
-/* ---------------- MARKET FILTER ---------------- */
-
-function filterMarkets(type, btn) {
-    if(btn){
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-    }
-
-    const tbody = document.getElementById('market-list');
-    tbody.innerHTML = '';
-
-    const filtered = allSymbols.filter(s => {
-        if (type === 'synthetic') return s.market === 'synthetic_index' &&
-            !s.display_name.includes('Crash') &&
-            !s.display_name.includes('Boom') &&
-            !s.display_name.includes('Step') &&
-            !s.display_name.includes('Range');
-        return s.market === type;
-    });
-
-    filtered.forEach(s => {
-        tbody.innerHTML += `
-            <tr>
-                <td>${s.display_name}</td>
-                <td style="color:#666; font-size:10px;">${s.symbol}</td>
-                <td>
-                    <button class="btn-analyze"
-                        onclick="openAnalysis('${s.symbol}', '${s.display_name}')">
-                        Analyze
-                    </button>
-                </td>
-            </tr>`;
-    });
+function filterMarkets(type,btn){
+  if(btn){document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
+  const tbody=document.getElementById('market-list');tbody.innerHTML='';
+  const filtered=allSymbols.filter(s=>type==='synthetic'?s.market==='synthetic_index':s.market===type);
+  filtered.forEach(s=>{tbody.innerHTML+=`<tr><td>${s.display_name}</td><td style="color:#666; font-size:10px;">${s.symbol}</td><td><button class="btn-analyze" onclick="openAnalysis('${s.symbol}','${s.display_name}')">Analyze</button></td></tr>`;});
 }
 
-/* ---------------- OPEN ANALYSIS ---------------- */
-
-function openAnalysis(symbol, name) {
-
-    currentSymbol = symbol;
-
-    document.getElementById('target-name').innerText = name;
-    document.getElementById('target-symbol').innerText = symbol;
-    document.getElementById('analysis-overlay').style.display = 'block';
-
-    digitHistory = [];
-    priceHistory = [];
-
-    buildDigitUI();
-
-    // Cancel previous subscription
-    if (activeSubscriptionId) {
-        ws.send(JSON.stringify({ forget: activeSubscriptionId }));
-        activeSubscriptionId = null;
-    }
-
-    // Request EXACT 1000 latest ticks
-    ws.send(JSON.stringify({
-        ticks_history: symbol,
-        adjust_start_time: 1,
-        count: MAX_DIGITS,
-        end: "latest",
-        style: "ticks"
-    }));
-
-    // Subscribe to live ticks
-    ws.send(JSON.stringify({
-        ticks: symbol,
-        subscribe: 1
-    }));
+function openAnalysis(symbol,name){
+  currentSymbol=symbol;
+  document.getElementById('target-name').innerText=name;
+  document.getElementById('target-symbol').innerText=symbol;
+  document.getElementById('analysis-overlay').style.display='block';
+  digitHistory=[];priceHistory=[];
+  buildDigitUI();
+  if(activeSubscriptionId){ws.send(JSON.stringify({forget:activeSubscriptionId}));activeSubscriptionId=null;}
+  ws.send(JSON.stringify({ticks_history:symbol,adjust_start_time:1,count:MAX_DIGITS,end:"latest",style:"ticks"}));
+  ws.send(JSON.stringify({ticks:symbol,subscribe:1}));
+  document.getElementById('chart-container').innerHTML=`<iframe src="https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=dark" width="100%" height="100%" frameborder="0"></iframe>`;
 }
 
-/* ---------------- HANDLE LIVE TICK ---------------- */
-
-function handleTick(tick) {
-
-    activeSubscriptionId = tick.id;
-
-    const asset = allSymbols.find(s => s.symbol === tick.symbol);
-    const pipSize = asset ? asset.pip_size : 2;
-
-    const price = Number(tick.quote);
-    const formatted = price.toFixed(pipSize);
-    const digit = parseInt(formatted.slice(-1));
-
-    document.getElementById('live-price').innerText = formatted;
-
-    digitHistory.push(digit);
-    priceHistory.push(price);
-
-    // STRICT ROLLING BUFFER
-    if (digitHistory.length > MAX_DIGITS) digitHistory.shift();
-    if (priceHistory.length > MAX_DIGITS) priceHistory.shift();
-
-    updateDigitCircles();
-    updateStrategyPanel(digit, price);
+function buildDigitUI(){
+  const container=document.getElementById('digit-circles');container.innerHTML='';
+  for(let i=0;i<=9;i++){
+    container.innerHTML+=`<div id="circle-${i}" class="digit-circle"><div class="digit-num">${i}</div><div id="pct-${i}" class="digit-pct">0%</div><div class="digit-tooltip" id="tooltip-${i}">0%</div></div>`;
+  }
 }
 
-/* ---------------- DIGIT ANALYTICS ---------------- */
-
-function updateDigitCircles() {
-
-    const counts = new Array(10).fill(0);
-    digitHistory.forEach(d => counts[d]++);
-
-    const total = digitHistory.length;
-    document.getElementById('tick-counter').innerText = `${total}/${MAX_DIGITS}`;
-
-    const maxVal = Math.max(...counts);
-    const minVal = total >= MAX_DIGITS ? Math.min(...counts) : -1;
-
-    counts.forEach((count, i) => {
-
-        const pct = total > 0 ? ((count / total) * 100).toFixed(1) : "0.0";
-        const circle = document.getElementById(`circle-${i}`);
-        document.getElementById(`pct-${i}`).innerText = `${pct}%`;
-
-        circle.classList.remove('most-freq','least-freq','active');
-
-        if (digitHistory[total - 1] === i)
-            circle.classList.add('active');
-
-        if (count === maxVal && total >= MAX_DIGITS)
-            circle.classList.add('most-freq');
-
-        if (count === minVal && total >= MAX_DIGITS)
-            circle.classList.add('least-freq');
-    });
+function handleTick(tick){
+  activeSubscriptionId=tick.id;
+  const asset=allSymbols.find(s=>s.symbol===tick.symbol);
+  const pipSize=asset?asset.pip_size:2;
+  const price=Number(tick.quote);
+  const formatted=price.toFixed(pipSize);
+  const digit=parseInt(formatted.slice(-1));
+  document.getElementById('live-price').innerText=formatted;
+  digitHistory.push(digit);priceHistory.push(price);
+  if(digitHistory.length>MAX_DIGITS) digitHistory.shift();
+  if(priceHistory.length>MAX_DIGITS) priceHistory.shift();
+  updateDigitCircles();updateStrategyPanel();
 }
 
-/* ---------------- STRATEGY PANEL ---------------- */
-
-function updateStrategyPanel(digit, price) {
-
-    const evenOdd = document.getElementById('stat-even-odd');
-    const overUnder = document.getElementById('stat-over-under');
-    const riseFall = document.getElementById('stat-rise-fall');
-
-    const isEven = digit % 2 === 0;
-    evenOdd.innerText = isEven ? "EVEN" : "ODD";
-    evenOdd.style.color = isEven ? "var(--blue)" : "var(--gold)";
-
-    const isOver = digit > 4;
-    overUnder.innerText = isOver ? "OVER" : "UNDER";
-    overUnder.style.color = isOver ? "var(--green)" : "var(--red)";
-
-    const lastPrice = priceHistory[priceHistory.length - 2] || price;
-    riseFall.innerText = price >= lastPrice ? "RISE" : "FALL";
-    riseFall.style.color = price >= lastPrice ? "var(--green)" : "var(--red)";
-
-    const counts = new Array(10).fill(0);
-    digitHistory.forEach(d => counts[d]++);
-    const hot = counts.indexOf(Math.max(...counts));
-    document.getElementById('stat-match-diff').innerText = `HOT: ${hot}`;
+function updateDigitCircles(){
+  const counts=new Array(10).fill(0);digitHistory.forEach(d=>counts[d]++);
+  const total=digitHistory.length;
+  document.getElementById('tick-counter').innerText=`${total}/${MAX_DIGITS}`;
+  const maxVal=Math.max(...counts);const minVal=total>=MAX_DIGITS?Math.min(...counts):-1;
+  counts.forEach((count,i)=>{
+    const pct=total>0?((count/total)*100).toFixed(1):"0.0";
+    const circle=document.getElementById(`circle-${i}`);
+    document.getElementById(`pct-${i}`).innerText=`${pct}%`;
+    document.getElementById(`tooltip-${i}`).innerText=`${pct}%`;
+    circle.classList.remove('most-freq','least-freq','active');
+    if(digitHistory[total-1]===i)circle.classList.add('active');
+    if(count===maxVal&&total>=MAX_DIGITS)circle.classList.add('most-freq');
+    if(count===minVal&&total>=MAX_DIGITS)circle.classList.add('least-freq');
+  });
 }
 
-/* ---------------- CLOSE ---------------- */
-
-function closeAnalysis() {
-    document.getElementById('analysis-overlay').style.display = 'none';
-    if (activeSubscriptionId) {
-        ws.send(JSON.stringify({ forget: activeSubscriptionId }));
-        activeSubscriptionId = null;
-    }
+function updateStrategyPanel(){
+  const evenOdd=document.getElementById('stat-even-odd');const overUnder=document.getElementById('stat-over-under');const hotDigit=document.getElementById('stat-hot-digit');const riseFall=document.getElementById('stat-rise-fall');
+  if(digitHistory.length===0)return;
+  const lastDigit=digitHistory[digitHistory.length-1];const lastPrice=priceHistory[priceHistory.length-1];
+  evenOdd.innerText=lastDigit%2===0?"EVEN":"ODD";evenOdd.style.color=lastDigit%2===0?"var(--blue)":"var(--gold)";
+  overUnder.innerText=lastDigit>4?"OVER":"UNDER";overUnder.style.color=lastDigit>4?"var(--green)":"var(--red)";
+  riseFall.innerText=priceHistory.length>1&&lastPrice>=priceHistory[priceHistory.length-2]?"RISE":"FALL";riseFall.style.color=riseFall.innerText==="RISE"?"var(--green)":"var(--red)";
+  const counts=new Array(10).fill(0);digitHistory.forEach(d=>counts[d]++);
+  hotDigit.innerText=`HOT: ${counts.indexOf(Math.max(...counts))}`;
 }
+
+function closeAnalysis(){document.getElementById('analysis-overlay').style.display='none';if(activeSubscriptionId){ws.send(JSON.stringify({forget:activeSubscriptionId}));activeSubscriptionId=null;}}
 </script>
+</body>
+</html>
