@@ -163,27 +163,39 @@ td { padding: 12px; border-bottom: 1px solid #222; font-size: 13px; }
     padding: 4px 10px;
     border-radius: 15px;
 }
+
+/* Market count */
+.market-count {
+    color: var(--gold);
+    font-size: 11px;
+    margin-left: 10px;
+}
 </style>
 </head>
 <body>
 
 <div style="display:flex; justify-content:space-between; align-items:center; padding: 5px 10px;">
     <h2 style="margin:0; color: var(--gold); font-size: 18px;">🤖 ZION PRO LAB</h2>
-    <small id="status-text" style="color:var(--green)">● System Ready</small>
+    <div style="display: flex; gap: 10px; align-items: center;">
+        <small id="market-counter" style="color:var(--blue)">0 markets</small>
+        <small id="status-text" style="color:var(--green)">● System Ready</small>
+    </div>
 </div>
 
 <div class="nav-scroll">
     <button class="nav-btn active" onclick="filterMarkets('synthetic', this)">VOLATILITY</button>
     <button class="nav-btn" onclick="filterMarkets('crashboom', this)">CRASH/BOOM</button>
     <button class="nav-btn" onclick="filterMarkets('step', this)">STEP/RANGE</button>
-    <button class="nav-btn" onclick="filterMarkets('dex', this)">DEX/DRIFT</button>
     <button class="nav-btn" onclick="filterMarkets('forex', this)">FOREX</button>
     <button class="nav-btn" onclick="filterMarkets('cryptocurrency', this)">CRYPTO</button>
+    <button class="nav-btn" onclick="filterMarkets('commodities', this)">COMMODITIES</button>
+    <button class="nav-btn" onclick="filterMarkets('indices', this)">INDICES</button>
+    <button class="nav-btn" onclick="filterMarkets('all', this)">ALL MARKETS</button>
 </div>
 
 <div class="table-container">
     <table>
-        <thead><tr><th>Asset Name</th><th>Type</th><th>Action</th></tr></thead>
+        <thead><tr><th>Asset Name</th><th>Symbol</th><th>Market</th><th>Action</th></tr></thead>
         <tbody id="market-list"></tbody>
     </table>
 </div>
@@ -259,63 +271,195 @@ let priceHistory = [];
 const MAX_DIGITS = 1000;
 const cursor = document.getElementById("digit-cursor");
 
-ws.onopen = () => ws.send(JSON.stringify({ active_symbols: "brief", product_type: "basic" }));
+ws.onopen = () => {
+    console.log("WebSocket connected");
+    ws.send(JSON.stringify({ 
+        active_symbols: "brief", 
+        product_type: "basic" 
+    }));
+};
 
 ws.onmessage = (msg) => {
     const data = JSON.parse(msg.data);
-    if (data.active_symbols) { allSymbols = data.active_symbols; filterMarkets('synthetic'); }
+    
+    if (data.error) {
+        console.error("WebSocket error:", data.error);
+        return;
+    }
+    
+    if (data.active_symbols) { 
+        allSymbols = data.active_symbols; 
+        console.log(`Loaded ${allSymbols.length} symbols`);
+        // Show all markets by default
+        filterMarkets('all'); 
+    }
+    
     if (data.history && data.history.prices) {
-        digitHistory = data.history.prices.map(p => parseInt(Number(p).toFixed(2).slice(-1)));
+        digitHistory = data.history.prices.map(p => {
+            const num = Number(p);
+            return parseInt(num.toFixed(2).slice(-1));
+        });
         priceHistory = [...data.history.prices];
         updateDigitCircles();
-        updateStrategyPanel(digitHistory[digitHistory.length-1], priceHistory[priceHistory.length-1]);
+        if (digitHistory.length > 0) {
+            updateStrategyPanel(digitHistory[digitHistory.length-1], priceHistory[priceHistory.length-1]);
+        }
     }
+    
     if (data.tick) handleTick(data.tick);
 };
 
 function filterMarkets(type, btn) {
-    if(btn) document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); btn?.classList.add('active');
-    const tbody = document.getElementById('market-list'); tbody.innerHTML = '';
-    const filtered = allSymbols.filter(s => {
-        if(type==='synthetic') return s.market==='synthetic_index' && !s.display_name.includes('Crash') && !s.display_name.includes('Boom');
-        if(type==='crashboom') return s.display_name.includes('Crash') || s.display_name.includes('Boom');
-        if(type==='forex') return s.market === 'forex';
-        if(type==='cryptocurrency') return s.market === 'cryptocurrency';
-        return s.market === type;
+    // Update active button
+    if(btn) {
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+    
+    const tbody = document.getElementById('market-list');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    let filtered = [];
+    
+    if (type === 'all') {
+        // Show all symbols
+        filtered = allSymbols;
+    } else {
+        filtered = allSymbols.filter(s => {
+            if (!s || !s.market) return false;
+            
+            const market = s.market.toLowerCase();
+            const displayName = (s.display_name || '').toLowerCase();
+            
+            switch(type) {
+                case 'synthetic':
+                    return market === 'synthetic_index' && 
+                           !displayName.includes('crash') && 
+                           !displayName.includes('boom') &&
+                           !displayName.includes('jump') &&
+                           !displayName.includes('step');
+                
+                case 'crashboom':
+                    return displayName.includes('crash') || 
+                           displayName.includes('boom') ||
+                           displayName.includes('crash/boom');
+                
+                case 'step':
+                    return displayName.includes('step') || 
+                           displayName.includes('range') ||
+                           displayName.includes('step index');
+                
+                case 'forex':
+                    return market === 'forex';
+                
+                case 'cryptocurrency':
+                    return market === 'cryptocurrency';
+                
+                case 'commodities':
+                    return market === 'commodities';
+                
+                case 'indices':
+                    return market === 'stock_index' || 
+                           market === 'indices';
+                
+                default:
+                    return true;
+            }
+        });
+    }
+    
+    // Update market counter
+    const counterEl = document.getElementById('market-counter');
+    if (counterEl) {
+        counterEl.innerHTML = `${filtered.length} markets`;
+    }
+    
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#666;">No markets found</td></tr>';
+        return;
+    }
+    
+    // Display first 50 markets to avoid performance issues
+    filtered.slice(0, 50).forEach(s => {
+        const row = document.createElement('tr');
+        const marketType = s.market || 'N/A';
+        const symbol = s.symbol || '';
+        const displayName = s.display_name || symbol;
+        
+        row.innerHTML = `
+            <td>${displayName}</td>
+            <td style="color:#666; font-size:10px;">${symbol}</td>
+            <td style="color:#888; font-size:10px;">${marketType}</td>
+            <td><button class="btn-analyze" onclick="openAnalysis('${symbol}','${displayName.replace(/'/g, "\\'")}')">Analyze</button></td>
+        `;
+        tbody.appendChild(row);
     });
-    filtered.slice(0, 20).forEach(s => tbody.innerHTML+=`<tr><td>${s.display_name}</td><td style="color:#666; font-size:10px;">${s.symbol.toUpperCase()}</td><td><button class="btn-analyze" onclick="openAnalysis('${s.symbol}','${s.display_name}')">Analyze</button></td></tr>`);
+    
+    if (filtered.length > 50) {
+        const row = document.createElement('tr');
+        row.innerHTML = `<td colspan="4" style="text-align:center; color:var(--gold);">+ ${filtered.length - 50} more markets (scroll in API)</td>`;
+        tbody.appendChild(row);
+    }
 }
 
 function openAnalysis(symbol, name){
-    document.getElementById('target-name').innerText=name;
-    document.getElementById('target-symbol').innerText=symbol;
-    document.getElementById('analysis-overlay').style.display='block';
-    document.getElementById('chart-container').innerHTML=`<iframe src="https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=dark" width="100%" height="100%" frameborder="0"></iframe>`;
-    digitHistory=[]; priceHistory=[]; buildDigitUI();
+    document.getElementById('target-name').innerText = name;
+    document.getElementById('target-symbol').innerText = symbol;
+    document.getElementById('analysis-overlay').style.display = 'block';
+    
+    // Load chart
+    document.getElementById('chart-container').innerHTML = `
+        <iframe src="https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=dark" 
+                width="100%" height="100%" frameborder="0"></iframe>`;
+    
+    // Reset data
+    digitHistory = []; 
+    priceHistory = []; 
+    buildDigitUI();
 
-    ws.send(JSON.stringify({ticks_history:symbol,adjust_start_time:1,count:MAX_DIGITS,end:"latest",style:"ticks"}));
-    if(activeTickSubscription) ws.send(JSON.stringify({forget:activeTickSubscription}));
-    ws.send(JSON.stringify({ticks:symbol,subscribe:1}));
+    // Request history
+    ws.send(JSON.stringify({
+        ticks_history: symbol,
+        adjust_start_time: 1,
+        count: Math.min(MAX_DIGITS, 1000),
+        end: "latest",
+        style: "ticks"
+    }));
+    
+    // Subscribe to ticks
+    if (activeTickSubscription) {
+        ws.send(JSON.stringify({ forget: activeTickSubscription }));
+    }
+    ws.send(JSON.stringify({ ticks: symbol, subscribe: 1 }));
 }
 
 function buildDigitUI(){
-    const container=document.getElementById('digit-circles'); container.innerHTML='';
-    for(let i=0;i<=9;i++){
-        container.innerHTML+=`<div id="circle-${i}" class="digit-circle">
-            <div class="digit-num">${i}</div>
-            <div id="pct-${i}" class="digit-pct">0%</div>
-            <div id="stats-${i}" class="digit-stats">E/O:--<br>M/D:--</div>
-            <div class="match-bar-container" id="bar-${i}">
-                <div class="match-bar-fill" id="fill-${i}" style="width:0%"></div>
+    const container = document.getElementById('digit-circles');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    for(let i = 0; i <= 9; i++){
+        container.innerHTML += `
+            <div id="circle-${i}" class="digit-circle">
+                <div class="digit-num">${i}</div>
+                <div id="pct-${i}" class="digit-pct">0%</div>
+                <div id="stats-${i}" class="digit-stats">E/O:--<br>M/D:--</div>
+                <div class="match-bar-container" id="bar-${i}">
+                    <div class="match-bar-fill" id="fill-${i}" style="width:0%"></div>
+                </div>
+                <div class="freq-bar-container" id="freq-bar-${i}">
+                    <div class="freq-bar-fill" id="freq-fill-${i}" style="width:0%"></div>
+                </div>
             </div>
-            <div class="freq-bar-container" id="freq-bar-${i}">
-                <div class="freq-bar-fill" id="freq-fill-${i}" style="width:0%"></div>
-            </div>
-        </div>`;
+        `;
     }
 }
 
 function handleTick(tick){
+    if (!tick || !tick.quote) return;
+    
     activeTickSubscription = tick.id;
     const pipSize = tick.pip_size || 2;
     const priceStr = Number(tick.quote).toFixed(pipSize);
@@ -324,24 +468,28 @@ function handleTick(tick){
     document.getElementById('live-price').innerText = priceStr;
 
     digitHistory.push(lastDigit); 
-    priceHistory.push(Number(priceStr));
+    priceHistory.push(Number(tick.quote));
     
     if(digitHistory.length > MAX_DIGITS) digitHistory.shift();
     if(priceHistory.length > MAX_DIGITS) priceHistory.shift();
 
     updateDigitCircles(); 
-    updateStrategyPanel(lastDigit, Number(priceStr));
+    updateStrategyPanel(lastDigit, Number(tick.quote));
 }
 
 function updateDigitCircles(){
+    if (digitHistory.length === 0) return;
+    
     const recentDigits = digitHistory.slice(-MAX_DIGITS);
     const counts = Array(10).fill(0); 
-    recentDigits.forEach(d => counts[d]++);
+    recentDigits.forEach(d => {
+        if (d >= 0 && d <= 9) counts[d]++;
+    });
 
     const total = recentDigits.length;
     document.getElementById('tick-counter').innerText = `${total}/${MAX_DIGITS}`;
 
-    // Calculate match counts (consecutive same digits)
+    // Calculate match counts
     const matchCounts = Array(10).fill(0);
     for(let i = 1; i < recentDigits.length; i++){
         if(recentDigits[i] === recentDigits[i-1]){
@@ -415,7 +563,7 @@ function updateDigitCircles(){
     const lastDigit = recentDigits[recentDigits.length-1];
     if(lastDigit !== undefined){
         const targetCircle = document.getElementById(`circle-${lastDigit}`);
-        if(targetCircle){
+        if(targetCircle && cursor){
             const rect = targetCircle.getBoundingClientRect();
             const parentRect = document.getElementById('digit-circles').getBoundingClientRect();
             cursor.style.left = `${rect.left - parentRect.left + rect.width/2 - 8}px`;
@@ -429,15 +577,21 @@ function updateStrategyPanel(digit, price){
     const rfEl = document.getElementById('stat-rise-fall');
     const mdEl = document.getElementById('stat-match-diff');
 
-    evOdEl.innerText = digit % 2 === 0 ? "EVEN" : "ODD"; 
-    evOdEl.style.color = digit % 2 === 0 ? "var(--blue)" : "var(--gold)";
+    if (evOdEl) {
+        evOdEl.innerText = digit % 2 === 0 ? "EVEN" : "ODD"; 
+        evOdEl.style.color = digit % 2 === 0 ? "var(--blue)" : "var(--gold)";
+    }
     
-    ovUnEl.innerText = digit >= 5 ? "OVER" : "UNDER"; 
-    ovUnEl.style.color = digit >= 5 ? "var(--green)" : "var(--red)";
+    if (ovUnEl) {
+        ovUnEl.innerText = digit >= 5 ? "OVER" : "UNDER"; 
+        ovUnEl.style.color = digit >= 5 ? "var(--green)" : "var(--red)";
+    }
     
-    const lastPrice = priceHistory[priceHistory.length-2] || price;
-    rfEl.innerText = price >= lastPrice ? "RISE" : "FALL"; 
-    rfEl.style.color = price >= lastPrice ? "var(--green)" : "var(--red)";
+    if (rfEl && priceHistory.length > 1) {
+        const lastPrice = priceHistory[priceHistory.length-2];
+        rfEl.innerText = price >= lastPrice ? "RISE" : "FALL"; 
+        rfEl.style.color = price >= lastPrice ? "var(--green)" : "var(--red)";
+    }
 
     // Calculate overall match percentage
     let matches = 0;
@@ -445,14 +599,24 @@ function updateStrategyPanel(digit, price){
         if(digitHistory[i] === digitHistory[i-1]) matches++;
     }
     const matchPct = digitHistory.length > 1 ? (matches / (digitHistory.length - 1) * 100).toFixed(1) : 0;
-    mdEl.innerText = `${matchPct}% match`;
-    mdEl.style.color = matchPct >= 50 ? "var(--green)" : "var(--red)";
+    if (mdEl) {
+        mdEl.innerText = `${matchPct}% match`;
+        mdEl.style.color = matchPct >= 50 ? "var(--green)" : "var(--red)";
+    }
 }
 
 function closeAnalysis(){
     document.getElementById('analysis-overlay').style.display = 'none';
-    if(activeTickSubscription) ws.send(JSON.stringify({forget: activeTickSubscription}));
+    if(activeTickSubscription) {
+        ws.send(JSON.stringify({ forget: activeTickSubscription }));
+        activeTickSubscription = null;
+    }
 }
+
+// Initialize on load
+window.addEventListener('load', () => {
+    buildDigitUI();
+});
 </script>
 </body>
-</html>
+        </html>
