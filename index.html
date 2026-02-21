@@ -3,135 +3,149 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Level-3 Quant Dashboard | Institutional Suite</title>
+<title>Level 5 Autonomous Trading AI</title>
 <style>
-  body { font-family: Arial, sans-serif; margin:0; padding:0; background:#111; color:#eee; }
-  h1 { text-align:center; margin:10px 0; color:#0ff; }
-  #dashboard { display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:10px; padding:10px; }
-  .card { background:#222; border-radius:10px; padding:15px; overflow:auto; max-height:400px; }
-  .card h2 { font-size:1.1em; color:#0ff; margin:0 0 10px 0; }
-  pre { font-size:0.85em; color:#0f0; overflow:auto; }
+  body {margin:0; font-family: Arial, sans-serif; background:#0f0f0f; color:#fff;}
+  #dashboard {display:flex; flex-wrap:wrap; gap:10px; padding:10px; overflow-y:auto; height:100vh;}
+  .market-card {background:#1a1a1a; padding:10px; border-radius:8px; width:300px; flex-shrink:0;}
+  .market-card h2 {margin:0 0 5px 0; font-size:16px;}
+  .signal {margin:5px 0;}
+  .digit-grid {display:grid; grid-template-columns:repeat(5,1fr); gap:2px; margin-top:5px;}
+  .digit {background:#333; padding:5px; text-align:center; border-radius:4px;}
+  .digit.hot {background:#ff4444;}
+  .digit.cold {background:#4444ff;}
+  button {padding:5px 10px; margin-top:5px; background:#ff4444; color:#fff; border:none; border-radius:4px; cursor:pointer;}
 </style>
 </head>
 <body>
-<h1>Level-3 Quant Dashboard | Institutional Suite</h1>
-<div id="dashboard">
-  <div class="card"><h2>Markets</h2><pre id="markets"></pre></div>
-  <div class="card"><h2>Ticks</h2><pre id="ticks"></pre></div>
-  <div class="card"><h2>Candles</h2><pre id="candles"></pre></div>
-  <div class="card"><h2>Balance</h2><pre id="balance"></pre></div>
-  <div class="card"><h2>Open Contracts</h2><pre id="openContracts"></pre></div>
-  <div class="card"><h2>Transactions</h2><pre id="transactions"></pre></div>
-  <div class="card"><h2>Currencies</h2><pre id="currencies"></pre></div>
-</div>
+<div id="dashboard"></div>
 
 <script>
-const APP_ID = 126973; // Your App ID
-const WS_URL = "wss://ws.binaryws.com/websockets/v3?app_id=" + APP_ID;
+// ======== CONFIG ========
+const APP_ID = 126973; // Your Deriv App ID
+let markets = []; // Dynamic list fetched from server
+const ws = new WebSocket("wss://ws.binaryws.com/websockets/v3?app_id=" + APP_ID);
 
-let state = {
-  markets: [],
-  ticks: {},
-  candles: {},
-  balance: null,
-  openContracts: [],
-  transactions: [],
-  currencies: []
-};
+// ======== DASHBOARD ELEMENT ========
+const dashboard = document.getElementById('dashboard');
 
-const ws = new WebSocket(WS_URL);
+// ======== STATE ========
+const marketData = {}; // Stores tick info
+const marketSignals = {}; // Stores AI signals
+const digitStats = {}; // Stores digit probability stats
+const openTrades = []; // Track open trades
 
+// ======== HELPER FUNCTIONS ========
+function createMarketCard(symbol) {
+    if(document.getElementById(symbol)) return;
+    const card = document.createElement('div');
+    card.className = 'market-card';
+    card.id = symbol;
+    card.innerHTML = `
+        <h2>${symbol}</h2>
+        <div class="signal">Trend: <span class="trend">-</span></div>
+        <div class="signal">Momentum: <span class="momentum">-</span></div>
+        <div class="signal">AI Confidence: <span class="confidence">-</span></div>
+        <div class="signal">Last Digits:</div>
+        <div class="digit-grid"></div>
+        <button class="trade-btn">Execute Trade</button>
+    `;
+    dashboard.appendChild(card);
+
+    const btn = card.querySelector('.trade-btn');
+    btn.addEventListener('click', () => executeTrade(symbol));
+}
+
+// Update digit heatmap
+function updateDigits(symbol, lastDigit) {
+    if(!digitStats[symbol]) digitStats[symbol] = Array(10).fill(0);
+    digitStats[symbol][lastDigit]++;
+    const total = digitStats[symbol].reduce((a,b)=>a+b,0);
+    const grid = document.getElementById(symbol).querySelector('.digit-grid');
+    grid.innerHTML = '';
+    for(let i=0;i<10;i++){
+        const div = document.createElement('div');
+        div.className = 'digit';
+        div.textContent = `${i}: ${((digitStats[symbol][i]/total)*100||0).toFixed(1)}%`;
+        if(digitStats[symbol][i]/total > 0.2) div.classList.add('hot');
+        if(digitStats[symbol][i]/total < 0.05) div.classList.add('cold');
+        grid.appendChild(div);
+    }
+}
+
+// ======== AI SIGNAL ENGINE ========
+function computeSignals(symbol, ticks) {
+    // Trend (basic moving average over last 5 ticks)
+    const prices = ticks.map(t=>t.quote);
+    const trend = prices.length>=5 ? (prices[prices.length-1]>prices[prices.length-5]?'Up':'Down') : '-';
+    const momentum = prices.length>=3 ? (prices[prices.length-1]-prices[prices.length-3]).toFixed(2) : '-';
+    const confidence = Math.min(0.9,Math.max(0.1, Math.random())).toFixed(2); // Placeholder AI confidence
+
+    marketSignals[symbol] = {trend,momentum,confidence};
+
+    // Update dashboard
+    const card = document.getElementById(symbol);
+    card.querySelector('.trend').textContent = trend;
+    card.querySelector('.momentum').textContent = momentum;
+    card.querySelector('.confidence').textContent = confidence;
+}
+
+// ======== TRADE EXECUTION (DUMMY FUNCTION) ========
+function executeTrade(symbol) {
+    const signal = marketSignals[symbol];
+    if(!signal) return alert('No signal available yet.');
+    const trade = {
+        symbol,
+        direction: signal.trend==='Up'?'CALL':'PUT',
+        stake: 1, // Default stake
+        time: Date.now()
+    };
+    openTrades.push(trade);
+    alert(`Trade executed: ${trade.symbol} | ${trade.direction} | Stake: ${trade.stake}`);
+    console.log('Open Trades:', openTrades);
+}
+
+// ======== WEBSOCKET ========
 ws.onopen = () => {
-  console.log("WebSocket connected");
-  ws.send(JSON.stringify({ authorize: APP_ID }));
+    console.log('Connected to Deriv WebSocket');
+    // Get active markets
+    ws.send(JSON.stringify({ "active_symbols": "brief", "product_type": "basic" }));
 };
 
 ws.onmessage = (msg) => {
-  const data = JSON.parse(msg.data);
-  handleMessage(data);
+    const data = JSON.parse(msg.data);
+
+    // ======= FETCH MARKETS =======
+    if(data.active_symbols){
+        markets = data.active_symbols.map(m=>m.symbol);
+        markets.forEach(s => createMarketCard(s));
+        // Subscribe to ticks
+        markets.forEach(symbol => {
+            ws.send(JSON.stringify({ticks: symbol, subscribe:1}));
+            marketData[symbol] = [];
+        });
+    }
+
+    // ======= RECEIVE TICKS =======
+    if(data.tick){
+        const symbol = data.tick.symbol;
+        const quote = data.tick.quote;
+        if(!marketData[symbol]) marketData[symbol]=[];
+        marketData[symbol].push({quote,time:Date.now()});
+        if(marketData[symbol].length>20) marketData[symbol].shift();
+
+        // Update digits
+        const lastDigit = parseInt(quote.toString().slice(-1));
+        updateDigits(symbol,lastDigit);
+
+        // Compute AI signals
+        computeSignals(symbol, marketData[symbol]);
+    }
 };
 
-function handleMessage(data) {
-  if (data.error) {
-    console.error("API Error:", data.error.message);
-    return;
-  }
+ws.onclose = () => console.log('WebSocket closed');
+ws.onerror = (err) => console.error('WebSocket error', err);
 
-  switch(data.msg_type) {
-    case "authorize": subscribeAllStreams(); break;
-    case "active_symbols": handleActiveSymbols(data.active_symbols); break;
-    case "tick": handleTick(data.tick); break;
-    case "ohlc": handleCandle(data.ohlc); break;
-    case "balance": handleBalance(data.balance); break;
-    case "proposal_open_contract": handleOpenContracts(data.proposal_open_contract); break;
-    case "transaction": handleTransactions(data.transaction); break;
-    case "payout_currencies": handleCurrencies(data.payout_currencies); break;
-  }
-
-  renderDashboard();
-}
-
-// ---------- Handlers ----------
-function handleActiveSymbols(symbols) {
-  state.markets = symbols.map(s => s.symbol);
-  // Subscribe to ticks & candles for all markets
-  state.markets.forEach(sym => {
-    ws.send(JSON.stringify({ ticks: sym, subscribe: 1 }));
-    ws.send(JSON.stringify({ candles: sym, granularity: 60, subscribe: 1 }));
-  });
-}
-
-function handleTick(tick) {
-  state.ticks[tick.symbol] = tick;
-}
-
-function handleCandle(candle) {
-  if (!state.candles[candle.symbol]) state.candles[candle.symbol] = [];
-  state.candles[candle.symbol].push(candle);
-  if (state.candles[candle.symbol].length > 50) state.candles[candle.symbol].shift();
-}
-
-function handleBalance(balance) {
-  state.balance = balance.balance;
-}
-
-function handleOpenContracts(contracts) {
-  state.openContracts = contracts;
-}
-
-function handleTransactions(transaction) {
-  state.transactions.push(transaction);
-  if (state.transactions.length > 50) state.transactions.shift();
-}
-
-function handleCurrencies(currencies) {
-  state.currencies = currencies;
-}
-
-// ---------- Dashboard Render ----------
-function renderDashboard() {
-  document.getElementById("markets").textContent = state.markets.join("\n");
-  document.getElementById("ticks").textContent = JSON.stringify(state.ticks, null, 2);
-  document.getElementById("candles").textContent = JSON.stringify(state.candles, null, 2);
-  document.getElementById("balance").textContent = state.balance;
-  document.getElementById("openContracts").textContent = JSON.stringify(state.openContracts, null, 2);
-  document.getElementById("transactions").textContent = JSON.stringify(state.transactions, null, 2);
-  document.getElementById("currencies").textContent = state.currencies.join("\n");
-}
-
-// ---------- Subscribe to All Streams ----------
-function subscribeAllStreams() {
-  // Request active symbols
-  ws.send(JSON.stringify({ active_symbols: "full", product_type: "basic" }));
-
-  // Subscribe to balance updates
-  ws.send(JSON.stringify({ balance: 1, subscribe: 1 }));
-
-  // Payout currencies
-  ws.send(JSON.stringify({ payout_currencies: 1 }));
-
-  console.log("Subscribed to all core streams. Waiting for active symbols to subscribe ticks & candles...");
-}
 </script>
 </body>
 </html>
