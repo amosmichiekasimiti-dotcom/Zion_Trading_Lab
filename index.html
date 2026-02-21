@@ -34,23 +34,27 @@ td { padding: 12px; border-bottom: 1px solid #222; font-size: 13px; }
 .strat-value { font-weight: bold; font-size: 14px; }
 
 /* Neon Circles */
-.digit-circle-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin: 15px 0; }
+.digit-circle-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 15px 0; }
 .digit-circle { 
     aspect-ratio: 1/1; border-radius: 50%; 
     background: #1a1a24; border: 2px solid #333; 
     display: flex; flex-direction: column; align-items: center; justify-content: center; 
-    transition: all 0.3s ease; position: relative;
+    transition: all 0.3s ease; position: relative; font-size: 12px;
 }
-.digit-num { font-size: 16px; font-weight: bold; }
-.digit-pct { font-size: 9px; color: #888; margin-top: 2px; }
+.digit-num { font-size: 14px; font-weight: bold; }
+.digit-pct { font-size: 8px; color: #888; margin-top: 2px; }
 
 /* State Glows */
-.digit-circle.active { border-color: var(--blue); box-shadow: 0 0 15px var(--blue); transform: scale(1.05); }
-.digit-circle.most-freq { background: linear-gradient(145deg, #00ff88, #008844) !important; border-color: #fff; box-shadow: 0 0 20px rgba(0, 255, 136, 0.6); }
+.digit-circle.active { border-color: var(--blue); box-shadow: 0 0 10px var(--blue); transform: scale(1.05); }
+.digit-circle.most-freq { background: linear-gradient(145deg, #00ff88, #008844) !important; border-color: #fff; box-shadow: 0 0 15px rgba(0, 255, 136, 0.6); }
 .digit-circle.most-freq .digit-num, .digit-circle.most-freq .digit-pct { color: #000; font-weight: 900; }
-.digit-circle.least-freq { background: linear-gradient(145deg, #ff444f, #882222) !important; border-color: #fff; box-shadow: 0 0 20px rgba(255, 68, 79, 0.6); }
+.digit-circle.least-freq { background: linear-gradient(145deg, #ff444f, #882222) !important; border-color: #fff; box-shadow: 0 0 15px rgba(255, 68, 79, 0.6); }
 .digit-circle.least-freq .digit-num, .digit-circle.least-freq .digit-pct { color: #fff; }
 
+/* Cursor arrow */
+.cursor { position: absolute; top: -10px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 10px solid var(--red); transition: left 0.3s ease; }
+
+/* Chart */
 #chart-container { height: 700px; background: #000; border-radius: 12px; margin-top: 15px; overflow: hidden; border: 1px solid #222; }
 .close-btn { background: #333; color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: bold; margin: 20px 0; cursor: pointer; }
 .btn-analyze { background: var(--blue); color: #000; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; }
@@ -86,8 +90,7 @@ td { padding: 12px; border-bottom: 1px solid #222; font-size: 13px; }
     </div>
 
     <div class="price-card">
-        <div id="live-price">0.0000</div>
-        <div id="ai-signal" style="font-weight:bold; margin-top:10px; font-size:18px;">CALIBRATING...</div>
+        <div id="live-price">00</div>
     </div>
 
     <div class="strategy-grid">
@@ -97,12 +100,13 @@ td { padding: 12px; border-bottom: 1px solid #222; font-size: 13px; }
         <div class="strat-card"><div class="strat-label">Tick Trend</div><div id="stat-rise-fall" class="strat-value">---</div></div>
     </div>
 
-    <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1);">
+    <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1); position:relative;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
             <div style="font-size: 10px; color: #aaa; text-transform: uppercase; letter-spacing: 1px;">Live Digit Analytics</div>
-            <div id="tick-counter" style="background: var(--blue); color: #000; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: bold;">Syncing...</div>
+            <div id="tick-counter" style="background: var(--blue); color: #000; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: bold;">0/1000</div>
         </div>
         <div class="digit-circle-grid" id="digit-circles"></div>
+        <div class="cursor" id="digit-cursor"></div>
     </div>
 
     <div id="chart-container"></div>
@@ -117,24 +121,19 @@ let activeTickSubscription = null;
 let digitHistory = [];
 let priceHistory = [];
 const MAX_DIGITS = 1000;
+const cursor = document.getElementById("digit-cursor");
 
 // Load active symbols
 ws.onopen = () => ws.send(JSON.stringify({ active_symbols: "brief", product_type: "basic" }));
 
 ws.onmessage = (msg) => {
     const data = JSON.parse(msg.data);
-
-    if (data.active_symbols) {
-        allSymbols = data.active_symbols;
-        filterMarkets('synthetic');
-    }
-
+    if (data.active_symbols) { allSymbols = data.active_symbols; filterMarkets('synthetic'); }
     if (data.history && data.history.prices) {
         digitHistory = data.history.prices.map(p => parseInt(p.toFixed(2).slice(-1)));
         priceHistory = [...data.history.prices];
         updateDigitCircles();
     }
-
     if (data.tick) handleTick(data.tick);
 };
 
@@ -146,15 +145,14 @@ function filterMarkets(type, btn) {
         if(type==='crashboom') return s.display_name.includes('Crash') || s.display_name.includes('Boom');
         return s.market===type;
     });
-    filtered.forEach(s => tbody.innerHTML += `<tr><td>${s.display_name}</td><td style="color:#666; font-size:10px;">${s.symbol.toUpperCase()}</td><td><button class="btn-analyze" onclick="openAnalysis('${s.symbol}','${s.display_name}')">Analyze</button></td></tr>`);
+    filtered.forEach(s => tbody.innerHTML+=`<tr><td>${s.display_name}</td><td style="color:#666; font-size:10px;">${s.symbol.toUpperCase()}</td><td><button class="btn-analyze" onclick="openAnalysis('${s.symbol}','${s.display_name}')">Analyze</button></td></tr>`);
 }
 
-function openAnalysis(symbol, name) {
+function openAnalysis(symbol, name){
     document.getElementById('target-name').innerText=name;
     document.getElementById('target-symbol').innerText=symbol;
     document.getElementById('analysis-overlay').style.display='block';
     document.getElementById('chart-container').innerHTML=`<iframe src="https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=dark" width="100%" height="100%" frameborder="0"></iframe>`;
-
     digitHistory=[]; priceHistory=[]; buildDigitUI();
 
     ws.send(JSON.stringify({ticks_history:symbol,adjust_start_time:1,count:MAX_DIGITS,end:"latest",style:"ticks"}));
@@ -162,12 +160,14 @@ function openAnalysis(symbol, name) {
     ws.send(JSON.stringify({ticks:symbol,subscribe:1}));
 }
 
-function buildDigitUI() {
-    const container = document.getElementById('digit-circles'); container.innerHTML='';
-    for(let i=0;i<=9;i++) container.innerHTML+=`<div id="circle-${i}" class="digit-circle"><div class="digit-num">${i}</div><div id="pct-${i}" class="digit-pct">0%</div></div>`;
+function buildDigitUI(){
+    const container=document.getElementById('digit-circles'); container.innerHTML='';
+    for(let i=0;i<=9;i++){
+        container.innerHTML+=`<div id="circle-${i}" class="digit-circle"><div class="digit-num">${i}</div><div id="pct-${i}" class="digit-pct">0%</div></div>`;
+    }
 }
 
-function handleTick(tick) {
+function handleTick(tick){
     activeTickSubscription=tick.id;
     const price=tick.quote; const pipSize=tick.pip_size||2;
     const lastDigit=parseInt(price.toFixed(pipSize).slice(-1));
@@ -177,10 +177,10 @@ function handleTick(tick) {
     if(digitHistory.length>MAX_DIGITS) digitHistory.shift();
     if(priceHistory.length>MAX_DIGITS) priceHistory.shift();
 
-    updateDigitCircles(); updateStrategyPanel(lastDigit, price);
+    updateDigitCircles(); updateStrategyPanel(lastDigit,price);
 }
 
-function updateDigitCircles() {
+function updateDigitCircles(){
     const counts=Array(10).fill(0); digitHistory.forEach(d=>counts[d]++);
     const total=digitHistory.length; document.getElementById('tick-counter').innerText=`${total}/${MAX_DIGITS}`;
     const maxVal=Math.max(...counts); const minVal=Math.min(...counts.filter(c=>c>0));
@@ -194,9 +194,18 @@ function updateDigitCircles() {
         if(count===maxVal&&count>0) circle.classList.add('most-freq');
         if(count===minVal&&count>0) circle.classList.add('least-freq');
     });
+
+    // Move cursor smoothly
+    const lastDigit = digitHistory[digitHistory.length-1];
+    const targetCircle = document.getElementById(`circle-${lastDigit}`);
+    if(targetCircle){
+        const rect = targetCircle.getBoundingClientRect();
+        const parentRect = document.getElementById('digit-circles').getBoundingClientRect();
+        cursor.style.left = `${rect.left - parentRect.left + rect.width/2 - 6}px`;
+    }
 }
 
-function updateStrategyPanel(digit, price) {
+function updateStrategyPanel(digit,price){
     const evOdEl=document.getElementById('stat-even-odd');
     const ovUnEl=document.getElementById('stat-over-under');
     const rfEl=document.getElementById('stat-rise-fall');
@@ -211,10 +220,10 @@ function updateStrategyPanel(digit, price) {
     mdEl.innerText=`HOT: ${counts.indexOf(Math.max(...counts))}`;
 }
 
-function closeAnalysis() {
+function closeAnalysis(){
     document.getElementById('analysis-overlay').style.display='none';
     if(activeTickSubscription) ws.send(JSON.stringify({forget:activeTickSubscription}));
 }
 </script>
 </body>
-</html>
+                </html>
