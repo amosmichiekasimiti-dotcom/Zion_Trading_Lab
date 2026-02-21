@@ -35,8 +35,7 @@ td { padding: 12px; border-bottom: 1px solid #222; font-size: 13px; }
 .digit-circle-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin: 15px 0; }
 .digit-circle { aspect-ratio: 1/1; border-radius: 50%; background: #1a1a24; border: 2px solid #333; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.3s ease; position: relative; }
 .digit-num { font-size: 16px; font-weight: bold; }
-.digit-pct { font-size: 9px; color: #888; margin-top: 2px; }
-.digit-tooltip { position: absolute; bottom: -18px; font-size: 9px; color: #fff; background: #333; padding: 1px 4px; border-radius: 4px; display: none; }
+.digit-pct { font-size: 9px; color: #00ff88; margin-top: 4px; }
 
 .digit-circle.active { border-color: var(--blue); box-shadow: 0 0 15px var(--blue); transform: scale(1.05); }
 .digit-circle.most-freq { background: linear-gradient(145deg, #00ff88, #008844) !important; border-color: #fff; box-shadow: 0 0 20px rgba(0, 255, 136, 0.6); }
@@ -44,14 +43,13 @@ td { padding: 12px; border-bottom: 1px solid #222; font-size: 13px; }
 .digit-circle.least-freq { background: linear-gradient(145deg, #ff444f, #882222) !important; border-color: #fff; box-shadow: 0 0 20px rgba(255, 68, 79, 0.6); }
 .digit-circle.least-freq .digit-num, .digit-circle.least-freq .digit-pct { color: #fff; }
 
-.digit-circle:hover .digit-tooltip { display: block; }
-
 #chart-container { height: 700px; background: #000; border-radius: 12px; margin-top: 15px; overflow: hidden; border: 1px solid #222; }
 .close-btn { background: #333; color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: bold; margin: 20px 0; cursor: pointer; }
 .btn-analyze { background: var(--blue); color: #000; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; }
 </style>
 </head>
 <body>
+
 <div style="display:flex; justify-content:space-between; align-items:center; padding: 5px 10px;">
 <h2 style="margin:0; color: var(--gold); font-size: 18px;">🤖 ZION PRO LAB</h2>
 <small id="status-text" style="color:var(--green)">● System Ready</small>
@@ -81,7 +79,6 @@ td { padding: 12px; border-bottom: 1px solid #222; font-size: 13px; }
 
 <div class="price-card">
 <div id="live-price">0.0000</div>
-<div id="ai-signal" style="font-weight:bold; margin-top:10px; font-size:18px;">CALIBRATING...</div>
 </div>
 
 <div class="strategy-grid">
@@ -106,7 +103,7 @@ td { padding: 12px; border-bottom: 1px solid #222; font-size: 13px; }
 <script>
 const APP_ID=126973;
 const ws=new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`);
-let allSymbols=[], activeSubscriptionId=null, digitHistory=[], priceHistory=[], currentSymbol=null;
+let allSymbols=[], activeSubId=null, digitHistory=[], priceHistory=[], currentSymbol=null;
 const MAX_DIGITS=1000;
 
 ws.onopen=()=>{document.getElementById("status-text").innerText="● Connected";document.getElementById("status-text").style.color="var(--green)";ws.send(JSON.stringify({active_symbols:"brief",product_type:"basic"}));};
@@ -116,13 +113,6 @@ ws.onclose=()=>{document.getElementById("status-text").innerText="● Disconnect
 ws.onmessage=(msg)=>{
   const data=JSON.parse(msg.data);
   if(data.active_symbols){allSymbols=data.active_symbols;filterMarkets('synthetic');}
-  if(data.history&&data.echo_req.ticks_history===currentSymbol){
-    const asset=allSymbols.find(s=>s.symbol===currentSymbol);
-    const pipSize=asset?asset.pip_size:2;
-    digitHistory=[];priceHistory=[];
-    data.history.prices.forEach(price=>{const f=Number(price).toFixed(pipSize);digitHistory.push(parseInt(f.slice(-1)));priceHistory.push(Number(price));});
-    updateDigitCircles();updateStrategyPanel();
-  }
   if(data.tick&&data.tick.symbol===currentSymbol){handleTick(data.tick);}
 };
 
@@ -140,8 +130,7 @@ function openAnalysis(symbol,name){
   document.getElementById('analysis-overlay').style.display='block';
   digitHistory=[];priceHistory=[];
   buildDigitUI();
-  if(activeSubscriptionId){ws.send(JSON.stringify({forget:activeSubscriptionId}));activeSubscriptionId=null;}
-  ws.send(JSON.stringify({ticks_history:symbol,adjust_start_time:1,count:MAX_DIGITS,end:"latest",style:"ticks"}));
+  if(activeSubId){ws.send(JSON.stringify({forget:activeSubId}));activeSubId=null;}
   ws.send(JSON.stringify({ticks:symbol,subscribe:1}));
   document.getElementById('chart-container').innerHTML=`<iframe src="https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=dark" width="100%" height="100%" frameborder="0"></iframe>`;
 }
@@ -149,12 +138,12 @@ function openAnalysis(symbol,name){
 function buildDigitUI(){
   const container=document.getElementById('digit-circles');container.innerHTML='';
   for(let i=0;i<=9;i++){
-    container.innerHTML+=`<div id="circle-${i}" class="digit-circle"><div class="digit-num">${i}</div><div id="pct-${i}" class="digit-pct">0%</div><div class="digit-tooltip" id="tooltip-${i}">0%</div></div>`;
+    container.innerHTML+=`<div id="circle-${i}" class="digit-circle"><div class="digit-num">${i}</div><div id="pct-${i}" class="digit-pct">0.000%</div></div>`;
   }
 }
 
 function handleTick(tick){
-  activeSubscriptionId=tick.id;
+  activeSubId=tick.id;
   const asset=allSymbols.find(s=>s.symbol===tick.symbol);
   const pipSize=asset?asset.pip_size:2;
   const price=Number(tick.quote);
@@ -173,10 +162,9 @@ function updateDigitCircles(){
   document.getElementById('tick-counter').innerText=`${total}/${MAX_DIGITS}`;
   const maxVal=Math.max(...counts);const minVal=total>=MAX_DIGITS?Math.min(...counts):-1;
   counts.forEach((count,i)=>{
-    const pct=total>0?((count/total)*100).toFixed(1):"0.0";
+    const pct=total>0?((count/total)*100).toFixed(3):"0.000";
     const circle=document.getElementById(`circle-${i}`);
     document.getElementById(`pct-${i}`).innerText=`${pct}%`;
-    document.getElementById(`tooltip-${i}`).innerText=`${pct}%`;
     circle.classList.remove('most-freq','least-freq','active');
     if(digitHistory[total-1]===i)circle.classList.add('active');
     if(count===maxVal&&total>=MAX_DIGITS)circle.classList.add('most-freq');
@@ -185,17 +173,24 @@ function updateDigitCircles(){
 }
 
 function updateStrategyPanel(){
-  const evenOdd=document.getElementById('stat-even-odd');const overUnder=document.getElementById('stat-over-under');const hotDigit=document.getElementById('stat-hot-digit');const riseFall=document.getElementById('stat-rise-fall');
   if(digitHistory.length===0)return;
-  const lastDigit=digitHistory[digitHistory.length-1];const lastPrice=priceHistory[priceHistory.length-1];
-  evenOdd.innerText=lastDigit%2===0?"EVEN":"ODD";evenOdd.style.color=lastDigit%2===0?"var(--blue)":"var(--gold)";
-  overUnder.innerText=lastDigit>4?"OVER":"UNDER";overUnder.style.color=lastDigit>4?"var(--green)":"var(--red)";
-  riseFall.innerText=priceHistory.length>1&&lastPrice>=priceHistory[priceHistory.length-2]?"RISE":"FALL";riseFall.style.color=riseFall.innerText==="RISE"?"var(--green)":"var(--red)";
+  const lastDigit=digitHistory[digitHistory.length-1];
+  const lastPrice=priceHistory[priceHistory.length-1];
+  const evenOdd=document.getElementById('stat-even-odd');
+  const overUnder=document.getElementById('stat-over-under');
+  const hotDigit=document.getElementById('stat-hot-digit');
+  const riseFall=document.getElementById('stat-rise-fall');
+  evenOdd.innerText=lastDigit%2===0?"EVEN":"ODD";
+  evenOdd.style.color=lastDigit%2===0?"var(--blue)":"var(--gold)";
+  overUnder.innerText=lastDigit>4?"OVER":"UNDER";
+  overUnder.style.color=lastDigit>4?"var(--green)":"var(--red)";
+  riseFall.innerText=priceHistory.length>1&&lastPrice>=priceHistory[priceHistory.length-2]?"RISE":"FALL";
+  riseFall.style.color=riseFall.innerText==="RISE"?"var(--green)":"var(--red)";
   const counts=new Array(10).fill(0);digitHistory.forEach(d=>counts[d]++);
   hotDigit.innerText=`HOT: ${counts.indexOf(Math.max(...counts))}`;
 }
 
-function closeAnalysis(){document.getElementById('analysis-overlay').style.display='none';if(activeSubscriptionId){ws.send(JSON.stringify({forget:activeSubscriptionId}));activeSubscriptionId=null;}}
+function closeAnalysis(){document.getElementById('analysis-overlay').style.display='none';if(activeSubId){ws.send(JSON.stringify({forget:activeSubId}));activeSubId=null;}}
 </script>
 </body>
 </html>
