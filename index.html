@@ -3,279 +3,209 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Zion AI Lab | Pro Edition</title>
+<title>Zion AI Lab | Sniper Live</title>
 <style>
-:root { 
-    --red: #ff444f; 
-    --dark: #0a0a0f; 
-    --green: #00ff88; 
-    --gold: #ffd700; 
-    --blue: #00f2fe; 
-    --panel: #151520; 
-}
+:root { --red: #ff444f; --dark: #0a0a0f; --green: #00ff88; --gold: #ffd700; --blue: #00f2fe; --panel: #151520; }
 body { font-family: 'Segoe UI', sans-serif; background: var(--dark); color: white; margin: 0; padding: 10px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-.nav-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
-.nav-btn { background: var(--panel); border: 1px solid #333; color: #888; padding: 10px 15px; border-radius: 8px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap; transition: 0.3s; }
+/* Dashboard UI */
+.strategy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+.strat-card { background: var(--panel); padding: 12px; border-radius: 12px; border: 1px solid #333; transition: 0.3s; position: relative; }
+.strat-label { font-size: 10px; color: #888; text-transform: uppercase; margin-bottom: 5px; letter-spacing: 1px; }
+.strat-value { font-weight: bold; font-size: 15px; margin-bottom: 10px; border-bottom: 1px solid #222; padding-bottom: 5px; }
+
+/* Real-Time Validator Styles */
+.validation-list { font-size: 9px; display: flex; flex-direction: column; gap: 4px; font-family: 'Courier New', monospace; }
+.condition-row { display: flex; justify-content: space-between; align-items: center; }
+.status-tag { padding: 1px 4px; border-radius: 3px; font-size: 8px; font-weight: bold; text-transform: uppercase; }
+.tag-pass { background: rgba(0, 255, 136, 0.1); color: var(--green); border: 1px solid var(--green); }
+.tag-fail { background: rgba(255, 68, 79, 0.1); color: var(--red); border: 1px solid var(--red); }
+
+/* GINO Animation */
+.gino-active { border-color: var(--gold); box-shadow: 0 0 20px rgba(255, 215, 0, 0.4); transform: translateY(-2px); }
+.gino-active .strat-value { color: var(--gold); }
+
+#live-price { font-size: 34px; font-weight: bold; text-align: center; margin: 10px 0; font-family: monospace; color: var(--blue); text-shadow: 0 0 10px rgba(0, 242, 254, 0.3); }
+.nav-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; }
+.nav-btn { background: #1a1a24; border: 1px solid #333; color: #888; padding: 8px 12px; border-radius: 6px; font-size: 10px; cursor: pointer; white-space: nowrap; }
 .nav-btn.active { background: var(--red); color: white; border-color: var(--red); }
 
-.table-container { background: var(--panel); border-radius: 12px; flex-grow: 1; overflow-y: auto; border: 1px solid #222; margin-top: 5px; }
-table { width: 100%; border-collapse: collapse; }
-th { position: sticky; top: 0; background: #1c1c2b; padding: 12px; text-align: left; font-size: 11px; color: #aaa; z-index: 10; }
-td { padding: 12px; border-bottom: 1px solid #222; font-size: 13px; }
-
-#analysis-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--dark); z-index: 1000; padding: 15px; box-sizing: border-box; overflow-y: auto; }
-.price-card { background: #151520; padding: 15px; border-radius: 12px; text-align: center; border: 1px solid var(--blue); margin-bottom: 10px; box-shadow: 0 0 15px rgba(0, 242, 254, 0.2); }
-#live-price { font-size: 32px; font-weight: bold; font-family: monospace; }
-
-.strategy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
-.strat-card { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; border: 1px solid #333; position: relative; }
-.strat-label { font-size: 9px; color: #888; text-transform: uppercase; margin-bottom: 4px; }
-.strat-value { font-weight: bold; font-size: 14px; }
-.score-dots { display: flex; gap: 2px; margin-top: 5px; }
-.dot { width: 4px; height: 4px; border-radius: 50%; background: #333; }
-.dot.active { background: var(--gold); box-shadow: 0 0 5px var(--gold); }
-
-.digit-circle-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 15px 0; }
-.digit-circle { 
-    aspect-ratio: 1/1; border-radius: 50%; 
-    background: #1a1a24; border: 2px solid #333; 
-    display: flex; flex-direction: column; align-items: center; justify-content: center; 
-    transition: all 0.3s ease; position: relative; font-size: 12px; color: white;
-}
-.digit-num { font-size: 14px; font-weight: bold; }
-.digit-pct { font-size: 8px; margin-top: 2px; }
-
-.digit-circle.hot { background: linear-gradient(145deg, #00ff88, #008844) !important; border-color: #fff; }
-.digit-circle.hot .digit-num, .digit-circle.hot .digit-pct { color: #000; font-weight: 900; }
-.digit-circle.cold { background: linear-gradient(145deg, #ff444f, #882222) !important; border-color: #fff; }
-.digit-circle.active { border-color: var(--blue); box-shadow: 0 0 10px var(--blue); transform: scale(1.05); }
-
-#chart-container { height: 400px; background: #000; border-radius: 12px; margin-top: 15px; overflow: hidden; border: 1px solid #222; }
-.close-btn { background: #333; color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: bold; margin: 20px 0; cursor: pointer; }
-.btn-analyze { background: var(--blue); color: #000; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; }
+#analysis-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--dark); z-index: 1000; padding: 15px; box-sizing: border-box; display:none; overflow-y:auto; }
+.close-btn { background: #222; color: #888; border: 1px solid #333; padding: 12px; border-radius: 8px; width: 100%; margin-top: 20px; font-weight: bold; cursor: pointer; }
 </style>
 </head>
 <body>
 
-<div style="display:flex; justify-content:space-between; align-items:center; padding: 5px 10px;">
-    <h2 style="margin:0; color: var(--gold); font-size: 18px;">🤖 ZION PRO LAB</h2>
-    <small id="status-text" style="color:var(--green)">● System Ready</small>
+<div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:10px;">
+    <h2 style="color: var(--gold); font-size: 18px; margin:0;">🤖 ZION SNIPER V2</h2>
+    <div id="status-text" style="color:var(--green); font-size:10px;">● SYSTEM LIVE</div>
 </div>
 
 <div class="nav-scroll">
     <button class="nav-btn active" onclick="filterMarkets('synthetic', this)">VOLATILITY</button>
     <button class="nav-btn" onclick="filterMarkets('crashboom', this)">CRASH/BOOM</button>
     <button class="nav-btn" onclick="filterMarkets('step', this)">STEP/RANGE</button>
-    <button class="nav-btn" onclick="filterMarkets('dex', this)">DEX/DRIFT</button>
-    <button class="nav-btn" onclick="filterMarkets('forex', this)">FOREX</button>
-    <button class="nav-btn" onclick="filterMarkets('cryptocurrency', this)">CRYPTO</button>
 </div>
 
-<div class="table-container">
-    <table>
-        <thead><tr><th>Asset Name</th><th>Type</th><th>Action</th></tr></thead>
+<div style="flex-grow:1; overflow-y:auto; background:var(--panel); border-radius:12px; border:1px solid #222; margin-top:5px;">
+    <table style="width:100%; border-collapse:collapse;" id="market-table">
         <tbody id="market-list"></tbody>
     </table>
 </div>
 
 <div id="analysis-overlay">
-    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-        <h3 id="target-name" style="margin:0; color:var(--gold);">Asset Analysis</h3>
-        <span id="target-symbol" style="color:#666; font-family: monospace;">---</span>
-    </div>
-
-    <div class="price-card">
-        <div id="live-price">00</div>
-    </div>
-
+    <div id="live-price">0.0000</div>
+    
     <div class="strategy-grid">
-        <div class="strat-card">
-            <div class="strat-label">Rise / Fall</div>
-            <div id="stat-rise-fall" class="strat-value">---</div>
-            <div class="score-dots" id="score-rf"></div>
+        <div class="strat-card" id="card-rf">
+            <div class="strat-label">Trend Momentum</div>
+            <div id="val-rf" class="strat-value">ANALYZING...</div>
+            <div class="validation-list" id="list-rf"></div>
         </div>
-        <div class="strat-card">
-            <div class="strat-label">Even / Odd</div>
-            <div id="stat-even-odd" class="strat-value">---</div>
-            <div class="score-dots" id="score-eo"></div>
+        <div class="strat-card" id="card-eo">
+            <div class="strat-label">Even/Odd Pile</div>
+            <div id="val-eo" class="strat-value">ANALYZING...</div>
+            <div class="validation-list" id="list-eo"></div>
         </div>
-        <div class="strat-card">
-            <div class="strat-label">Match Signal</div>
-            <div id="stat-match-diff" class="strat-value">---</div>
-            <div class="score-dots" id="score-md"></div>
+        <div class="strat-card" id="card-md">
+            <div class="strat-label">Match Pattern</div>
+            <div id="val-md" class="strat-value">ANALYZING...</div>
+            <div class="validation-list" id="list-md"></div>
         </div>
-        <div class="strat-card">
-            <div class="strat-label">Over 4 / Under 5</div>
-            <div id="stat-over-under" class="strat-value">---</div>
-            <div class="score-dots" id="score-ou"></div>
+        <div class="strat-card" id="card-ou">
+            <div class="strat-label">Zone Sniper (O4)</div>
+            <div id="val-ou" class="strat-value">ANALYZING...</div>
+            <div class="validation-list" id="list-ou"></div>
         </div>
     </div>
 
-    <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <div style="font-size: 10px; color: #aaa; text-transform: uppercase;">Digit Pile Analysis</div>
-            <div id="tick-counter" style="background: var(--blue); color: #000; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: bold;">0/1000</div>
-        </div>
-        <div class="digit-circle-grid" id="digit-circles"></div>
-    </div>
-
-    <div id="chart-container"></div>
-    <button class="close-btn" onclick="closeAnalysis()">EXIT ENGINE</button>
+    <div id="chart-container" style="height:350px; border-radius:12px; overflow:hidden; border:1px solid #333; margin-top:10px;"></div>
+    <button class="close-btn" onclick="closeAnalysis()">DISCONNECT SNIPER</button>
 </div>
 
 <script>
 const APP_ID = 126973;
 const ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`);
-let allSymbols = [], activeTickSubscription = null;
-let digitHistory = [], priceHistory = [], ema10 = 0;
-const MAX_DIGITS = 1000;
+let digitHistory = [], priceHistory = [], activeSub = null;
+let ema10 = 0;
 
 ws.onopen = () => ws.send(JSON.stringify({ active_symbols: "brief", product_type: "basic" }));
-
 ws.onmessage = (msg) => {
     const data = JSON.parse(msg.data);
-    if (data.active_symbols) { allSymbols = data.active_symbols; filterMarkets('synthetic'); }
-    if (data.history) {
-        digitHistory = data.history.prices.map(p => parseInt(Number(p).toFixed(2).slice(-1)));
-        priceHistory = data.history.prices.map(Number);
-        updateDigitCircles();
-    }
-    if (data.tick) handleTick(data.tick);
+    if (data.active_symbols) populateMarkets(data.active_symbols);
+    if (data.tick) processLiveTick(data.tick);
 };
 
-function handleTick(tick) {
-    activeTickSubscription = tick.id;
+function populateMarkets(syms) {
+    const list = document.getElementById('market-list');
+    list.innerHTML = "";
+    syms.filter(s => s.market === 'synthetic_index').forEach(s => {
+        list.innerHTML += `<tr style="border-bottom:1px solid #222;"><td style="padding:15px; font-size:13px;">${s.display_name}</td><td style="text-align:right; padding-right:15px;"><button style="background:var(--blue); border:none; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="openSniper('${s.symbol}')">SNIPE</button></td></tr>`;
+    });
+}
+
+function openSniper(symbol) {
+    document.getElementById('analysis-overlay').style.display = 'block';
+    document.getElementById('chart-container').innerHTML = `<iframe src="https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=dark" width="100%" height="100%" frameborder="0"></iframe>`;
+    if(activeSub) ws.send(JSON.stringify({forget: activeSub}));
+    ws.send(JSON.stringify({ticks: symbol, subscribe: 1}));
+    digitHistory = []; priceHistory = []; ema10 = 0;
+}
+
+function processLiveTick(tick) {
+    activeSub = tick.id;
     const price = Number(tick.quote);
     const priceStr = price.toFixed(tick.pip_size || 2);
-    const lastDigit = parseInt(priceStr.slice(-1));
+    const digit = parseInt(priceStr.slice(-1));
 
     document.getElementById('live-price').innerText = priceStr;
-    digitHistory.push(lastDigit);
     priceHistory.push(price);
-    
-    if(digitHistory.length > MAX_DIGITS) digitHistory.shift();
-    if(priceHistory.length > MAX_DIGITS) priceHistory.shift();
+    digitHistory.push(digit);
+    if(priceHistory.length > 50) { priceHistory.shift(); digitHistory.shift(); }
 
-    updateDigitCircles();
-    updateZionEngine(lastDigit, price);
-}
-
-function updateZionEngine(digit, price) {
-    // EMA Calculation
-    const k = 2 / (10 + 1);
+    // EMA 10 Calculation
+    const k = 2 / (11);
     ema10 = (ema10 === 0) ? price : (price * k) + (ema10 * (1 - k));
 
-    const recent25 = digitHistory.slice(-25);
-    const recent10 = digitHistory.slice(-10);
-    const last5Ticks = priceHistory.slice(-5);
+    runLiveValidation(digit, price);
+}
 
-    // 1. RISE & FALL (5 CONDITIONS)
-    let rfScore = 0;
-    const upward = last5Ticks.filter((p, i) => i > 0 && p > last5Ticks[i-1]).length;
-    if (upward >= 3) rfScore++; 
-    if (last5Ticks[4] < last5Ticks[3] && last5Ticks[3] > last5Ticks[2]) rfScore++; // Pullback
-    if (Math.abs(last5Ticks[4] - last5Ticks[0]) > 0.001) rfScore++;
-    if (price > ema10) rfScore++;
-    if (upward < 5) rfScore++;
+function runLiveValidation(digit, price) {
+    const last5Prices = priceHistory.slice(-5);
+    const last20Digits = digitHistory.slice(-20);
+    const last10Digits = digitHistory.slice(-10);
 
-    // 2. EVEN & ODD (5 CONDITIONS)
-    let eoScore = 0;
-    const evenCount = recent25.filter(d => d % 2 === 0).length;
-    if (evenCount / 25 > 0.60) eoScore++;
-    if (digit % 2 === 0 && digitHistory[digitHistory.length-2] % 2 === 0) eoScore++;
-    if (recent10.includes(0)) eoScore++;
-    if (evenCount > 13 || evenCount < 12) eoScore++;
-    if (digit % 2 === 0) eoScore++;
+    // 1. RISE/FALL Logic (5 Points)
+    const rfConds = [
+        { label: "VELOCITY CHECK", v: Math.abs(price - priceHistory[priceHistory.length-2]) > 0.0001 },
+        { label: "PULLBACK DETECT", v: last5Prices[3] > last5Prices[2] && price < last5Prices[3] },
+        { label: "EMA ALIGNMENT", v: price > ema10 },
+        { label: "TREND RESUMED", v: price > priceHistory[priceHistory.length-2] },
+        { label: "MOMENTUM FLOW", v: last5Prices.filter((p,i)=>i>0 && p > last5Prices[i-1]).length >= 3 }
+    ];
 
-    // 3. MATCH & DIFF (5 CONDITIONS)
-    let mdScore = 0;
-    const counts = Array(10).fill(0); recent10.forEach(d => counts[d]++);
+    // 2. EVEN/ODD Logic (5 Points)
+    const eoConds = [
+        { label: "DENSITY > 70%", v: last20Digits.filter(d=>d%2===0).length >= 14 },
+        { label: "TRIPLE STREAK", v: digitHistory.slice(-3).every(d=>d%2===0) },
+        { label: "ZERO ANCHOR", v: last10Digits.includes(0) },
+        { label: "STABLE SEQUENCE", v: Math.abs(digitHistory[digitHistory.length-2] - digit) < 8 },
+        { label: "NOW EVEN", v: digit % 2 === 0 }
+    ];
+
+    // 3. MATCH/DIFF Logic (5 Points)
+    const counts = Array(10).fill(0); last10Digits.forEach(d => counts[d]++);
     const hotDigit = counts.indexOf(Math.max(...counts));
-    if (counts[hotDigit] >= 3) mdScore++;
-    if (!recent25.slice(0, 15).includes(digit)) mdScore++;
-    if (counts[hotDigit+1] > 0 || counts[hotDigit-1] > 0) mdScore++;
-    if (recent10.slice(-5).includes(hotDigit)) mdScore++;
-    if (price > ema10 && hotDigit > 5) mdScore++;
+    const mdConds = [
+        { label: "CLUSTER HIT", v: counts[hotDigit] >= 3 },
+        { label: "GAP DYNAMICS", v: !digitHistory.slice(-15).includes(hotDigit === 9 ? 0 : hotDigit + 1) },
+        { label: "NEIGHBOR SYNC", v: counts[hotDigit-1] > 0 || counts[hotDigit+1] > 0 },
+        { label: "RECENCY BIAS", v: digitHistory.slice(-5).includes(hotDigit) },
+        { label: "SYNC WITH TREND", v: (price > ema10 && hotDigit > 4) || (price < ema10 && hotDigit < 5) }
+    ];
 
-    // 4. OVER 4 / UNDER 5 (5 CONDITIONS)
-    let ouScore = 0;
-    const over4 = recent10.filter(d => d > 4).length;
-    if (over4 >= 7) ouScore++;
-    if (!recent10.includes(0) && !recent10.includes(1)) ouScore++;
-    if (recent10.includes(5)) ouScore++;
-    if (price > last5Ticks[0]) ouScore++;
-    if (digit >= 7) ouScore++;
+    // 4. OVER 4 Logic (5 Points)
+    const ouConds = [
+        { label: "ZONE LOCK 80%", v: last10Digits.filter(d=>d>4).length >= 8 },
+        { label: "KILLER 0/1 COLD", v: !last20Digits.includes(0) && !last20Digits.includes(1) },
+        { label: "BOUNCE DETECT", v: last10Digits.includes(5) || last10Digits.includes(4) },
+        { label: "ZONE ALIGNMENT", v: price > last5Prices[0] },
+        { label: "GINO DIGIT (7+)", v: digit >= 7 }
+    ];
 
-    updateUI('stat-rise-fall', rfScore, "GINO RISE", "RISE/FALL", 'score-rf');
-    updateUI('stat-even-odd', eoScore, "GINO EVEN", "EVEN/ODD", 'score-eo');
-    updateUI('stat-match-diff', mdScore, `GINO MATCH ${hotDigit}`, "MATCH/DIFF", 'score-md');
-    updateUI('stat-over-under', ouScore, "GINO OVER 4", "OVER/UNDER", 'score-ou');
+    updateDashboard('rf', rfConds, "GINO RISE");
+    updateDashboard('eo', eoConds, "GINO EVEN");
+    updateDashboard('md', mdConds, "GINO MATCH " + hotDigit);
+    updateDashboard('ou', ouConds, "GINO OVER 4");
 }
 
-function updateUI(elId, score, ginoText, normalText, scoreId) {
-    const el = document.getElementById(elId);
-    const scoreEl = document.getElementById(scoreId);
-    
-    el.innerText = score >= 5 ? "🔥 " + ginoText : normalText;
-    el.style.color = score >= 5 ? "var(--gold)" : "white";
+function updateDashboard(id, conds, ginoText) {
+    const card = document.getElementById(`card-${id}`);
+    const val = document.getElementById(`val-${id}`);
+    const list = document.getElementById(`list-${id}`);
+    const passCount = conds.filter(c => c.v).length;
 
-    scoreEl.innerHTML = '';
-    for(let i=1; i<=5; i++) {
-        scoreEl.innerHTML += `<div class="dot ${i <= score ? 'active' : ''}"></div>`;
+    // Update List
+    list.innerHTML = conds.map(c => `
+        <div class="condition-row">
+            <span>${c.label}</span>
+            <span class="status-tag ${c.v ? 'tag-pass' : 'tag-fail'}">${c.v ? 'PASS' : 'FAIL'}</span>
+        </div>
+    `).join('');
+
+    // Update Header
+    if (passCount === 5) {
+        card.classList.add('gino-active');
+        val.innerText = "🔥 " + ginoText;
+    } else {
+        card.classList.remove('gino-active');
+        val.innerText = `WAITING (${passCount}/5)`;
     }
 }
 
-function filterMarkets(type, btn) {
-    if(btn) document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); btn?.classList.add('active');
-    const tbody = document.getElementById('market-list'); tbody.innerHTML = '';
-    const filtered = allSymbols.filter(s => {
-        if(type==='synthetic') return s.market==='synthetic_index' && !s.display_name.includes('Crash') && !s.display_name.includes('Boom');
-        if(type==='crashboom') return s.display_name.includes('Crash') || s.display_name.includes('Boom');
-        return s.market===type;
-    });
-    filtered.forEach(s => tbody.innerHTML+=`<tr><td>${s.display_name}</td><td style="color:#666; font-size:10px;">${s.symbol.toUpperCase()}</td><td><button class="btn-analyze" onclick="openAnalysis('${s.symbol}','${s.display_name}')">Analyze</button></td></tr>`);
-}
-
-function openAnalysis(symbol, name){
-    document.getElementById('target-name').innerText=name;
-    document.getElementById('target-symbol').innerText=symbol;
-    document.getElementById('analysis-overlay').style.display='block';
-    document.getElementById('chart-container').innerHTML=`<iframe src="https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=dark" width="100%" height="100%" frameborder="0"></iframe>`;
-    digitHistory=[]; priceHistory=[]; buildDigitUI();
-
-    ws.send(JSON.stringify({ticks_history:symbol,adjust_start_time:1,count:MAX_DIGITS,end:"latest",style:"ticks"}));
-    if(activeTickSubscription) ws.send(JSON.stringify({forget:activeTickSubscription}));
-    ws.send(JSON.stringify({ticks:symbol,subscribe:1}));
-}
-
-function buildDigitUI(){
-    const container=document.getElementById('digit-circles'); container.innerHTML='';
-    for(let i=0;i<=9;i++){
-        container.innerHTML+=`<div id="circle-${i}" class="digit-circle"><div class="digit-num">${i}</div><div id="pct-${i}" class="digit-pct">0%</div></div>`;
-    }
-}
-
-function updateDigitCircles(){
-    const recentDigits = digitHistory.slice(-MAX_DIGITS);
-    const counts = Array(10).fill(0); recentDigits.forEach(d=>counts[d]++);
-    const total = recentDigits.length;
-    document.getElementById('tick-counter').innerText=`${total}/${MAX_DIGITS}`;
-
-    counts.forEach((count,i)=>{
-        const pct = total>0?((count/total)*100).toFixed(1):0;
-        const circle = document.getElementById(`circle-${i}`);
-        document.getElementById(`pct-${i}`).innerText=`${pct}%`;
-        circle.classList.remove('hot','cold','active');
-        if(i===recentDigits[recentDigits.length-1]) circle.classList.add('active');
-        if(count === Math.max(...counts) && count > 0) circle.classList.add('hot');
-        if(count === Math.min(...counts.filter(c=>c>0)) && count > 0) circle.classList.add('cold');
-    });
-}
-
-function closeAnalysis(){
-    document.getElementById('analysis-overlay').style.display='none';
-    if(activeTickSubscription) ws.send(JSON.stringify({forget:activeTickSubscription}));
+function closeAnalysis() {
+    document.getElementById('analysis-overlay').style.display = 'none';
+    if(activeSub) ws.send(JSON.stringify({forget: activeSub}));
 }
 </script>
 </body>
