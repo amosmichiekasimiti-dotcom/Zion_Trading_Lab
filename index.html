@@ -3,93 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Zion Ultimate | Radar & Sniper</title>
+    <title>Zion Ultimate | Fixed Terminal</title>
     <style>
         :root { --red: #ff444f; --dark: #050508; --green: #00ff88; --gold: #ffd700; --blue: #00f2fe; --panel: #111118; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--dark); color: white; margin: 0; padding: 10px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        /* Stats & Navigation */
         .dash-header { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
         .box { background: var(--panel); padding: 10px; border-radius: 10px; border: 1px solid #222; text-align: center; }
         .lbl { font-size: 8px; color: #888; text-transform: uppercase; }
         .val { font-size: 16px; font-weight: bold; color: var(--blue); font-family: monospace; }
 
-        .nav-tabs { display: flex; gap: 5px; margin-bottom: 10px; background: #1a1a24; padding: 5px; border-radius: 8px; }
-        .tab-btn { flex: 1; padding: 10px; border: none; background: none; color: #888; border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: bold; }
-        .tab-btn.active { background: var(--red); color: white; }
+        .nav-tabs { display: flex; gap: 5px; margin-bottom: 10px; background: #1a1a24; padding: 5px; border-radius: 8px; border: 1px solid #333; }
+        .tab-btn { flex: 1; padding: 12px; border: none; background: none; color: #888; border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: bold; transition: 0.3s; }
+        .tab-btn.active { background: var(--red); color: white; box-shadow: 0 0 10px rgba(255, 68, 79, 0.3); }
 
-        /* Market Browser */
-        .market-browser { flex-grow: 1; overflow-y: auto; background: var(--panel); border-radius: 12px; border: 1px solid #222; }
+        .market-browser { flex-grow: 1; overflow-y: auto; background: var(--panel); border-radius: 12px; border: 1px solid #222; padding: 5px; }
         table { width: 100%; border-collapse: collapse; }
-        td { padding: 12px; border-bottom: 1px solid #1a1a24; font-size: 13px; }
-        .btn-action { background: var(--blue); color: #000; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; font-size: 10px; cursor: pointer; }
+        td { padding: 15px 10px; border-bottom: 1px solid #1a1a24; font-size: 13px; }
+        .btn-action { background: var(--blue); color: #000; border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; font-size: 10px; cursor: pointer; }
 
-        /* Sniper Overlay */
         #sniper-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--dark); z-index: 1000; display: none; flex-direction: column; padding: 15px; box-sizing: border-box; }
-        .overlay-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .price-big { font-size: 40px; text-align: center; font-family: monospace; color: var(--blue); margin: 15px 0; font-weight: bold; }
-
-        /* Logic Display */
-        .logic-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        .logic-card { background: #1a1a24; padding: 10px; border-radius: 8px; border: 1px solid #333; }
-        .cond { display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 4px; font-family: monospace; }
-        .pass { color: var(--green); } .fail { color: #444; }
-
-        .buy-btn { width: 100%; padding: 18px; border-radius: 10px; border: none; font-size: 16px; font-weight: 900; cursor: pointer; text-transform: uppercase; background: #222; color: #444; }
-        .buy-btn.active { background: var(--gold); color: #000; box-shadow: 0 0 20px var(--gold); }
-
-        /* Footer Log */
-        .terminal { height: 60px; background: #000; color: var(--green); font-family: monospace; font-size: 10px; padding: 8px; overflow-y: auto; border-top: 2px solid #222; }
+        .price-big { font-size: 45px; text-align: center; font-family: monospace; color: var(--blue); margin: 20px 0; font-weight: bold; }
+        
+        .buy-btn { width: 100%; padding: 20px; border-radius: 12px; border: none; font-size: 18px; font-weight: 900; cursor: pointer; text-transform: uppercase; background: #222; color: #444; }
+        .buy-btn.active { background: var(--gold); color: #000; box-shadow: 0 0 25px var(--gold); }
+        .terminal { height: 60px; background: #000; color: var(--green); font-family: monospace; font-size: 10px; padding: 10px; border-top: 2px solid #222; overflow-y: auto; }
     </style>
 </head>
 <body>
 
 <div class="dash-header">
-    <div class="box"><div class="lbl">Balance</div><div id="acc-bal" class="val">$0.00</div></div>
+    <div class="box"><div class="lbl">Balance</div><div id="acc-bal" class="val">$23.74</div></div>
     <div class="box"><div class="lbl">Session P/L</div><div id="acc-pl" class="val">$0.00</div></div>
     <div class="box"><div class="lbl">Next Stake</div><div id="acc-stake" class="val">$1.60</div></div>
 </div>
 
-<div style="background:var(--panel); padding:10px; border-radius:10px; margin-bottom:10px; border:1px solid #333;">
-    <input type="password" id="api-token" placeholder="Paste API Token" style="width:70%; background:#000; border:1px solid #444; color:var(--gold); padding:8px; border-radius:5px;">
-    <button onclick="initAccount()" style="width:25%; background:var(--green); border:none; padding:8px; border-radius:5px; font-weight:bold; cursor:pointer;">CONNECT</button>
+<div style="background:var(--panel); padding:10px; border-radius:10px; margin-bottom:10px; border:1px solid #333; display:flex; gap:10px;">
+    <input type="password" id="api-token" placeholder="Enter Deriv Token" style="flex-grow:1; background:#000; border:1px solid #444; color:var(--gold); padding:10px; border-radius:5px; font-family:monospace;">
+    <button onclick="initAccount()" style="background:var(--green); border:none; padding:10px 20px; border-radius:5px; font-weight:bold; cursor:pointer;">CONNECT</button>
 </div>
 
 <div class="nav-tabs">
-    <button class="tab-btn active" onclick="showView('radar', this)">GLOBAL RADAR</button>
-    <button class="tab-btn" onclick="showView('manual', this)">MARKET LIST</button>
+    <button id="tab-radar" class="tab-btn active" onclick="showView('radar', this)">GLOBAL RADAR</button>
+    <button id="tab-manual" class="tab-btn" onclick="showView('manual', this)">MARKET LIST</button>
 </div>
 
 <div id="view-radar" class="market-browser">
-    <table style="width:100%"><tbody id="radar-body"></tbody></table>
+    <table><tbody id="radar-body"><tr><td style="text-align:center; color:#555;">Radar Idle. Connect to Scan.</td></tr></tbody></table>
 </div>
 
 <div id="view-manual" class="market-browser" style="display:none;">
-    <table style="width:100%"><tbody id="manual-body"></tbody></table>
+    <table><tbody id="manual-body"><tr><td style="text-align:center; color:#555;">List Empty. Fetching assets...</td></tr></tbody></table>
 </div>
 
 <div id="sniper-overlay">
-    <div class="overlay-header">
-        <h3 id="target-title" style="margin:0; color:var(--gold);">Market Sniper</h3>
-        <button onclick="closeSniper()" style="background:#333; color:white; border:none; padding:5px 12px; border-radius:4px;">BACK</button>
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2 id="target-title" style="margin:0; color:var(--gold);">ASSET SNIPER</h2>
+        <button onclick="closeSniper()" style="background:#333; color:white; border:none; padding:8px 15px; border-radius:5px;">BACK</button>
     </div>
     <div class="price-big" id="live-tick">0.0000</div>
-    <div class="logic-grid">
-        <div class="logic-card">
-            <div style="font-size:10px; color:var(--gold); margin-bottom:5px;">ZONE LOCK (O4)</div>
-            <div id="logic-list"></div>
-        </div>
-        <div class="logic-card" style="display:flex; align-items:center; justify-content:center; font-size:10px; color:#555;">
-            STRATEGY: BANDWAGON v2
-        </div>
+    <div style="background:var(--panel); padding:15px; border-radius:10px; border:1px solid #333; margin-bottom:15px;">
+        <div id="logic-list" style="font-family:monospace; font-size:11px;"></div>
     </div>
-    <div style="background:var(--panel); padding:15px; border-radius:10px; border:1px solid #333;">
-        <button id="exec-btn" class="buy-btn" disabled>Scanning Market...</button>
-    </div>
-    <div id="tv-chart" style="flex-grow:1; margin-top:10px; border-radius:8px; overflow:hidden;"></div>
+    <button id="exec-btn" class="buy-btn" disabled>Waiting for Signal...</button>
+    <div id="tv-chart" style="flex-grow:1; margin-top:15px; border-radius:10px; overflow:hidden;"></div>
 </div>
 
-<div class="terminal" id="sys-log">>> Zion System Loaded. Please connect API...</div>
+<div class="terminal" id="sys-log">>> System Ready. Awaiting Token...</div>
 
 <script>
     let wsMkt, wsAcc, activeSym = '', allAssets = [], marketData = {};
@@ -99,15 +79,21 @@
 
     function initAccount() {
         const token = document.getElementById('api-token').value;
+        if(!token) return alert("Please paste your API Token!");
+        
+        log("Connecting to Gateway...");
         wsAcc = new WebSocket('wss://ws.derivws.com/websockets/v3?app_id=126973');
+        
         wsAcc.onopen = () => wsAcc.send(JSON.stringify({ authorize: token }));
+        
         wsAcc.onmessage = (e) => {
             const d = JSON.parse(e.data);
             if(d.authorize) {
+                log("Connection Verified.");
                 document.getElementById('acc-bal').innerText = "$" + d.authorize.balance;
                 wsAcc.send(JSON.stringify({ balance: 1, subscribe: 1 }));
                 wsAcc.send(JSON.stringify({ proposal_open_contract: 1, subscribe: 1 }));
-                fetchMarkets();
+                fetchMarkets(); // Force market list generation
             }
             if(d.balance) document.getElementById('acc-bal').innerText = "$" + d.balance.balance;
             if(d.proposal_open_contract) handleContract(d.proposal_open_contract);
@@ -115,14 +101,20 @@
     }
 
     function fetchMarkets() {
+        log("Refreshing Market Data...");
         wsMkt = new WebSocket('wss://ws.derivws.com/websockets/v3?app_id=126973');
         wsMkt.onopen = () => wsMkt.send(JSON.stringify({ active_symbols: "brief", product_type: "basic" }));
+        
         wsMkt.onmessage = (e) => {
             const d = JSON.parse(e.data);
             if(d.active_symbols) {
+                // Filter specifically for the assets you see in your screenshots
                 allAssets = d.active_symbols.filter(s => s.market === 'synthetic_index');
-                renderLists();
-                allAssets.forEach(s => {
+                log(`Found ${allAssets.length} Synthetic Assets.`);
+                renderManualList();
+                
+                // Subscribe to ticks for the Radar
+                allAssets.slice(0, 15).forEach(s => {
                     marketData[s.symbol] = { digits: [], name: s.display_name, prices: [] };
                     wsMkt.send(JSON.stringify({ ticks: s.symbol, subscribe: 1 }));
                 });
@@ -131,31 +123,51 @@
         };
     }
 
-    function renderLists() {
+    function renderManualList() {
         const manual = document.getElementById('manual-body');
-        manual.innerHTML = allAssets.map(s => `<tr><td>${s.display_name}</td><td style="text-align:right;"><button class="btn-action" onclick="openSniper('${s.symbol}','${s.display_name}')">SNIPE</button></td></tr>`).join('');
+        if(allAssets.length === 0) return;
+        manual.innerHTML = allAssets.map(s => `
+            <tr>
+                <td style="font-weight:bold;">${s.display_name}</td>
+                <td style="text-align:right;">
+                    <button class="btn-action" onclick="openSniper('${s.symbol}','${s.display_name}')">SNIPE ASSET</button>
+                </td>
+            </tr>
+        `).join('');
     }
 
     function processTick(t) {
-        const data = marketData[t.symbol];
-        if(!data) return;
-        const digit = parseInt(t.quote.toString().slice(-1));
-        data.digits.push(digit); data.prices.push(t.quote);
-        if(data.digits.length > 20) { data.digits.shift(); data.prices.shift(); }
+        if(!marketData[t.symbol]) return;
+        const d = parseInt(t.quote.toString().slice(-1));
+        marketData[t.symbol].digits.push(d);
+        marketData[t.symbol].prices.push(t.quote);
+        if(marketData[t.symbol].digits.length > 15) { marketData[t.symbol].digits.shift(); marketData[t.symbol].prices.shift(); }
 
         if(t.symbol === activeSym) {
             document.getElementById('live-tick').innerText = t.quote;
-            updateSniperLogic(data);
+            updateSniperLogic(marketData[t.symbol]);
         }
         updateRadarUI();
     }
 
     function updateRadarUI() {
         const radar = document.getElementById('radar-body');
-        radar.innerHTML = Object.keys(marketData).map(k => {
-            const d = marketData[k];
-            const score = d.digits.slice(-10).filter(x => x > 4).length;
-            return `<tr><td>${d.name}</td><td style="color:${score >= 8 ? 'var(--green)' : '#555'}">${score}/10 GINO</td><td style="text-align:right;"><button class="btn-action" onclick="openSniper('${k}','${d.name}')">VIEW</button></td></tr>`;
+        const sorted = Object.keys(marketData).sort((a,b) => {
+            const scoreA = marketData[a].digits.slice(-10).filter(x => x > 4).length;
+            const scoreB = marketData[b].digits.slice(-10).filter(x => x > 4).length;
+            return scoreB - scoreA;
+        });
+        
+        radar.innerHTML = sorted.map(k => {
+            const data = marketData[k];
+            const score = data.digits.slice(-10).filter(x => x > 4).length;
+            return `
+                <tr>
+                    <td>${data.name}</td>
+                    <td style="color:${score >= 8 ? 'var(--green)' : '#555'}; font-weight:bold;">${score}/10 GINO</td>
+                    <td style="text-align:right;"><button class="btn-action" onclick="openSniper('${k}','${data.name}')">VIEW</button></td>
+                </tr>
+            `;
         }).join('');
     }
 
@@ -168,16 +180,18 @@
 
     function updateSniperLogic(data) {
         const last10 = data.digits.slice(-10);
-        const conds = [
-            { n: "VACUUM (0,1 COLD)", v: !last10.includes(0) && !last10.includes(1) },
-            { n: "ZONE 80% (O4)", v: last10.filter(x => x > 4).length >= 8 },
-            { n: "TICK VELOCITY", v: Math.abs(data.prices[data.prices.length-1] - data.prices[data.prices.length-2]) > 0.0001 },
-            { n: "SNIPER DIGIT", v: data.digits[data.digits.length-1] >= 8 }
-        ];
-        const list = document.getElementById('logic-list');
-        list.innerHTML = conds.map(c => `<div class="cond"><span>${c.n}</span><span class="${c.v?'pass':'fail'}">${c.v?'PASS':'FAIL'}</span></div>`).join('');
+        const vacuum = !last10.includes(0) && !last10.includes(1);
+        const density = last10.filter(x => x > 4).length >= 8;
+        const trigger = data.digits[data.digits.length-1] >= 8;
+
+        document.getElementById('logic-list').innerHTML = `
+            VACUUM (0,1 COLD): <span style="color:${vacuum?'var(--green)':'#444'}">${vacuum?'PASS':'FAIL'}</span><br>
+            ZONE DENSITY: <span style="color:${density?'var(--green)':'#444'}">${density?'PASS':'FAIL'}</span><br>
+            GINO TRIGGER: <span style="color:${trigger?'var(--green)':'#444'}">${trigger?'PASS':'FAIL'}</span>
+        `;
+
         const btn = document.getElementById('exec-btn');
-        if(conds.every(c => c.v) && !isTrading) {
+        if(vacuum && density && trigger && !isTrading) {
             btn.disabled = false; btn.className = "buy-btn active"; btn.innerText = "GINO READY: SNIPE";
         } else {
             btn.disabled = true; btn.className = "buy-btn"; btn.innerText = "WAITING FOR SIGNAL...";
@@ -196,8 +210,9 @@
         if(c.is_sold) {
             sessionPL += c.profit;
             document.getElementById('acc-pl').innerText = "$" + sessionPL.toFixed(2);
-            if(c.profit > 0) { currentStake = 1.60; log("WIN! Resetting stake."); }
-            else { currentStake = (currentStake * 2.1).toFixed(2); log("LOSS. Martingale applied."); }
+            // Martingale Logic from Bandwagon XML
+            if(c.profit > 0) { currentStake = 1.60; log("WIN! Stake Reset."); }
+            else { currentStake = (currentStake * 2.1).toFixed(2); log("LOSS. Martingale Applied."); }
             document.getElementById('acc-stake').innerText = "$" + currentStake;
             isTrading = false;
         }
@@ -208,6 +223,7 @@
         btn.classList.add('active');
         document.getElementById('view-radar').style.display = view === 'radar' ? 'block' : 'none';
         document.getElementById('view-manual').style.display = view === 'manual' ? 'block' : 'none';
+        if(view === 'manual') renderManualList();
     }
 
     function closeSniper() { document.getElementById('sniper-overlay').style.display = 'none'; activeSym = ''; }
