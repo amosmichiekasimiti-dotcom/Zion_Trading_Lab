@@ -33,23 +33,26 @@ td { padding: 12px; border-bottom: 1px solid #222; font-size: 13px; }
 .strat-label { font-size: 9px; color: #888; text-transform: uppercase; margin-bottom: 4px; }
 .strat-value { font-weight: bold; font-size: 14px; }
 
-/* Neon Circles */
+/* Digit Circles */
 .digit-circle-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 15px 0; }
 .digit-circle { 
     aspect-ratio: 1/1; border-radius: 50%; 
     background: #1a1a24; border: 2px solid #333; 
     display: flex; flex-direction: column; align-items: center; justify-content: center; 
-    transition: all 0.3s ease; position: relative; font-size: 12px;
+    transition: all 0.3s ease; position: relative; font-size: 12px; color: white;
 }
-.digit-num { font-size: 14px; font-weight: bold; }
-.digit-pct { font-size: 8px; color: #888; margin-top: 2px; }
+.digit-num { font-size: 14px; font-weight: bold; color: white; }
+.digit-pct { font-size: 8px; color: white; margin-top: 2px; }
 
-/* State Glows */
+/* Hot and Cold */
+.digit-circle.hot { background: linear-gradient(145deg, #00ff88, #008844) !important; border-color: #fff; }
+.digit-circle.hot .digit-num, .digit-circle.hot .digit-pct { color: #000; font-weight: 900; }
+
+.digit-circle.cold { background: linear-gradient(145deg, #ff444f, #882222) !important; border-color: #fff; }
+.digit-circle.cold .digit-num, .digit-circle.cold .digit-pct { color: #fff; }
+
+/* Active last digit */
 .digit-circle.active { border-color: var(--blue); box-shadow: 0 0 10px var(--blue); transform: scale(1.05); }
-.digit-circle.most-freq { background: linear-gradient(145deg, #00ff88, #008844) !important; border-color: #fff; box-shadow: 0 0 15px rgba(0, 255, 136, 0.6); }
-.digit-circle.most-freq .digit-num, .digit-circle.most-freq .digit-pct { color: #000; font-weight: 900; }
-.digit-circle.least-freq { background: linear-gradient(145deg, #ff444f, #882222) !important; border-color: #fff; box-shadow: 0 0 15px rgba(255, 68, 79, 0.6); }
-.digit-circle.least-freq .digit-num, .digit-circle.least-freq .digit-pct { color: #fff; }
 
 /* Cursor arrow */
 .cursor { position: absolute; top: -10px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 10px solid var(--red); transition: left 0.3s ease; }
@@ -123,14 +126,13 @@ let priceHistory = [];
 const MAX_DIGITS = 1000;
 const cursor = document.getElementById("digit-cursor");
 
-// Load active symbols
 ws.onopen = () => ws.send(JSON.stringify({ active_symbols: "brief", product_type: "basic" }));
 
 ws.onmessage = (msg) => {
     const data = JSON.parse(msg.data);
     if (data.active_symbols) { allSymbols = data.active_symbols; filterMarkets('synthetic'); }
     if (data.history && data.history.prices) {
-        digitHistory = data.history.prices.map(p => parseInt(p.toFixed(2).slice(-1)));
+        digitHistory = data.history.prices.map(p => parseInt(Number(p).toFixed(2).slice(-1)));
         priceHistory = [...data.history.prices];
         updateDigitCircles();
     }
@@ -168,35 +170,52 @@ function buildDigitUI(){
 }
 
 function handleTick(tick){
-    activeTickSubscription=tick.id;
-    const price=tick.quote; const pipSize=tick.pip_size||2;
-    const lastDigit=parseInt(price.toFixed(pipSize).slice(-1));
-    document.getElementById('live-price').innerText=price.toFixed(pipSize);
+    activeTickSubscription = tick.id;
+    const pipSize = tick.pip_size || 2;
+    const priceStr = Number(tick.quote).toFixed(pipSize);
+    const lastDigit = parseInt(priceStr[priceStr.length-1]);
 
-    digitHistory.push(lastDigit); priceHistory.push(price);
+    document.getElementById('live-price').innerText = priceStr;
+
+    digitHistory.push(lastDigit); priceHistory.push(Number(priceStr));
     if(digitHistory.length>MAX_DIGITS) digitHistory.shift();
     if(priceHistory.length>MAX_DIGITS) priceHistory.shift();
 
-    updateDigitCircles(); updateStrategyPanel(lastDigit,price);
+    updateDigitCircles(); updateStrategyPanel(lastDigit, Number(priceStr));
 }
 
 function updateDigitCircles(){
-    const counts=Array(10).fill(0); digitHistory.forEach(d=>counts[d]++);
-    const total=digitHistory.length; document.getElementById('tick-counter').innerText=`${total}/${MAX_DIGITS}`;
-    const maxVal=Math.max(...counts); const minVal=Math.min(...counts.filter(c=>c>0));
+    const recentDigits = digitHistory.slice(-MAX_DIGITS);
+    const counts = Array(10).fill(0); recentDigits.forEach(d=>counts[d]++);
+
+    const total = recentDigits.length;
+    document.getElementById('tick-counter').innerText=`${total}/${MAX_DIGITS}`;
+
+    let pctSum = 0;
+    const pctArr = counts.map((count,i)=>{
+        let pct = total>0?(count/total*100):0;
+        pct = Math.round(pct*10)/10;
+        pctSum+=pct; return pct;
+    });
+    if(pctSum!==100 && total>0){
+        const diff = 100-pctSum;
+        pctArr[pctArr.lastIndexOf(Math.max(...pctArr))]+=diff;
+    }
+
+    const maxVal = Math.max(...counts);
+    const minVal = Math.min(...counts.filter(c=>c>0));
 
     counts.forEach((count,i)=>{
-        const pct=total>0?((count/total)*100).toFixed(1):"0.0";
-        const circle=document.getElementById(`circle-${i}`);
-        document.getElementById(`pct-${i}`).innerText=`${pct}%`;
-        circle.classList.remove('most-freq','least-freq','active');
-        if(i===digitHistory[digitHistory.length-1]) circle.classList.add('active');
-        if(count===maxVal&&count>0) circle.classList.add('most-freq');
-        if(count===minVal&&count>0) circle.classList.add('least-freq');
+        const circle = document.getElementById(`circle-${i}`);
+        document.getElementById(`pct-${i}`).innerText=`${pctArr[i].toFixed(1)}%`;
+        circle.classList.remove('hot','cold','active');
+        if(i===recentDigits[recentDigits.length-1]) circle.classList.add('active');
+        if(count===maxVal && count>0) circle.classList.add('hot');
+        if(count===minVal && count>0) circle.classList.add('cold');
     });
 
-    // Move cursor smoothly
-    const lastDigit = digitHistory[digitHistory.length-1];
+    // Move cursor above last digit
+    const lastDigit = recentDigits[recentDigits.length-1];
     const targetCircle = document.getElementById(`circle-${lastDigit}`);
     if(targetCircle){
         const rect = targetCircle.getBoundingClientRect();
@@ -226,4 +245,4 @@ function closeAnalysis(){
 }
 </script>
 </body>
-</html>
+    </html>
