@@ -12,7 +12,6 @@
     --gold: #ffd700; 
     --blue: #00f2fe; 
     --panel: #151520; 
-    --orange: #ff9800;
 }
 body { font-family: 'Segoe UI', sans-serif; background: var(--dark); color: white; margin: 0; padding: 10px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
@@ -35,49 +34,35 @@ td { padding: 12px; border-bottom: 1px solid #222; font-size: 13px; }
 .strat-value { font-weight: bold; font-size: 14px; }
 
 /* Enhanced Digit Circles - 10 digits grid */
-.digit-circle-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin: 15px 0; position: relative; }
+.digit-circle-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 15px 0; position: relative; }
 .digit-circle { 
     aspect-ratio: 1/1; border-radius: 50%; 
     background: #1a1a24; border: 2px solid #333; 
     display: flex; flex-direction: column; align-items: center; justify-content: center; 
     transition: all 0.3s ease; position: relative; font-size: 12px; color: white;
-    padding: 8px 4px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    padding: 5px;
 }
+.digit-num { font-size: 16px; font-weight: bold; color: white; }
+.digit-pct { font-size: 9px; color: #aaa; margin-top: 2px; }
+.digit-stats { font-size: 7px; line-height: 1.2; color: #ccc; margin-top: 3px; text-align: center; }
 
-/* Hot digit styling (most frequent) */
+/* Hot and Cold - based on frequency */
 .digit-circle.hot { 
-    background: linear-gradient(145deg, #1a3a2a, #0f2a1f); 
-    border-color: var(--green); 
-    box-shadow: 0 0 20px rgba(0,255,136,0.3);
+    background: linear-gradient(145deg, #00ff88, #008844) !important; 
+    border-color: #fff; 
+    box-shadow: 0 0 15px var(--green);
 }
-.digit-circle.hot .digit-num { color: var(--green); text-shadow: 0 0 10px var(--green); }
+.digit-circle.hot .digit-num, .digit-circle.hot .digit-pct, .digit-circle.hot .digit-stats { color: #000; font-weight: 900; }
 
-/* Cold digit styling (least frequent) */
 .digit-circle.cold { 
-    background: linear-gradient(145deg, #3a1a1f, #2a0f12); 
-    border-color: var(--red); 
-    box-shadow: 0 0 20px rgba(255,68,79,0.3);
+    background: linear-gradient(145deg, #ff444f, #882222) !important; 
+    border-color: #fff; 
+    box-shadow: 0 0 15px var(--red);
 }
-.digit-circle.cold .digit-num { color: var(--red); text-shadow: 0 0 10px var(--red); }
+.digit-circle.cold .digit-num, .digit-circle.cold .digit-pct, .digit-circle.cold .digit-stats { color: #fff; }
 
 /* Active last digit indicator */
-.digit-circle.active { 
-    border-color: var(--gold); 
-    box-shadow: 0 0 20px var(--gold); 
-    transform: scale(1.05);
-}
-.digit-circle.active .digit-num { color: var(--gold); }
-
-.digit-num { font-size: 22px; font-weight: 800; color: white; line-height: 1; }
-.digit-pct { font-size: 11px; font-weight: 600; color: #fff; margin: 2px 0; }
-.digit-stats { font-size: 8px; line-height: 1.3; color: #ccc; text-align: center; margin: 2px 0; }
-
-/* Match/Diff bar container */
-.match-bar-container { width: 80%; height: 3px; background: #333; border-radius: 2px; margin: 3px auto; overflow: hidden; }
-.match-bar-fill { height: 100%; width: 0%; transition: width 0.3s ease; }
-.match-bar-hot { background: var(--green); }
-.match-bar-cold { background: var(--red); }
+.digit-circle.active { border-color: var(--blue); box-shadow: 0 0 10px var(--blue); transform: scale(1.05); }
 
 /* Cursor arrow for last digit */
 .cursor { 
@@ -98,77 +83,24 @@ td { padding: 12px; border-bottom: 1px solid #222; font-size: 13px; }
 .close-btn { background: #333; color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: bold; margin: 20px 0; cursor: pointer; }
 .btn-analyze { background: var(--blue); color: #000; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; }
 
-/* Frequency bar (outside circle) */
-.freq-bar-container {
-    width: 90%;
-    height: 6px;
-    background: #222;
-    border-radius: 3px;
-    margin: 5px auto 0;
-    overflow: hidden;
-}
+/* Match/Diff bar container */
+.match-bar-container { width: 100%; height: 4px; background: #333; border-radius: 2px; margin-top: 3px; overflow: hidden; }
+.match-bar-fill { height: 100%; width: 0%; transition: width 0.3s ease; }
+.match-bar-hot { background: var(--green); }
+.match-bar-cold { background: var(--red); }
 
-.freq-bar-fill {
-    height: 100%;
-    width: 0%;
-    transition: width 0.3s ease;
-}
-
-.freq-bar-hot { background: linear-gradient(90deg, var(--green), #00cc66); }
-.freq-bar-cold { background: linear-gradient(90deg, var(--red), #cc3333); }
-.freq-bar-neutral { background: linear-gradient(90deg, #666, #444); }
-
-/* Legend */
-.legend {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    margin: 15px 0;
-    flex-wrap: wrap;
-}
-
-.legend-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: rgba(255,255,255,0.05);
-    padding: 6px 15px;
-    border-radius: 20px;
-    font-size: 11px;
-}
-
-.legend-dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 3px;
-}
-
-.legend-dot.hot { background: var(--green); }
-.legend-dot.cold { background: var(--red); }
-.legend-dot.active { background: var(--gold); }
-
-/* Header stats */
-.stats-header {
-    display: flex;
-    justify-content: space-between;
-    background: rgba(0,0,0,0.3);
-    border-radius: 10px;
-    padding: 10px;
-    margin-bottom: 15px;
-    font-size: 12px;
-}
-
-.stat-badge {
-    background: rgba(255,255,255,0.1);
-    padding: 4px 10px;
-    border-radius: 15px;
-}
-
-/* Market count */
+/* Market counter */
 .market-count {
     color: var(--gold);
     font-size: 11px;
     margin-left: 10px;
+}
+
+/* Loading indicator */
+.loading {
+    text-align: center;
+    padding: 20px;
+    color: var(--gold);
 }
 </style>
 </head>
@@ -176,13 +108,14 @@ td { padding: 12px; border-bottom: 1px solid #222; font-size: 13px; }
 
 <div style="display:flex; justify-content:space-between; align-items:center; padding: 5px 10px;">
     <h2 style="margin:0; color: var(--gold); font-size: 18px;">🤖 ZION PRO LAB</h2>
-    <div style="display: flex; gap: 10px; align-items: center;">
+    <div style="display: flex; gap: 15px; align-items: center;">
         <small id="market-counter" style="color:var(--blue)">0 markets</small>
-        <small id="status-text" style="color:var(--green)">● System Ready</small>
+        <small id="status-text" style="color:var(--green)">● Connected</small>
     </div>
 </div>
 
 <div class="nav-scroll">
+    <button class="nav-btn" onclick="filterMarkets('all', this)">ALL</button>
     <button class="nav-btn active" onclick="filterMarkets('synthetic', this)">VOLATILITY</button>
     <button class="nav-btn" onclick="filterMarkets('crashboom', this)">CRASH/BOOM</button>
     <button class="nav-btn" onclick="filterMarkets('step', this)">STEP/RANGE</button>
@@ -190,7 +123,6 @@ td { padding: 12px; border-bottom: 1px solid #222; font-size: 13px; }
     <button class="nav-btn" onclick="filterMarkets('cryptocurrency', this)">CRYPTO</button>
     <button class="nav-btn" onclick="filterMarkets('commodities', this)">COMMODITIES</button>
     <button class="nav-btn" onclick="filterMarkets('indices', this)">INDICES</button>
-    <button class="nav-btn" onclick="filterMarkets('all', this)">ALL MARKETS</button>
 </div>
 
 <div class="table-container">
@@ -210,7 +142,6 @@ td { padding: 12px; border-bottom: 1px solid #222; font-size: 13px; }
         <div id="live-price">00.00</div>
     </div>
 
-    <!-- Strategy Panel -->
     <div class="strategy-grid">
         <div class="strat-card"><div class="strat-label">Even / Odd</div><div id="stat-even-odd" class="strat-value">---</div></div>
         <div class="strat-card"><div class="strat-label">Over / Under</div><div id="stat-over-under" class="strat-value">---</div></div>
@@ -218,41 +149,27 @@ td { padding: 12px; border-bottom: 1px solid #222; font-size: 13px; }
         <div class="strat-card"><div class="strat-label">Tick Trend</div><div id="stat-rise-fall" class="strat-value">---</div></div>
     </div>
 
-    <!-- Hot/Cold Legend -->
-    <div class="legend">
-        <div class="legend-item">
-            <span class="legend-dot hot"></span>
-            <span>Hot digit (most frequent)</span>
+    <!-- Legend -->
+    <div style="display: flex; justify-content: center; gap: 20px; margin: 10px 0; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="width: 12px; height: 12px; background: var(--green); border-radius: 3px;"></div>
+            <span style="font-size: 10px;">Hot (most frequent)</span>
         </div>
-        <div class="legend-item">
-            <span class="legend-dot cold"></span>
-            <span>Cold digit (least frequent)</span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="width: 12px; height: 12px; background: var(--red); border-radius: 3px;"></div>
+            <span style="font-size: 10px;">Cold (least frequent)</span>
         </div>
-        <div class="legend-item">
-            <span class="legend-dot active"></span>
-            <span>Last digit</span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="width: 12px; height: 12px; background: var(--blue); border-radius: 3px;"></div>
+            <span style="font-size: 10px;">Last digit</span>
         </div>
     </div>
 
-    <!-- Digit Analytics Panel -->
-    <div style="background: rgba(255,255,255,0.05); padding: 20px 15px; border-radius: 16px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1); position:relative;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <div style="font-size: 12px; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">
-                <i class="fas fa-chart-pie" style="margin-right: 8px;"></i>Digit Analytics (0-9)
-            </div>
-            <div id="tick-counter" style="background: var(--blue); color: #000; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold;">
-                0/1000
-            </div>
+    <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1); position:relative;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="font-size: 10px; color: #aaa; text-transform: uppercase; letter-spacing: 1px;">Digit Analytics (0-9)</div>
+            <div id="tick-counter" style="background: var(--blue); color: #000; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: bold;">0/1000</div>
         </div>
-
-        <!-- Stats Summary -->
-        <div class="stats-header">
-            <span class="stat-badge" id="hot-digit-display">Hot: -</span>
-            <span class="stat-badge" id="cold-digit-display">Cold: -</span>
-            <span class="stat-badge" id="avg-match">Avg Match: 0%</span>
-        </div>
-
-        <!-- Digit Circles Grid -->
         <div class="digit-circle-grid" id="digit-circles"></div>
         <div class="cursor" id="digit-cursor"></div>
     </div>
@@ -273,25 +190,29 @@ const cursor = document.getElementById("digit-cursor");
 
 ws.onopen = () => {
     console.log("WebSocket connected");
-    ws.send(JSON.stringify({ 
-        active_symbols: "brief", 
-        product_type: "basic" 
-    }));
+    document.getElementById('status-text').innerHTML = '● Connected';
+    ws.send(JSON.stringify({ active_symbols: "brief", product_type: "basic" }));
+};
+
+ws.onerror = (error) => {
+    console.error("WebSocket error:", error);
+    document.getElementById('status-text').innerHTML = '● Error';
 };
 
 ws.onmessage = (msg) => {
     const data = JSON.parse(msg.data);
     
     if (data.error) {
-        console.error("WebSocket error:", data.error);
+        console.error("API error:", data.error);
         return;
     }
     
     if (data.active_symbols) { 
         allSymbols = data.active_symbols; 
         console.log(`Loaded ${allSymbols.length} symbols`);
-        // Show all markets by default
-        filterMarkets('all'); 
+        document.getElementById('market-counter').innerHTML = `${allSymbols.length} markets`;
+        // Show volatility markets by default
+        filterMarkets('synthetic'); 
     }
     
     if (data.history && data.history.prices) {
@@ -319,89 +240,92 @@ function filterMarkets(type, btn) {
     const tbody = document.getElementById('market-list');
     if (!tbody) return;
     
-    tbody.innerHTML = '';
+    tbody.innerHTML = '<tr><td colspan="4" class="loading">Loading markets...</td></tr>';
     
-    let filtered = [];
-    
-    if (type === 'all') {
-        // Show all symbols
-        filtered = allSymbols;
-    } else {
-        filtered = allSymbols.filter(s => {
-            if (!s || !s.market) return false;
-            
-            const market = s.market.toLowerCase();
-            const displayName = (s.display_name || '').toLowerCase();
-            
-            switch(type) {
-                case 'synthetic':
-                    return market === 'synthetic_index' && 
-                           !displayName.includes('crash') && 
-                           !displayName.includes('boom') &&
-                           !displayName.includes('jump') &&
-                           !displayName.includes('step');
-                
-                case 'crashboom':
-                    return displayName.includes('crash') || 
-                           displayName.includes('boom') ||
-                           displayName.includes('crash/boom');
-                
-                case 'step':
-                    return displayName.includes('step') || 
-                           displayName.includes('range') ||
-                           displayName.includes('step index');
-                
-                case 'forex':
-                    return market === 'forex';
-                
-                case 'cryptocurrency':
-                    return market === 'cryptocurrency';
-                
-                case 'commodities':
-                    return market === 'commodities';
-                
-                case 'indices':
-                    return market === 'stock_index' || 
-                           market === 'indices';
-                
-                default:
-                    return true;
-            }
-        });
-    }
-    
-    // Update market counter
-    const counterEl = document.getElementById('market-counter');
-    if (counterEl) {
-        counterEl.innerHTML = `${filtered.length} markets`;
-    }
-    
-    if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#666;">No markets found</td></tr>';
-        return;
-    }
-    
-    // Display first 50 markets to avoid performance issues
-    filtered.slice(0, 50).forEach(s => {
-        const row = document.createElement('tr');
-        const marketType = s.market || 'N/A';
-        const symbol = s.symbol || '';
-        const displayName = s.display_name || symbol;
+    // Small delay to allow UI update
+    setTimeout(() => {
+        let filtered = [];
         
-        row.innerHTML = `
-            <td>${displayName}</td>
-            <td style="color:#666; font-size:10px;">${symbol}</td>
-            <td style="color:#888; font-size:10px;">${marketType}</td>
-            <td><button class="btn-analyze" onclick="openAnalysis('${symbol}','${displayName.replace(/'/g, "\\'")}')">Analyze</button></td>
-        `;
-        tbody.appendChild(row);
-    });
-    
-    if (filtered.length > 50) {
-        const row = document.createElement('tr');
-        row.innerHTML = `<td colspan="4" style="text-align:center; color:var(--gold);">+ ${filtered.length - 50} more markets (scroll in API)</td>`;
-        tbody.appendChild(row);
-    }
+        if (type === 'all') {
+            // Show all symbols
+            filtered = allSymbols;
+        } else {
+            filtered = allSymbols.filter(s => {
+                if (!s || !s.market) return false;
+                
+                const market = s.market.toLowerCase();
+                const displayName = (s.display_name || '').toLowerCase();
+                const symbol = (s.symbol || '').toLowerCase();
+                
+                switch(type) {
+                    case 'synthetic':
+                        return market === 'synthetic_index' && 
+                               !displayName.includes('crash') && 
+                               !displayName.includes('boom') &&
+                               !displayName.includes('jump') &&
+                               !displayName.includes('step');
+                    
+                    case 'crashboom':
+                        return displayName.includes('crash') || 
+                               displayName.includes('boom') ||
+                               symbol.includes('crash') ||
+                               symbol.includes('boom');
+                    
+                    case 'step':
+                        return displayName.includes('step') || 
+                               displayName.includes('range') ||
+                               symbol.includes('step') ||
+                               symbol.includes('range');
+                    
+                    case 'forex':
+                        return market === 'forex';
+                    
+                    case 'cryptocurrency':
+                        return market === 'cryptocurrency';
+                    
+                    case 'commodities':
+                        return market === 'commodities';
+                    
+                    case 'indices':
+                        return market === 'stock_index' || 
+                               market === 'indices';
+                    
+                    default:
+                        return true;
+                }
+            });
+        }
+        
+        // Update market counter
+        document.getElementById('market-counter').innerHTML = `${filtered.length} markets`;
+        
+        if (filtered.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#666; padding:20px;">No markets found in this category</td></tr>';
+            return;
+        }
+        
+        // Clear and populate
+        tbody.innerHTML = '';
+        
+        // Display all markets (no limit)
+        filtered.forEach(s => {
+            const row = document.createElement('tr');
+            const marketType = s.market || 'N/A';
+            const symbol = s.symbol || '';
+            const displayName = s.display_name || symbol;
+            
+            // Escape single quotes for onclick
+            const escapedName = displayName.replace(/'/g, "\\'");
+            
+            row.innerHTML = `
+                <td>${displayName}</td>
+                <td style="color:#666; font-size:10px;">${symbol}</td>
+                <td style="color:#888; font-size:10px;">${marketType}</td>
+                <td><button class="btn-analyze" onclick="openAnalysis('${symbol}','${escapedName}')">Analyze</button></td>
+            `;
+            tbody.appendChild(row);
+        });
+    }, 100);
 }
 
 function openAnalysis(symbol, name){
@@ -441,19 +365,14 @@ function buildDigitUI(){
     
     container.innerHTML = '';
     for(let i = 0; i <= 9; i++){
-        container.innerHTML += `
-            <div id="circle-${i}" class="digit-circle">
-                <div class="digit-num">${i}</div>
-                <div id="pct-${i}" class="digit-pct">0%</div>
-                <div id="stats-${i}" class="digit-stats">E/O:--<br>M/D:--</div>
-                <div class="match-bar-container" id="bar-${i}">
-                    <div class="match-bar-fill" id="fill-${i}" style="width:0%"></div>
-                </div>
-                <div class="freq-bar-container" id="freq-bar-${i}">
-                    <div class="freq-bar-fill" id="freq-fill-${i}" style="width:0%"></div>
-                </div>
+        container.innerHTML += `<div id="circle-${i}" class="digit-circle">
+            <div class="digit-num">${i}</div>
+            <div id="pct-${i}" class="digit-pct">0%</div>
+            <div id="stats-${i}" class="digit-stats">E/O:--<br>M/D:--</div>
+            <div class="match-bar-container" id="bar-${i}">
+                <div class="match-bar-fill" id="fill-${i}" style="width:0%"></div>
             </div>
-        `;
+        </div>`;
     }
 }
 
@@ -489,9 +408,9 @@ function updateDigitCircles(){
     const total = recentDigits.length;
     document.getElementById('tick-counter').innerText = `${total}/${MAX_DIGITS}`;
 
-    // Calculate match counts
+    // Calculate match counts for each digit (consecutive same digits)
     const matchCounts = Array(10).fill(0);
-    for(let i = 1; i < recentDigits.length; i++){
+    for(let i=1; i<recentDigits.length; i++){
         if(recentDigits[i] === recentDigits[i-1]){
             matchCounts[recentDigits[i]]++;
         }
@@ -506,15 +425,6 @@ function updateDigitCircles(){
     const maxDigit = counts.indexOf(maxVal);
     const minDigit = counts.indexOf(minVal);
 
-    // Update header displays
-    document.getElementById('hot-digit-display').innerHTML = `Hot: ${maxDigit} (${maxVal}x)`;
-    document.getElementById('cold-digit-display').innerHTML = `Cold: ${minDigit} (${minVal}x)`;
-    
-    // Calculate average match percentage
-    const totalMatches = matchCounts.reduce((a, b) => a + b, 0);
-    const avgMatch = total > 1 ? (totalMatches / (total - 1) * 100).toFixed(1) : 0;
-    document.getElementById('avg-match').innerHTML = `Avg Match: ${avgMatch}%`;
-
     counts.forEach((count, i) => {
         const circle = document.getElementById(`circle-${i}`);
         if(!circle) return;
@@ -522,16 +432,15 @@ function updateDigitCircles(){
         const pctEl = document.getElementById(`pct-${i}`);
         const statsEl = document.getElementById(`stats-${i}`);
         const fillEl = document.getElementById(`fill-${i}`);
-        const freqFillEl = document.getElementById(`freq-fill-${i}`);
         
         if(pctEl) pctEl.innerText = `${pctArr[i].toFixed(1)}%`;
         
         // Even/Odd and Over/Under text
-        const evenOdd = i % 2 === 0 ? "E" : "O";
-        const overUnder = i >= 5 ? "Ov" : "Un";
+        const evenOdd = i%2===0 ? "E" : "O";
+        const overUnder = i>=5 ? "Ov" : "Un";
         
         // Match percentage for this digit
-        const matchPct = count > 0 ? (matchCounts[i] / count * 100) : 0;
+        const matchPct = count>0 ? (matchCounts[i]/count * 100) : 0;
         
         if(statsEl) statsEl.innerHTML = `${evenOdd}/${overUnder}<br>M:${matchPct.toFixed(0)}%`;
         
@@ -541,22 +450,11 @@ function updateDigitCircles(){
             fillEl.className = `match-bar-fill ${matchPct >= 50 ? 'match-bar-hot' : 'match-bar-cold'}`;
         }
         
-        // Frequency bar (relative to max)
-        if(freqFillEl) {
-            const freqWidth = maxVal > 0 ? (count / maxVal * 100) : 0;
-            freqFillEl.style.width = `${freqWidth}%`;
-            
-            // Color based on hot/cold status
-            if(i === maxDigit) freqFillEl.className = 'freq-bar-fill freq-bar-hot';
-            else if(i === minDigit) freqFillEl.className = 'freq-bar-fill freq-bar-cold';
-            else freqFillEl.className = 'freq-bar-fill freq-bar-neutral';
-        }
-        
         // Hot/Cold classes based on frequency
         circle.classList.remove('hot', 'cold', 'active');
         if(i === recentDigits[recentDigits.length-1]) circle.classList.add('active');
-        if(i === maxDigit && maxVal > 0) circle.classList.add('hot');
-        if(i === minDigit && minVal < maxVal) circle.classList.add('cold');
+        if(i === maxDigit && count > 0) circle.classList.add('hot');
+        if(i === minDigit && count > 0 && minVal < maxVal) circle.classList.add('cold');
     });
 
     // Move cursor above last digit
@@ -595,10 +493,10 @@ function updateStrategyPanel(digit, price){
 
     // Calculate overall match percentage
     let matches = 0;
-    for(let i = 1; i < digitHistory.length; i++){
+    for(let i=1; i<digitHistory.length; i++){
         if(digitHistory[i] === digitHistory[i-1]) matches++;
     }
-    const matchPct = digitHistory.length > 1 ? (matches / (digitHistory.length - 1) * 100).toFixed(1) : 0;
+    const matchPct = digitHistory.length > 1 ? (matches/(digitHistory.length-1)*100).toFixed(1) : 0;
     if (mdEl) {
         mdEl.innerText = `${matchPct}% match`;
         mdEl.style.color = matchPct >= 50 ? "var(--green)" : "var(--red)";
@@ -619,4 +517,4 @@ window.addEventListener('load', () => {
 });
 </script>
 </body>
-        </html>
+</html>
