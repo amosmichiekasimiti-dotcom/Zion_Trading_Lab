@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Zion Synthetic Pro Terminal v3</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zion Synthetic Pro Terminal v4</title>
 <style>
 :root {
     --red: #ff444f;
@@ -20,18 +20,21 @@
 * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI', sans-serif; }
 body { background: var(--dark); color:white; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
 
-/* HEADER / ACCOUNT BAR */
+/* HEADER */
 .header-bar {
     display:flex;
+    flex-wrap:wrap;
     justify-content:space-between;
     align-items:center;
-    padding:10px 15px;
+    padding:10px;
     background: var(--panel);
-    border-bottom: 1px solid #222;
+    border-bottom:1px solid #222;
 }
-.header-box { text-align:center; flex:1; padding:8px 10px; margin:0 5px; background:#111; border-radius:8px; border:1px solid #222; }
-.header-box .lbl { font-size:9px; color:var(--lightgray); text-transform:uppercase; }
+.header-box { flex:1; min-width:100px; margin:5px; text-align:center; background:#111; border-radius:8px; border:1px solid #222; padding:10px; }
+.header-box .lbl { font-size:10px; color:var(--lightgray); text-transform:uppercase; }
 .header-box .val { font-size:16px; font-weight:bold; color:var(--blue); font-family:monospace; }
+.header-box input { width:100%; padding:8px; border-radius:5px; border:1px solid #444; background:#000; color:var(--gold); font-family:monospace; }
+.header-box button { margin-top:5px; width:100%; padding:8px; border-radius:5px; border:none; background:var(--green); color:#000; font-weight:bold; cursor:pointer; }
 
 /* MAIN LAYOUT */
 .main-layout {
@@ -45,6 +48,7 @@ body { background: var(--dark); color:white; height:100vh; display:flex; flex-di
 /* LEFT: MARKET LIST */
 .market-list {
     width:200px;
+    min-width:150px;
     background: var(--panel);
     border-radius:10px;
     border:1px solid #222;
@@ -52,24 +56,19 @@ body { background: var(--dark); color:white; height:100vh; display:flex; flex-di
 }
 .market-list h3 { text-align:center; padding:10px 0; color:var(--gold); font-size:14px; font-weight:bold; }
 .market-item { display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #222; cursor:pointer; transition:0.3s; }
-.market-item:hover { background: #222; }
+.market-item:hover { background:#222; }
 .market-item .name { font-weight:bold; }
 .market-item .btn-snipe { padding:5px 10px; font-size:11px; border:none; border-radius:5px; background:var(--blue); color:#000; cursor:pointer; }
 
 /* CENTER: CHART AREA */
-.chart-panel {
-    flex:1;
-    background: var(--panel);
-    border-radius:10px;
-    overflow:hidden;
-    position:relative;
-}
+.chart-panel { flex:1; background: var(--panel); border-radius:10px; overflow:hidden; display:flex; flex-direction:column; }
 .chart-header { padding:10px; text-align:center; font-weight:bold; font-size:14px; color:var(--gold); border-bottom:1px solid #222; }
-.chart-container { width:100%; height:100%; }
+.chart-container { flex:1; width:100%; }
 
 /* RIGHT: TRADE PANEL */
 .trade-panel {
     width:300px;
+    min-width:250px;
     background: var(--panel);
     border-radius:10px;
     display:flex;
@@ -83,21 +82,16 @@ body { background: var(--dark); color:white; height:100vh; display:flex; flex-di
 .trade-btn { width:100%; padding:15px; border:none; border-radius:10px; background:#222; color:#444; font-weight:900; text-transform:uppercase; cursor:pointer; transition:0.3s; }
 .trade-btn.active { background:var(--gold); color:#000; box-shadow:0 0 20px var(--gold); }
 
-/* DIGIT ANALYTICS PANEL */
-.digit-panel { display:flex; justify-content:space-between; gap:5px; margin-top:5px; flex-wrap:wrap; }
-.digit-box { flex:1; padding:5px; background:#111; border-radius:5px; text-align:center; font-size:10px; border:1px solid #222; }
+/* DIGIT ANALYTICS */
+.digit-panel { display:flex; justify-content:space-between; gap:5px; flex-wrap:wrap; margin-top:5px; }
+.digit-box { flex:1 0 20%; padding:5px; background:#111; border-radius:5px; text-align:center; font-size:10px; border:1px solid #222; }
 
 /* BOTTOM HISTORY & TERMINAL */
-.bottom-bar {
-    display:flex;
-    height:120px;
-    gap:10px;
-    padding:10px;
-}
-.history-panel, .terminal-panel { flex:1; background:var(--panel); border-radius:10px; border:1px solid #222; padding:10px; font-family:monospace; font-size:10px; overflow-y:auto; }
+.bottom-bar { display:flex; flex-wrap:wrap; gap:10px; padding:10px; }
+.history-panel, .terminal-panel { flex:1; min-height:100px; background:var(--panel); border-radius:10px; border:1px solid #222; padding:10px; font-family:monospace; font-size:10px; overflow-y:auto; }
 .history-panel h4, .terminal-panel h4 { color:var(--gold); font-size:11px; margin-bottom:5px; }
 
-/* SCROLLBAR STYLING */
+/* SCROLLBAR */
 .market-list::-webkit-scrollbar, .chart-panel::-webkit-scrollbar, .trade-panel::-webkit-scrollbar, .bottom-bar::-webkit-scrollbar {
     width:6px; height:6px;
 }
@@ -105,25 +99,34 @@ body { background: var(--dark); color:white; height:100vh; display:flex; flex-di
     background:#333; border-radius:3px;
 }
 
-/* MODALS / ALERTS */
+/* MODAL */
 .modal-overlay {
     position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); display:none; justify-content:center; align-items:center; z-index:1000; flex-direction:column; padding:10px; }
 .modal-header { display:flex; justify-content:space-between; width:100%; margin-bottom:10px; }
 .modal-header h2 { color:var(--gold); font-size:16px; }
 .modal-btn { padding:5px 10px; background:#333; color:white; border:none; border-radius:5px; cursor:pointer; }
 
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .main-layout { flex-direction:column; }
+  .market-list, .trade-panel { width:100%; min-width:auto; height:auto; }
+  .chart-panel { height:300px; }
+  .header-box { flex:1 1 45%; }
+  .trade-input, .trade-btn { font-size:14px; padding:12px; }
+  .chart-header { font-size:16px; }
+}
 </style>
 </head>
 <body>
 
-<!-- HEADER / ACCOUNT BAR -->
+<!-- HEADER -->
 <div class="header-bar">
     <div class="header-box"><div class="lbl">Balance</div><div id="acc-bal" class="val">$0.00</div></div>
     <div class="header-box"><div class="lbl">Session P/L</div><div id="acc-pl" class="val">$0.00</div></div>
     <div class="header-box"><div class="lbl">Next Stake</div><div id="acc-stake" class="val">$1.60</div></div>
     <div class="header-box">
-        <input type="password" id="api-token" placeholder="API Token" class="trade-input" style="margin:0;">
-        <button onclick="initAccount()" class="trade-btn" style="margin-top:5px;padding:8px;">CONNECT</button>
+        <input type="password" id="api-token" placeholder="API Token">
+        <button onclick="initAccount()">CONNECT</button>
     </div>
 </div>
 
@@ -142,13 +145,12 @@ body { background: var(--dark); color:white; height:100vh; display:flex; flex-di
     <div class="chart-panel">
         <div class="chart-header" id="chart-title">Select Market</div>
         <div class="chart-container" id="chart-container">
-            <!-- TradingView iframe will be injected here -->
+            <!-- TradingView iframe injected dynamically -->
         </div>
     </div>
 
     <!-- RIGHT: TRADE PANEL -->
     <div class="trade-panel">
-        <!-- Contract Settings -->
         <div class="trade-section">
             <h4>CONTRACT</h4>
             <select id="contract-type" class="trade-input">
@@ -165,7 +167,6 @@ body { background: var(--dark); color:white; height:100vh; display:flex; flex-di
             <input type="number" id="duration-input" class="trade-input" placeholder="Duration (s)" value="1">
         </div>
 
-        <!-- Digit Analytics -->
         <div class="trade-section">
             <h4>DIGIT ANALYTICS</h4>
             <div class="digit-panel" id="digit-panel">
@@ -182,13 +183,11 @@ body { background: var(--dark); color:white; height:100vh; display:flex; flex-di
             </div>
         </div>
 
-        <!-- Trade Execution -->
         <div class="trade-section">
             <h4>ACTION</h4>
             <button id="buy-btn" class="trade-btn" disabled>WAITING FOR SIGNAL</button>
         </div>
 
-        <!-- Martingale / Auto Control -->
         <div class="trade-section">
             <h4>AUTO / MARTINGALE</h4>
             <div>Multiplier: <span id="mg-multiplier">2.1</span></div>
@@ -210,7 +209,7 @@ body { background: var(--dark); color:white; height:100vh; display:flex; flex-di
     </div>
 </div>
 
-<!-- MODAL / ALERT PLACEHOLDER -->
+<!-- MODAL -->
 <div class="modal-overlay" id="modal-overlay">
     <div class="modal-header">
         <h2 id="modal-title">Modal</h2>
@@ -220,7 +219,7 @@ body { background: var(--dark); color:white; height:100vh; display:flex; flex-di
 </div>
 
 <script>
-/* PLACEHOLDER: Part 2 will include WebSocket, Radar, AI logic, Trading Execution */
+/* Placeholder: WebSocket, Radar, AI Logic, Trading execution will go here (same as Part 2) */
 </script>
 </body>
-</html>
+    </html>
