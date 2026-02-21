@@ -107,21 +107,25 @@ const ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`);
 let allSymbols = [];
 let activeTickStream = null;
 
-const TICK_LIMIT = 1000; // maintain last 1000 digits
+const TICK_LIMIT = 1000;
 const tickQueue = [];
 const digitCounts = Array(10).fill(0);
 let priceHistory = [];
+let updateTimer = null;
 
 ws.onopen = () => ws.send(JSON.stringify({ active_symbols: "brief", product_type: "basic" }));
 
 ws.onmessage = (msg) => {
     const data = JSON.parse(msg.data);
-    if(data.active_symbols){ allSymbols = data.active_symbols; filterMarkets('synthetic'); }
-    if(data.tick) handleTick(data.tick);
+    if (data.active_symbols) {
+        allSymbols = data.active_symbols;
+        filterMarkets('synthetic');
+    }
+    if (data.tick) handleTick(data.tick);
 };
 
 function filterMarkets(type, btn){
-    if(btn){ document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
+    if(btn){ document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
     const tbody = document.getElementById('market-list'); tbody.innerHTML='';
     const filtered = allSymbols.filter(s=>{
         if(type==='synthetic') return s.market==='synthetic_index' && !s.display_name.includes('Crash') && !s.display_name.includes('Boom') && !s.display_name.includes('Step') && !s.display_name.includes('Range');
@@ -131,11 +135,15 @@ function filterMarkets(type, btn){
         return s.market===type;
     });
     filtered.forEach(s=>{
-        tbody.innerHTML+=`<tr><td>${s.display_name}</td><td style="color:#666; font-size:10px;">${s.symbol.toUpperCase()}</td><td><button class="btn-analyze" onclick="openAnalysis('${s.symbol}','${s.display_name}')">Analyze</button></td></tr>`;
+        tbody.innerHTML+=`<tr>
+            <td>${s.display_name}</td>
+            <td style="color:#666; font-size:10px;">${s.symbol.toUpperCase()}</td>
+            <td><button class="btn-analyze" onclick="openAnalysis('${s.symbol}','${s.display_name}')">Analyze</button></td>
+        </tr>`;
     });
 }
 
-function openAnalysis(symbol, name){
+function openAnalysis(symbol,name){
     document.getElementById('target-name').innerText=name;
     document.getElementById('target-symbol').innerText=symbol;
     document.getElementById('analysis-overlay').style.display='block';
@@ -146,8 +154,8 @@ function openAnalysis(symbol, name){
     digitCounts.fill(0);
     buildDigitCircles();
 
-    if(activeTickStream) ws.send(JSON.stringify({forget: activeTickStream}));
-    ws.send(JSON.stringify({ticks: symbol, subscribe: 1}));
+    if(activeTickStream) ws.send(JSON.stringify({ forget: activeTickStream }));
+    ws.send(JSON.stringify({ ticks: symbol, subscribe: 1 }));
 }
 
 function handleTick(tick){
@@ -156,18 +164,18 @@ function handleTick(tick){
     const priceStr = price.toFixed(tick.pip_size||2);
     const lastDigit = parseInt(priceStr.slice(-1));
 
-    document.getElementById('live-price').innerText=priceStr;
+    document.getElementById('live-price').innerText = priceStr;
     priceHistory.push(price);
 
-    // sliding window
     tickQueue.push(lastDigit);
     digitCounts[lastDigit]++;
-    if(tickQueue.length>TICK_LIMIT){
+    if(tickQueue.length > TICK_LIMIT){
         const removed = tickQueue.shift();
         digitCounts[removed]--;
     }
 
-    updateDigitCircles();
+    if(updateTimer) clearTimeout(updateTimer);
+    updateTimer = setTimeout(()=>updateDigitCircles(),300);
     updateStrategyPanel(lastDigit, price);
 }
 
@@ -179,14 +187,17 @@ function buildDigitCircles(){
 }
 
 function updateDigitCircles(){
-    const total=tickQueue.length; if(total===0) return;
-    const maxVal=Math.max(...digitCounts);
-    const minVal=Math.min(...digitCounts.filter(c=>c>0));
+    const total = tickQueue.length;
+    if(total===0) return;
+    const maxVal = Math.max(...digitCounts);
+    const minVal = Math.min(...digitCounts.filter(c=>c>0));
 
     for(let i=0;i<=9;i++){
-        const pct=((digitCounts[i]/total)*100).toFixed(1);
-        const circle=document.getElementById(`circle-${i}`);
-        document.getElementById(`pct-${i}`).innerText=pct+'%';
+        let pct = ((digitCounts[i]/total)*100);
+        if(pct>14) pct=14;
+        pct = pct.toFixed(1);
+        const circle = document.getElementById(`circle-${i}`);
+        document.getElementById(`pct-${i}`).innerText = pct+'%';
 
         circle.classList.remove('active','most-freq','least-freq');
         if(i===tickQueue[tickQueue.length-1]) circle.classList.add('active');
@@ -216,12 +227,12 @@ function updateStrategyPanel(digit, price){
     const sig=document.getElementById('ai-signal');
     if(price>=(priceHistory[priceHistory.length-2]||price) && digit%2===0){ sig.innerText="STRONG BUY (EVEN)"; sig.style.color="var(--green)"; }
     else if(price<(priceHistory[priceHistory.length-2]||price) && digit%2!==0){ sig.innerText="STRONG SELL (ODD)"; sig.style.color="var(--red)"; }
-    else { sig.innerText="MARKET NEUTRAL"; sig.style.color="white"; }
+    else{ sig.innerText="MARKET NEUTRAL"; sig.style.color="white"; }
 }
 
 function closeAnalysis(){
     document.getElementById('analysis-overlay').style.display='none';
-    if(activeTickStream) ws.send(JSON.stringify({forget: activeTickStream}));
+    if(activeTickStream) ws.send(JSON.stringify({ forget: activeTickStream }));
 }
 </script>
 </body>
