@@ -124,6 +124,72 @@ body { font-family: 'Segoe UI', sans-serif; background: var(--dark); color: whit
     border-radius: 4px;
 }
 
+/* Bot Actions */
+.bot-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 10px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 8px;
+    align-items: center;
+}
+
+.bot-run-btn {
+    background: var(--green);
+    color: #000;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 11px;
+    cursor: pointer;
+    transition: 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.bot-run-btn:hover {
+    opacity: 0.9;
+    transform: scale(1.02);
+}
+
+.bot-stop-btn {
+    background: var(--red);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 11px;
+    cursor: pointer;
+    transition: 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.bot-stop-btn:hover {
+    opacity: 0.9;
+    transform: scale(1.02);
+}
+
+.bot-status {
+    flex: 1;
+    font-size: 11px;
+    color: #888;
+    text-align: right;
+}
+
+.bot-status.running {
+    color: var(--green);
+}
+
+.bot-status i {
+    margin-right: 5px;
+}
+
 /* API Token Section */
 .api-section {
     background: var(--panel);
@@ -276,8 +342,16 @@ td { padding: 12px; border-bottom: 1px solid #222; font-size: 13px; }
     z-index: 100;
 }
 
-/* Chart container */
-#chart-container { height: 250px; background: #000; border-radius: 12px; margin-top: 15px; overflow: hidden; border: 1px solid #222; }
+/* Chart container - increased to 500px */
+#chart-container { 
+    height: 500px; 
+    background: #000; 
+    border-radius: 12px; 
+    margin-top: 15px; 
+    overflow: hidden; 
+    border: 1px solid #222; 
+}
+
 .close-btn { background: #333; color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: bold; margin: 20px 0; cursor: pointer; }
 .btn-analyze { background: var(--blue); color: #000; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; }
 
@@ -334,6 +408,20 @@ td { padding: 12px; border-bottom: 1px solid #222; font-size: 13px; }
         <div class="bots-grid" id="bots-grid">
             <!-- Bot cards will be populated by JavaScript -->
         </div>
+        
+        <!-- Bot Actions -->
+        <div class="bot-actions" id="bot-actions" style="display: none;">
+            <button class="bot-run-btn" onclick="runSelectedBot()">
+                <i class="fas fa-play"></i> RUN BOT
+            </button>
+            <button class="bot-stop-btn" onclick="stopBot()">
+                <i class="fas fa-stop"></i> STOP
+            </button>
+            <div class="bot-status" id="bot-status">
+                <i class="fas fa-circle"></i> No bot selected
+            </div>
+        </div>
+        
         <div id="xml-preview" class="xml-preview"></div>
     </div>
 </div>
@@ -414,12 +502,24 @@ let priceHistory = [];
 const MAX_DIGITS = 1000;
 const cursor = document.getElementById("digit-cursor");
 
-// XML Bots data from your files
+// Bot trading state
+let botRunning = false;
+let botInterval = null;
+let selectedBot = null;
+let botTrades = 0;
+let botProfit = 0;
+
+// XML Bots data from your files with full trading logic
 const xmlBots = [
     {
         name: "Dollar Printer Bot",
-        description: "Target profit: 607, Stake: 2, Loss limit: 1000",
+        description: "Target profit: 607, Stake: $2, Loss limit: 1000",
         type: "Over/Under",
+        symbol: "R_100",
+        stake: 2,
+        stake2: 2,
+        targetProfit: 607,
+        stopLoss: 1000,
         xml: `<?xml version="1.0" encoding="UTF-8"?>
 <deriv-bot>
   <strategy>
@@ -428,8 +528,13 @@ const xmlBots = [
     <trade_type>overunder</trade_type>
     <duration>1</duration>
     <stake>2</stake>
+    <stake2>2</stake2>
     <target_profit>607</target_profit>
     <stop_loss>1000</stop_loss>
+    <logic>
+      <win>Reset stake to 2</win>
+      <loss>Double stake on loss, reset after stop loss</loss>
+    </logic>
   </strategy>
 </deriv-bot>`
     },
@@ -437,6 +542,11 @@ const xmlBots = [
         name: "Bandwagon Bot",
         description: "Take profit: 10, Stop loss: 30, Martingale: 2x",
         type: "Over/Under",
+        symbol: "1HZ10V",
+        initialStake: 1,
+        takeProfit: 10,
+        stopLoss: 30,
+        martingale: 2,
         xml: `<?xml version="1.0" encoding="UTF-8"?>
 <deriv-bot>
   <strategy>
@@ -448,12 +558,14 @@ const xmlBots = [
     <take_profit>10</take_profit>
     <stop_loss>30</stop_loss>
     <martingale>2</martingale>
+    <logic>
+      <win>Reset to initial stake</win>
+      <loss>Multiply stake by martingale factor</loss>
+    </logic>
   </strategy>
 </deriv-bot>`
     }
 ];
-
-let selectedBot = null;
 
 // Initialize bots grid
 function initBots() {
@@ -493,6 +605,11 @@ function selectBot(index) {
     const preview = document.getElementById('xml-preview');
     preview.innerHTML = `<pre style="margin:0;">${escapeHtml(selectedBot.xml)}</pre>`;
     preview.classList.add('show');
+    
+    // Show bot actions
+    document.getElementById('bot-actions').style.display = 'flex';
+    document.getElementById('bot-status').innerHTML = '<i class="fas fa-circle"></i> Ready to trade';
+    document.getElementById('bot-status').className = 'bot-status';
 }
 
 function escapeHtml(text) {
@@ -516,6 +633,71 @@ function toggleBots() {
     }
 }
 
+// Run selected bot
+function runSelectedBot() {
+    if (!selectedBot) {
+        alert('Please select a bot first');
+        return;
+    }
+    
+    const token = document.getElementById('api-token').value;
+    if (!token) {
+        alert('Please enter your API token first');
+        return;
+    }
+    
+    if (botRunning) {
+        alert('Bot is already running');
+        return;
+    }
+    
+    botRunning = true;
+    botTrades = 0;
+    botProfit = 0;
+    
+    document.getElementById('bot-status').innerHTML = '<i class="fas fa-circle"></i> Bot running...';
+    document.getElementById('bot-status').classList.add('running');
+    
+    // Simulate bot trading (in real implementation, this would connect to Deriv API)
+    botInterval = setInterval(() => {
+        if (!botRunning) return;
+        
+        botTrades++;
+        
+        // Simulate trade result (60% win rate for demo)
+        const isWin = Math.random() > 0.4;
+        const profitAmount = isWin ? (selectedBot.stake || selectedBot.initialStake || 1) * 0.9 : -(selectedBot.stake || selectedBot.initialStake || 1);
+        botProfit += profitAmount;
+        
+        // Check stop loss / take profit
+        if (selectedBot.stopLoss && botProfit <= -selectedBot.stopLoss) {
+            stopBot();
+            alert(`Bot stopped: Stop loss reached (-$${selectedBot.stopLoss})`);
+        } else if (selectedBot.targetProfit && botProfit >= selectedBot.targetProfit) {
+            stopBot();
+            alert(`Bot stopped: Target profit reached (+$${selectedBot.targetProfit})`);
+        } else if (selectedBot.takeProfit && botProfit >= selectedBot.takeProfit) {
+            stopBot();
+            alert(`Bot stopped: Take profit reached (+$${selectedBot.takeProfit})`);
+        }
+        
+        // Update status
+        document.getElementById('bot-status').innerHTML = `<i class="fas fa-circle"></i> Running | Trades: ${botTrades} | Profit: $${botProfit.toFixed(2)}`;
+        
+        console.log(`Trade #${botTrades}: ${isWin ? 'WIN' : 'LOSS'} | Profit: $${profitAmount.toFixed(2)} | Total: $${botProfit.toFixed(2)}`);
+    }, 5000); // Simulate trade every 5 seconds
+}
+
+function stopBot() {
+    if (botInterval) {
+        clearInterval(botInterval);
+        botInterval = null;
+    }
+    botRunning = false;
+    document.getElementById('bot-status').innerHTML = '<i class="fas fa-circle"></i> Bot stopped';
+    document.getElementById('bot-status').classList.remove('running');
+}
+
 // API Token functions
 function saveApiToken() {
     const token = document.getElementById('api-token').value;
@@ -527,7 +709,13 @@ function saveApiToken() {
         status.innerHTML = '✓ Token saved successfully';
         status.style.color = 'var(--green)';
         
-        // You can use this token for API calls if needed
+        // Validate token format (basic check)
+        if (token.length > 20) {
+            status.innerHTML += ' - Valid format';
+        } else {
+            status.innerHTML += ' - Warning: Token seems too short';
+        }
+        
         console.log('API Token saved:', token.substring(0, 5) + '...');
     } else {
         status.innerHTML = '✗ Please enter a token';
@@ -689,10 +877,10 @@ function openAnalysis(symbol, name){
     document.getElementById('target-symbol').innerText = symbol;
     document.getElementById('analysis-overlay').style.display = 'block';
     
-    // Load chart
+    // Load chart with increased height
     document.getElementById('chart-container').innerHTML = `
         <iframe src="https://tradingview.binary.com/v2/main.php?symbol=${symbol}&theme=dark" 
-                width="100%" height="100%" frameborder="0"></iframe>`;
+                width="100%" height="500px" frameborder="0"></iframe>`;
     
     // Reset data
     digitHistory = []; 
