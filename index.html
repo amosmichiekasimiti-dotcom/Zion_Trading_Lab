@@ -37,11 +37,11 @@ td { padding: 12px; border-bottom: 1px solid #222; font-size: 13px; }
 .strat-value { font-weight: bold; font-size: 14px; }
 
 /* Digit Stats */
-.digit-stat-container { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; height: 60px; margin: 15px 0; align-items: end; }
-.digit-bar-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.digit-stat-container { display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; height: 100px; margin: 15px 0; align-items: end; }
+.digit-bar-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; position: relative; }
 .digit-bar { width: 100%; background: var(--blue); border-radius: 2px; transition: height 0.1s ease; min-height: 2px; opacity: 0.7; }
 .digit-label { font-size: 10px; color: #888; font-weight: bold; }
-.high-freq { background: var(--gold) !important; opacity: 1; }
+.digit-circle { position: absolute; top: -18px; background: #222; color: #fff; width: 28px; height: 18px; font-size: 10px; display: flex; justify-content: center; align-items: center; border-radius: 10px; border: 1px solid #444; }
 
 /* Chart Container */
 #chart-container { height: 700px; background: #000; border-radius: 12px; margin-top: 15px; overflow: hidden; }
@@ -105,7 +105,7 @@ td { padding: 12px; border-bottom: 1px solid #222; font-size: 13px; }
 </div>
 
 <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;">
-<div style="font-size: 10px; color: #aaa; text-transform: uppercase;">Digit Frequency (Last 50 ticks)</div>
+<div style="font-size: 10px; color: #aaa; text-transform: uppercase;">Digit Frequency (Last 1000 ticks)</div>
 <div class="digit-stat-container" id="digit-stats"></div>
 </div>
 
@@ -120,7 +120,7 @@ let allSymbols = [];
 let activeTickStream = null;
 let digitHistory = [];
 let priceHistory = [];
-const MAX_DIGITS = 50;
+const MAX_DIGITS = 1000;
 
 // Request active symbols on open
 ws.onopen = () => ws.send(JSON.stringify({ active_symbols: "brief", product_type: "basic" }));
@@ -195,6 +195,7 @@ function buildDigitUI() {
     container.innerHTML = '';
     for(let i=0; i<=9; i++) {
         container.innerHTML += `<div class="digit-bar-wrap">
+        <div class="digit-circle" id="circle-${i}">0%</div>
         <div id="bar-${i}" class="digit-bar" style="height:0px;"></div>
         <div class="digit-label">${i}</div>
         </div>`;
@@ -205,11 +206,15 @@ function updateDigitBars() {
     const counts = new Array(10).fill(0);
     digitHistory.forEach(d => counts[d]++);
     const max = Math.max(...counts);
+    const total = digitHistory.length;
+
     counts.forEach((count,i)=>{
-        const height = digitHistory.length ? (count/digitHistory.length)*100 : 0;
+        const percent = ((count/total)*100).toFixed(2);
+        const height = total ? (count/total)*100 : 0;
         const bar = document.getElementById(`bar-${i}`);
-        bar.style.height = (height*2.5) + "px";
+        bar.style.height = (height*2.5)+"px";
         bar.className = (count===max && max>0) ? "digit-bar high-freq" : "digit-bar";
+        document.getElementById(`circle-${i}`).innerText = `${percent}%`;
     });
 }
 
