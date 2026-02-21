@@ -3,168 +3,226 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Zion Sniper | XML Integrated Terminal</title>
+    <title>Zion AI | Final Sniper Terminal</title>
     <style>
-        :root { --red: #ff444f; --dark: #0a0a0f; --green: #00ff88; --gold: #ffd700; --blue: #00f2fe; --panel: #151520; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--dark); color: white; margin: 0; padding: 10px; overflow-x: hidden; }
+        :root { --red: #ff444f; --dark: #050508; --green: #00ff88; --gold: #ffd700; --blue: #00f2fe; --panel: #111118; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--dark); color: white; margin: 0; padding: 10px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        .account-panel { background: var(--panel); padding: 15px; border-radius: 12px; border: 1px solid #333; margin-bottom: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        .balance-val { font-size: 28px; font-weight: bold; color: var(--green); font-family: monospace; }
-        .token-input { background: #000; border: 1px solid #444; color: var(--gold); padding: 10px; border-radius: 6px; width: 100%; box-sizing: border-box; margin-top: 10px; font-size: 12px; }
-        
-        .bot-settings { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 10px 0; }
-        .setting-card { background: #1a1a24; padding: 10px; border-radius: 8px; border: 1px solid #333; text-align: center; }
-        .set-label { font-size: 9px; color: #888; text-transform: uppercase; margin-bottom: 5px; }
-        .set-input { background: none; border: none; color: var(--blue); font-weight: bold; width: 100%; text-align: center; font-size: 16px; outline: none; }
+        /* Dashboard Stats */
+        .dash-header { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        .box { background: var(--panel); padding: 10px; border-radius: 10px; border: 1px solid #222; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .lbl { font-size: 8px; color: #888; text-transform: uppercase; margin-bottom: 3px; letter-spacing: 1px; }
+        .val { font-size: 16px; font-weight: bold; font-family: monospace; color: var(--blue); }
 
-        .sniper-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .strat-card { background: var(--panel); padding: 15px; border-radius: 12px; border: 1px solid #333; transition: 0.3s; }
-        .strat-title { font-size: 11px; color: var(--gold); font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #222; padding-bottom: 5px; }
-        .cond-row { display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 4px; font-family: monospace; }
-        .pass { color: var(--green); font-weight: bold; }
-        .fail { color: #555; }
+        /* API & Control Panel */
+        .control-panel { background: var(--panel); padding: 12px; border-radius: 12px; border: 1px solid #333; margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; }
+        .row { display: flex; gap: 10px; }
+        input { background: #000; border: 1px solid #444; color: var(--gold); padding: 10px; border-radius: 6px; flex-grow: 1; outline: none; font-size: 13px; font-family: monospace; }
+        .btn-start { background: var(--green); border: none; padding: 0 20px; border-radius: 6px; font-weight: bold; cursor: pointer; color: #000; transition: 0.3s; }
+        .btn-start:hover { background: #00cc6e; transform: scale(1.02); }
 
-        .gino-active { border-color: var(--gold); box-shadow: 0 0 20px rgba(255, 215, 0, 0.3); }
-        
-        #price-display { font-size: 40px; text-align: center; font-family: monospace; color: var(--blue); margin: 15px 0; font-weight: bold; }
-        .execution-btn { width: 100%; padding: 20px; border-radius: 12px; border: none; font-size: 18px; font-weight: 900; cursor: pointer; transition: 0.3s; text-transform: uppercase; }
-        .btn-locked { background: #222; color: #444; cursor: not-allowed; }
-        .btn-ready { background: linear-gradient(to bottom, var(--gold), #ccac00); color: #000; box-shadow: 0 0 20px var(--gold); }
+        /* The Global Radar Matrix */
+        .matrix-container { flex-grow: 1; background: var(--panel); border-radius: 12px; border: 1px solid #222; overflow-y: auto; padding: 5px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { font-size: 10px; color: #555; text-align: left; padding: 8px; border-bottom: 1px solid #222; }
+        td { padding: 12px 8px; border-bottom: 1px solid #1a1a24; font-size: 12px; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .pulse-green { background: var(--green); animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+
+        /* Pop-up Notification */
+        #snipe-alert { position: fixed; top: -100px; left: 10px; right: 10px; background: var(--gold); color: #000; padding: 15px; border-radius: 10px; font-weight: bold; text-align: center; z-index: 1000; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .alert-show { top: 20px !important; }
+
+        /* Terminal Logs */
+        .terminal { height: 70px; background: #000; border-top: 2px solid #222; color: var(--green); font-family: monospace; font-size: 10px; padding: 8px; overflow-y: auto; }
     </style>
 </head>
 <body>
 
-<div class="account-panel">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-size: 11px; color: #aaa;">DERIV LIVE BALANCE</span>
-        <span id="conn-status" style="color: var(--red); font-size: 10px; font-weight: bold;">● OFFLINE</span>
-    </div>
-    <div id="balance-amt" class="balance-val">$0.00</div>
-    <input type="password" id="api-token" class="token-input" placeholder="Enter API Token (Read/Trade scope)">
-    <button onclick="initAccount()" style="width:100%; margin-top:8px; padding:8px; background:var(--blue); border:none; border-radius:5px; font-weight:bold; cursor:pointer;">CONNECT ACCOUNT</button>
+<div id="snipe-alert">🚀 LEGIT SIGNAL DETECTED! EXECUTING...</div>
+
+<div class="dash-header">
+    <div class="box"><div class="lbl">Account Balance</div><div id="ui-bal" class="val">$0.00</div></div>
+    <div class="box"><div class="lbl">Session P/L</div><div id="ui-pl" class="val">$0.00</div></div>
+    <div class="box"><div class="lbl">Next Stake</div><div id="ui-stake" class="val">$1.60</div></div>
 </div>
 
-<div class="bot-settings">
-    <div class="setting-card"><div class="set-label">Initial Stake</div><input type="number" id="bot-stake" class="set-input" value="1.60"></div>
-    <div class="setting-card"><div class="set-label">Martingale</div><input type="number" id="bot-multi" class="set-input" value="2.1"></div>
-    <div class="setting-card"><div class="set-label">TP (Target)</div><input type="number" id="bot-tp" class="set-input" value="10.0"></div>
-</div>
-
-<div id="price-display">0.00</div>
-
-<div class="sniper-grid">
-    <div class="strat-card" id="card-ou">
-        <div class="strat-title">ZONE SNIPER (OVER 4)</div>
-        <div id="list-ou"></div>
+<div class="control-panel">
+    <div class="row">
+        <input type="password" id="api-token" placeholder="Enter Deriv API Token (Trade/Read)">
+        <button class="btn-start" onclick="igniteSystem()">IGNITE RADAR</button>
     </div>
-    <div class="strat-card" id="card-rf">
-        <div class="strat-title">MOMENTUM SNIPER (RISE)</div>
-        <div id="list-rf"></div>
+    <div class="row" style="justify-content: space-between; font-size: 10px; color: #888; padding: 0 5px;">
+        <span>Target: <input type="number" id="target-profit" value="10.00" style="width:40px; border:none; background:none; color:var(--green); font-weight:bold;"></span>
+        <span>Stop: <input type="number" id="stop-loss" value="20.00" style="width:40px; border:none; background:none; color:var(--red); font-weight:bold;"></span>
+        <span id="sys-status" style="color:var(--red)">System: Standby</span>
     </div>
 </div>
 
-<button id="exec-btn" class="execution-btn btn-locked" disabled>Waiting for Legit Signal...</button>
+<div class="matrix-container">
+    <table>
+        <thead>
+            <tr><th>MARKET ASSET</th><th>SIGNAL SCORE</th><th>TREND STATUS</th></tr>
+        </thead>
+        <tbody id="radar-rows">
+            </tbody>
+    </table>
+</div>
+
+<div class="terminal" id="term-log">>> Zion Master AI v3.0 initialized. Awaiting ignition...</div>
 
 <script>
-    let apiWs, priceWs;
-    let digitHistory = [], priceHistory = [];
+    let wsMkt, wsTrade;
+    let marketStorage = {};
+    let isLocked = false;
+    let baseStake = 1.60;
     let currentStake = 1.60;
-    
-    // --- Account Integration ---
-    function initAccount() {
+    let sessionPL = 0;
+
+    function log(m) {
+        const t = document.getElementById('term-log');
+        t.innerHTML += `<br>> ${m}`;
+        t.scrollTop = t.scrollHeight;
+    }
+
+    function igniteSystem() {
         const token = document.getElementById('api-token').value;
-        if (!token) return alert("Please enter your API token.");
+        if(!token) return alert("Please enter your API Token first.");
         
-        apiWs = new WebSocket('wss://ws.derivws.com/websockets/v3?app_id=126973');
+        log("Connecting to Deriv Secure Gateway...");
+        wsTrade = new WebSocket('wss://ws.derivws.com/websockets/v3?app_id=126973');
         
-        apiWs.onopen = () => apiWs.send(JSON.stringify({ authorize: token }));
+        wsTrade.onopen = () => wsTrade.send(JSON.stringify({ authorize: token }));
         
-        apiWs.onmessage = (msg) => {
-            const data = JSON.parse(msg.data);
-            if (data.authorize) {
-                document.getElementById('conn-status').innerText = "● ONLINE";
-                document.getElementById('conn-status').style.color = "var(--green)";
-                document.getElementById('balance-amt').innerText = "$" + data.authorize.balance;
-                apiWs.send(JSON.stringify({ balance: 1, subscribe: 1 }));
+        wsTrade.onmessage = (e) => {
+            const d = JSON.parse(e.data);
+            if(d.authorize) {
+                document.getElementById('ui-bal').innerText = "$" + d.authorize.balance;
+                document.getElementById('sys-status').innerText = "System: Active Scan";
+                document.getElementById('sys-status').style.color = "var(--green)";
+                wsTrade.send(JSON.stringify({ balance: 1, subscribe: 1 }));
+                wsTrade.send(JSON.stringify({ proposal_open_contract: 1, subscribe: 1 }));
+                startGlobalRadar();
             }
-            if (data.balance) document.getElementById('balance-amt').innerText = "$" + data.balance.balance;
-            if (data.buy) alert("Legit Trade Executed Successfully!");
+            if(d.balance) document.getElementById('ui-bal').innerText = "$" + d.balance.balance;
+            if(d.proposal_open_contract) handleTradeResolution(d.proposal_open_contract);
         };
     }
 
-    // --- Price Sniper Engine ---
-    priceWs = new WebSocket('wss://ws.derivws.com/websockets/v3?app_id=126973');
-    priceWs.onopen = () => priceWs.send(JSON.stringify({ ticks: 'R_100', subscribe: 1 }));
-    
-    priceWs.onmessage = (msg) => {
-        const data = JSON.parse(msg.data);
-        if (data.tick) {
-            const price = data.tick.quote;
-            const digit = parseInt(price.toString().slice(-1));
-            priceHistory.push(price);
-            digitHistory.push(digit);
-            if (digitHistory.length > 20) { digitHistory.shift(); priceHistory.shift(); }
-            
-            document.getElementById('price-display').innerText = price;
-            validateLegitSignals(digit, price);
-        }
-    };
-
-    function validateLegitSignals(digit, price) {
-        const last10 = digitHistory.slice(-10);
+    function startGlobalRadar() {
+        wsMkt = new WebSocket('wss://ws.derivws.com/websockets/v3?app_id=126973');
+        wsMkt.onopen = () => wsMkt.send(JSON.stringify({ active_symbols: "brief", product_type: "basic" }));
         
-        // legit conditions for Over 4
-        const ouConds = [
-            { n: "VACUUM (0,1 COLD)", v: !last10.includes(0) && !last10.includes(1) },
-            { n: "ZONE DENSITY 80%+", v: last10.filter(d => d > 4).length >= 8 },
-            { n: "REJECTION DETECTED", v: price > priceHistory[priceHistory.length-2] },
-            { n: "ALGO SUPPORT (4,5)", v: last10.includes(4) || last10.includes(5) },
-            { n: "GINO DIGIT (8,9)", v: digit >= 8 }
-        ];
-
-        updateUI('ou', ouConds, "LEGIT OVER 4");
+        wsMkt.onmessage = (e) => {
+            const d = JSON.parse(e.data);
+            if(d.active_symbols) {
+                const synthetics = d.active_symbols.filter(s => s.market === 'synthetic_index').slice(0, 12);
+                synthetics.forEach(s => {
+                    marketStorage[s.symbol] = { digits: [], prices: [], name: s.display_name };
+                    wsMkt.send(JSON.stringify({ ticks: s.symbol, subscribe: 1 }));
+                });
+                log(`Radar tracking ${synthetics.length} assets in parallel.`);
+            }
+            if(d.tick) processTick(d.tick);
+        };
     }
 
-    function updateUI(id, conds, label) {
-        const list = document.getElementById(`list-${id}`);
-        const card = document.getElementById(`card-${id}`);
-        const btn = document.getElementById('exec-btn');
-        const passes = conds.filter(c => c.v).length;
+    function processTick(t) {
+        const s = t.symbol;
+        const p = t.quote;
+        const d = parseInt(p.toString().slice(-1));
+        const data = marketStorage[s];
 
-        list.innerHTML = conds.map(c => `<div class="cond-row"><span>${c.n}</span><span class="${c.v?'pass':'fail'}">${c.v?'PASS':'FAIL'}</span></div>`).join('');
-        
-        if (passes === 5) {
-            card.classList.add('gino-active');
-            btn.disabled = false;
-            btn.className = "execution-btn btn-ready";
-            btn.innerText = "SNIPE NOW: " + label;
-        } else {
-            card.classList.remove('gino-active');
-            btn.disabled = true;
-            btn.className = "execution-btn btn-locked";
-            btn.innerText = `Waiting for Legit Signal (${passes}/5)...`;
+        data.digits.push(d);
+        data.prices.push(p);
+        if(data.digits.length > 20) { data.digits.shift(); data.prices.shift(); }
+
+        renderRadar();
+
+        // THE SNIPER LOGIC (HARD-CODED FILTERS)
+        const last10 = data.digits.slice(-10);
+        const vacuum = !last10.includes(0) && !last10.includes(1);
+        const density = last10.filter(v => v > 4).length >= 8;
+        const trigger = d >= 8;
+
+        if(vacuum && density && trigger && !isLocked) {
+            triggerSnipe(s, data.name);
         }
     }
 
-    // --- Execution Logic ---
-    document.getElementById('exec-btn').onclick = () => {
-        const stake = document.getElementById('bot-stake').value;
-        if (!apiWs || apiWs.readyState !== 1) return alert("Please connect your account first!");
-        
-        apiWs.send(JSON.stringify({
+    function renderRadar() {
+        const tbody = document.getElementById('radar-rows');
+        tbody.innerHTML = Object.keys(marketStorage).map(key => {
+            const m = marketStorage[key];
+            const score = m.digits.slice(-10).filter(x => x > 4).length;
+            const trend = m.prices[m.prices.length-1] > m.prices[0] ? 'BULLISH' : 'BEARISH';
+            return `<tr>
+                <td><div class="status-dot ${score >= 8 ? 'pulse-green' : ''}"></div> ${m.name}</td>
+                <td style="color:${score >= 8 ? 'var(--gold)' : '#555'}">${score}/10 GINO</td>
+                <td style="color:${trend === 'BULLISH' ? 'var(--green)' : 'var(--red)'}; font-size:10px;">${trend}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    function triggerSnipe(sym, name) {
+        isLocked = true;
+        const alert = document.getElementById('snipe-alert');
+        alert.innerText = `🚀 AUTO-SNIPE: ${name.toUpperCase()} ($${currentStake})`;
+        alert.classList.add('alert-show');
+
+        wsTrade.send(JSON.stringify({
             buy: "1",
-            price: stake,
+            price: currentStake,
             parameters: {
-                amount: stake,
+                amount: currentStake,
                 basis: "stake",
-                contract_type: "CALL", // Adjust if your XML preferred PUT
+                contract_type: "CALL",
                 currency: "USD",
                 duration: 1,
                 duration_unit: "t",
-                symbol: "R_100"
+                symbol: sym
             }
         }));
-    };
+
+        setTimeout(() => alert.classList.remove('alert-show'), 3500);
+    }
+
+    function handleTradeResolution(c) {
+        if(c.is_sold) {
+            const profit = parseFloat(c.profit);
+            sessionPL += profit;
+            
+            document.getElementById('ui-pl').innerText = "$" + sessionPL.toFixed(2);
+            document.getElementById('ui-pl').style.color = sessionPL >= 0 ? 'var(--green)' : 'var(--red)';
+            
+            if(profit > 0) {
+                log(`WIN: +$${profit.toFixed(2)} | Resetting stake.`);
+                currentStake = baseStake;
+            } else {
+                currentStake = (currentStake * 2.1).toFixed(2);
+                log(`LOSS: -$${Math.abs(profit).toFixed(2)} | Martingale: $${currentStake}`);
+            }
+            
+            document.getElementById('ui-stake').innerText = "$" + currentStake;
+            checkGoals();
+            isLocked = false;
+        }
+    }
+
+    function checkGoals() {
+        const tp = parseFloat(document.getElementById('target-profit').value);
+        const sl = parseFloat(document.getElementById('stop-loss').value);
+        
+        if(sessionPL >= tp) {
+            alert("TARGET PROFIT REACHED! Bot Stopping.");
+            location.reload();
+        }
+        if(sessionPL <= (sl * -1)) {
+            alert("STOP LOSS HIT. Protecting remaining balance.");
+            location.reload();
+        }
+    }
 </script>
 </body>
 </html>
